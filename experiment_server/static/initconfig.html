@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<title>Bootstrap 4 Example</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+	<script>
+	  $(document).ready(function() {
+	      $("#btnNext").click(function(){
+		  $.get("/initconfig/move", null);
+	      });
+	      
+	      $("#btnPause").click(function(){
+		  $.get("/initconfig/pause", null);
+	      });
+	      
+	  });
+	</script>
+    </head>
+    <body>
+
+	<div class="container">
+	    <div class="row">
+		<div class="col-sm-12 mt-2">
+		    <button id="btnNext" type="button" style="width:100%" class="btn btn-primary">Next</button>
+		</div>
+	    </div>
+	    <div class="row">
+		<div class="col-sm-12 mt-2">
+		    <button id="btnPause" type="button" style="width:100%" class="btn btn-primary">Pause</button>
+		</div>
+	    </div>
+	</div>
+
+    </body>
+</html>

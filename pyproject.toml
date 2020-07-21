@@ -1,7 +1,7 @@
 [tool.poetry]
 
-name = "ExperimentServer"
-version = "0.0"
+name = "experiment_server"
+version = "0.1.0-alpha.0"
 description = "Server for unity experiments to get configuarations from"
 
 license = ""
@@ -24,12 +24,13 @@ classifiers = [
 
 [tool.poetry.dependencies]
 
-python = "^3.6"
+python = "^3.6.1"
 
 # TODO: Remove these and add your library's requirements
 click = "^6.0"
 minilog = "^1.5"
 flask_restful = "^0.3.8"
+pandas = "^1.0.5"
 
 [tool.poetry.dev-dependencies]
 
@@ -66,7 +67,7 @@ ipython = "^7.12.0"
 
 [tool.poetry.scripts]
 
-unity-experiment-server = "ExperimentServer.cli:_main"
+unity-experiment-server = "experiment_server.cli:_main"
 
 [tool.black]
 
