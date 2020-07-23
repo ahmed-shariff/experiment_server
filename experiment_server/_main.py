@@ -37,8 +37,13 @@ config = [
     {"step_name": "case_indirect_no_hand",
      "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_75", "participantId": PARTICIPANT_ID}},
 ]
+
 _init_config = [{"step_name": "configuration",
-                 "config": {"participantId": PARTICIPANT_ID}}]
+                 "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
+                {"step_name": "case_direct",
+                 "config": {"buttonSize": 0.5, "trialsPerItem": 1, "conditionId": "training", "participantId": PARTICIPANT_ID}}]
+_final_config = [{"step_name": "configuration",
+                 "config": {"participantId": PARTICIPANT_ID, "conditionId": "final"}}]
 iterator = None
 stage = None
 initconfig_move = 0
