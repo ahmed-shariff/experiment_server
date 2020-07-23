@@ -15,7 +15,7 @@ from ._calibration import get_calibration_offsets
 PARTICIPANT_ID = 1
 TRIALS_PER_ITEM = 1
 
-config = [
+base_config = [
     {"step_name": "case_direct",
      "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
     {"step_name": "case_indirect",
@@ -37,23 +37,34 @@ config = [
     {"step_name": "case_indirect_no_hand",
      "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_75", "participantId": PARTICIPANT_ID}},
 ]
+latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
+                [2, 3, 1, 5, 6, 4, 8, 9, 7],
+                [3, 1, 2, 6, 4, 5, 9, 7, 8],
+                [4, 5, 6, 7, 8, 9, 1, 2, 3],
+                [5, 6, 4, 8, 9, 7, 2, 3, 1],
+                [6, 4, 5, 9, 7, 8, 3, 1, 2],
+                [7, 8, 9, 1, 2, 3, 4, 5, 6],
+                [8, 9, 7, 2, 3, 1, 5, 6, 4],
+                [9, 7, 8, 3, 1, 2, 6, 4, 5]]
 
 _init_config = [{"step_name": "configuration",
                  "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
                 {"step_name": "case_direct",
                  "config": {"buttonSize": 0.5, "trialsPerItem": 1, "conditionId": "training", "participantId": PARTICIPANT_ID}}]
+
 _final_config = [{"step_name": "configuration",
                  "config": {"participantId": PARTICIPANT_ID, "conditionId": "final"}}]
 iterator = None
 stage = None
 initconfig_move = 0
 
+def _construct_latin_square(config, participant_id, latin_square):
+    return [config[i] for i in latin_square[participant_id - 1]]
+
 def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibration_data_file.json"):
-    global config
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
-
-    config = _init_config + config
+    config = _init_config + _construct_latin_square(base_config, PARTICIPANT_ID, latin_square)
 
     if Path(calibration_data_file_path).exists():
         with open(calibration_data_file_path) as f:
