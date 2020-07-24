@@ -4,8 +4,8 @@ from datetime import datetime
 import re
 from pathlib import Path
 
-pd.set_option("display.width", 250)
-pd.set_option("display.max_colwidth", 150)
+pd.set_option("display.width", 350)
+pd.set_option("display.max_colwidth", 10)
 pd.set_option("display.min_rows", 40)
 
 button_controller_header = ["data.participantId", "data.conditionId", "0", "Valid", "currentTicks", "parent.name", "transform.name",
@@ -100,14 +100,15 @@ def get_calibration_offsets(f):
     z_df["fix"] = 0
     # z_df.loc[z_df["fix_needed"], "fix"] = z_df[z_df["fix_needed"]].apply(lambda x: x["diff"] - 0.45 * x["radius"] if x["r_percentage"] <= 0.4 else x["diff"] - 0.8 * x["radius"], axis=1)
     z_df.loc[z_df["fix_needed"], "fix"] = z_df[z_df["fix_needed"]].apply(lambda x: x["diff"] - 0.78 * x["radius"], axis=1)
-    z_df["fix"] = z_df["fix"] * z_df["sign"]
+    # z_df["fix"] = z_df["fix"] * z_df["sign"]
     # z_df["fix"] = z_df.apply(lambda x: x["fix"] if x["fix"] + x["parentLocalselfPositionZ"], axis=1)
 
     z_df_final = z_df  # .groupby("parent.name").max()
     z_df_final["collider"] = z_df_final["parentLocalcolliderPosition"]
     z_df_final["self"] = z_df_final["parentLocalselfPosition"]
     # z_df_final["parent.name"] = z_df_final.index
-    print(z_df_final.loc[:, ["idx", "radius", "diff", "r_percentage", "sign", "fix_needed", "fix"]])
+    z_df_final["idx"] = z_df["parent.name"] + z_df["transform.name"]
+    print(z_df_final.loc[:, ["idx", "collider", "self", "radius", "diff", "r_percentage", "sign", "fix_needed", "fix"]])
     z_df_final.to_csv("z_df_final.csv")
     calibration_offsets = dict(zip(z_df_final["idx"].tolist(), z_df_final["fix"].tolist()))
     fix_calibration_offsets = dict(zip(z_df_final["idx"].tolist(), z_df_final["fix_needed"].tolist()))

@@ -120,6 +120,7 @@ def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibra
             calibration_offsets, fix_calibration_offsets = get_calibration_offsets("temp.csv")
             calibration_data[PARTICIPANT_ID] = {"calibrationOffsets": calibration_offsets,   
                                                  "fixCaliberationOffsets": fix_calibration_offsets}
+            log.i(f"Caliberarion Data: {calibration_data[PARTICIPANT_ID]}")
             with open(calibration_data_file_path, "w") as f:
                 json.dump(calibration_data, f)
             print(calibration_data)
