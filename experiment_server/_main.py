@@ -12,8 +12,8 @@ import json
 from ._calibration import get_calibration_offsets
 
 
-PARTICIPANT_ID = 1
-TRIALS_PER_ITEM = 1
+PARTICIPANT_ID = 0
+TRIALS_PER_ITEM = 3
 
 base_config = [
     {"step_name": "case_direct",
@@ -59,11 +59,14 @@ stage = None
 initconfig_move = 0
 
 def _construct_latin_square(config, participant_id, latin_square):
-    return [config[i] for i in latin_square[participant_id - 1]]
+    if participant_id < 1:
+        participant_id = 1
+    return [config[i - 1] for i in latin_square[participant_id - 1]]
 
 def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibration_data_file.json"):
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
+    log.i(f"Loading latin_square {PARTICIPANT_ID}: \n{latin_square[PARTICIPANT_ID - 1]}")
     config = _init_config + _construct_latin_square(base_config, PARTICIPANT_ID, latin_square)
 
     if Path(calibration_data_file_path).exists():
@@ -76,6 +79,7 @@ def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibra
         def get(self):
             try:
                 config = stage["config"]
+                log.i(f"Config returned (sans calibration): {config}")
                 try:
                     config.update(calibration_data[str(PARTICIPANT_ID)])
                 except KeyError:
@@ -90,12 +94,15 @@ def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibra
             global iterator, stage
             try:
                 stage = next(iterator)
+                log.i(f"Lading step: {stage}")
                 return {"step_name": stage["step_name"]}
             except TypeError:
                 iterator = iter(config)
                 stage = next(iterator)
+                log.i(f"Lading step: {stage}")
                 return {"step_name": stage["step_name"]}
             except StopIteration:
+                log.i(f"Lading step: MainScene{stage}")
                 return {"step_name": "MainScene"}
             # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
 

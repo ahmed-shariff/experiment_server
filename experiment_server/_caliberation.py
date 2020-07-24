@@ -8,7 +8,7 @@ pd.set_option("display.width", 250)
 pd.set_option("display.max_colwidth", 150)
 pd.set_option("display.min_rows", 40)
 
-button_controller_header = ["data.participantId","0", "Valid", "currentTicks", "parent.name", "transform.name",
+button_controller_header = ["data.participantId", "data.conditionId", "0", "Valid", "currentTicks", "parent.name", "transform.name",
                             "cz.colliderPosition.x", "cz.colliderPosition.y", "cz.colliderPosition.z",
                             "cz.selfPosition.x", "cz.selfPosition.y", "cz.selfPosition.z",
                             "cz.contactPoint.x", "cz.contactPoint.y", "cz.contactPoint.z",
@@ -85,34 +85,37 @@ def _get_inverse(matrix):
 
 def get_calibration_offsets(f):
     data = load_button_data(f)  # Path(__file__).parent / "temp11.csv")
-    data["parentLocalColliderPositionZ"] = data['parentLocalcolliderPosition'].apply(lambda x: x[2])
-    data["parentLocalselfPositionZ"] = data['parentLocalselfPosition'].apply(lambda x: x[2])
-    data["radius"] = data.apply(lambda x: np.linalg.norm(x["parentLocalcolliderPosition"][:3] - x["parentLocalcolliderSurfacePosition"]), axis=1)
-    z_df = data.loc[:, ["parent.name", "transform.name", "parentLocalColliderPositionZ", "parentLocalselfPositionZ", "radius"]]
-    z_df["diff"] = (data["parentLocalColliderPositionZ"] - data["parentLocalselfPositionZ"]).abs()
-    z_df["r_percentage"] = z_df["diff"]/z_df["radius"]
+    # data["parentLocalColliderPosition"] = data['parentLocalcolliderPosition'].apply(lambda x: x[2])
+    # data["parentLocalselfPosition"] = data['parentLocalselfPosition'].apply(lambda x: x[2])
+    data["radius"] = data.apply(lambda x: np.linalg.norm(x["parentLocalcolliderPosition"][:3] - x["parentLocalcolliderSurfacePosition"][:3]), axis=1)
+    z_df = data.loc[:, ["currentTicks", "parent.name", "transform.name", "parentLocalcolliderPosition", "parentLocalselfPosition", "radius"]]
+    z_df["idx"] = z_df["parent.name"] + z_df["transform.name"]
+    z_df = z_df[z_df["currentTicks"].isin(z_df.groupby("idx")["currentTicks"].max())]
+    z_df["diff"] = data.apply(lambda x: np.linalg.norm(x["parentLocalcolliderPosition"][:3] - x["parentLocalselfPosition"][:3]), axis=1)
+    z_df["r_percentage"] = z_df["diff"].abs()/z_df["radius"]
     z_df["fix_needed"] = True
     # z_df.loc[(z_df["r_percentage"] > 0.4) & (z_df["r_percentage"] <= 0.85), "fix_needed"] = False
-    z_df.loc[(z_df["r_percentage"] <= 0.80) & (z_df["diff"] > 0), "fix_needed"] = False
+    z_df.loc[(z_df["r_percentage"] <= 0.80), "fix_needed"] = False
     z_df["sign"] = np.sign(z_df["diff"])
     z_df["fix"] = 0
     # z_df.loc[z_df["fix_needed"], "fix"] = z_df[z_df["fix_needed"]].apply(lambda x: x["diff"] - 0.45 * x["radius"] if x["r_percentage"] <= 0.4 else x["diff"] - 0.8 * x["radius"], axis=1)
     z_df.loc[z_df["fix_needed"], "fix"] = z_df[z_df["fix_needed"]].apply(lambda x: x["diff"] - 0.78 * x["radius"], axis=1)
-    # z_df["fix"] = z_df["fix"]*z_df["sign"]
+    z_df["fix"] = z_df["fix"] * z_df["sign"]
     # z_df["fix"] = z_df.apply(lambda x: x["fix"] if x["fix"] + x["parentLocalselfPositionZ"], axis=1)
 
     z_df_final = z_df  # .groupby("parent.name").max()
+    z_df_final["collider"] = z_df_final["parentLocalcolliderPosition"]
+    z_df_final["self"] = z_df_final["parentLocalselfPosition"]
     # z_df_final["parent.name"] = z_df_final.index
-    z_df_final["idx"] = z_df["parent.name"] + z_df["transform.name"]
-    print(z_df)
-    print(z_df_final)
+    print(z_df_final.loc[:, ["idx", "radius", "diff", "r_percentage", "sign", "fix_needed", "fix"]])
+    z_df_final.to_csv("z_df_final.csv")
     calibration_offsets = dict(zip(z_df_final["idx"].tolist(), z_df_final["fix"].tolist()))
     fix_calibration_offsets = dict(zip(z_df_final["idx"].tolist(), z_df_final["fix_needed"].tolist()))
     return calibration_offsets, fix_calibration_offsets
 
-    
+
 def main():
-    print(get_calibration_offsets(Path(__file__).parent / "temp11.csv"))
+    print(get_calibration_offsets("../../temp.csv"))# Path(__file__).parent.parent / "temp.csv"))
 
     
 if __name__ == "__main__":
