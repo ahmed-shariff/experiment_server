@@ -135,6 +135,8 @@ def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibra
                 initconfig_move = 1
             elif action == "pause":
                 initconfig_move = 2
+            elif action == "previous":
+                initconfig_move = 3
             else:
                 return "", 404
             
