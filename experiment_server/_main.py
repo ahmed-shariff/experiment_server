@@ -3,6 +3,7 @@
 """Main script."""
 
 import log
+import random
 from pathlib import Path
 
 from flask import Flask, request, send_from_directory, send_file
@@ -16,41 +17,58 @@ PARTICIPANT_ID = 0
 TRIALS_PER_ITEM = 3
 
 base_config = [
-    {"step_name": "case_direct",
-     "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect",
-     "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_50", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect_no_hand",
-     "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_50", "participantId": PARTICIPANT_ID}},
-
-    {"step_name": "case_direct",
+    # {"step_name": "case_direct_hand_for",
+    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+    {"step_name": "case_direct_finger_for",
      "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_100", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect",
+    # {"step_name": "case_indirect_hand_for",
+    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+    {"step_name": "case_indirect_finger_for",
      "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_100", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect_no_hand",
-     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_100", "participantId": PARTICIPANT_ID}},
 
-    {"step_name": "case_direct",
+    {"step_name": "case_direct_finger_for",
      "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect",
+    # {"step_name": "case_indirect_hand_for",
+    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+    {"step_name": "case_indirect_finger_for",
      "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect_no_hand",
-     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_75", "participantId": PARTICIPANT_ID}},
-]
-latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [2, 3, 1, 5, 6, 4, 8, 9, 7],
-                [3, 1, 2, 6, 4, 5, 9, 7, 8],
-                [4, 5, 6, 7, 8, 9, 1, 2, 3],
-                [5, 6, 4, 8, 9, 7, 2, 3, 1],
-                [6, 4, 5, 9, 7, 8, 3, 1, 2],
-                [7, 8, 9, 1, 2, 3, 4, 5, 6],
-                [8, 9, 7, 2, 3, 1, 5, 6, 4],
-                [9, 7, 8, 3, 1, 2, 6, 4, 5]]
 
-_init_config = [{"step_name": "configuration",
-                 "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
-                {"step_name": "case_direct",
-                 "config": {"buttonSize": 0.5, "trialsPerItem": 1, "conditionId": "training", "participantId": PARTICIPANT_ID}}]
+    
+    # {"step_name": "case_direct",
+    #  "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_100", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect",
+    #  "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_100", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect_no_hand",
+    #  "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_100", "participantId": PARTICIPANT_ID}},
+
+    # {"step_name": "case_direct",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect_no_hand",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_75", "participantId": PARTICIPANT_ID}},
+]
+# latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
+#                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
+#                 [3, 1, 2, 6, 4, 5, 9, 7, 8],
+#                 [4, 5, 6, 7, 8, 9, 1, 2, 3],
+#                 [5, 6, 4, 8, 9, 7, 2, 3, 1],
+#                 [6, 4, 5, 9, 7, 8, 3, 1, 2],
+#                 [7, 8, 9, 1, 2, 3, 4, 5, 6],
+#                 [8, 9, 7, 2, 3, 1, 5, 6, 4],
+#                 [9, 7, 8, 3, 1, 2, 6, 4, 5]]
+
+latin_square = [[1, 2, 3, 4],
+                [3, 4, 1, 2],
+                [4, 3, 2, 1],
+                [2, 1, 4, 3]]
+
+_init_config = [# {"step_name": "configuration",
+                #  "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
+    {"step_name": "case_direct_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training1", "participantId": PARTICIPANT_ID}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training2", "participantId": PARTICIPANT_ID}},]
 
 _final_config = [{"step_name": "configuration",
                  "config": {"participantId": PARTICIPANT_ID, "conditionId": "final"}}]
@@ -61,13 +79,15 @@ initconfig_move = 0
 def _construct_latin_square(config, participant_id, latin_square):
     if participant_id < 1:
         participant_id = 1
-    return [config[i - 1] for i in latin_square[participant_id - 1]]
+    config = [base_config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
+    return config
 
 def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibration_data_file.json"):
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
-    log.i(f"Loading latin_square {PARTICIPANT_ID}: \n{latin_square[PARTICIPANT_ID - 1]}")
+    log.i(f"Loading latin_square {PARTICIPANT_ID}: \n{latin_square[(PARTICIPANT_ID - 1) % len(base_config)]}")
     config = _init_config + _construct_latin_square(base_config, PARTICIPANT_ID, latin_square)
+    config = base_config
 
     if Path(calibration_data_file_path).exists():
         with open(calibration_data_file_path) as f:
