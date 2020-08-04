@@ -14,24 +14,35 @@ from ._calibration import get_calibration_offsets
 
 
 PARTICIPANT_ID = 0
-TRIALS_PER_ITEM = 3
+TRIALS_PER_ITEM = 2
 
 base_config = [
-    # {"step_name": "case_direct_hand_for",
-    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_100", "participantId": PARTICIPANT_ID}},
-    # {"step_name": "case_indirect_hand_for",
-    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_100_on", "participantId": PARTICIPANT_ID, "relativePosition": "on"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_100", "participantId": PARTICIPANT_ID}},
+     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_100_on", "participantId": PARTICIPANT_ID, "relativePosition": "on"}},
 
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75", "participantId": PARTICIPANT_ID}},
-    # {"step_name": "case_indirect_hand_for",
-    #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_100_off", "participantId": PARTICIPANT_ID, "relativePosition": "off"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75", "participantId": PARTICIPANT_ID}},
+     "config": {"buttonSize": 1, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_100_off", "participantId": PARTICIPANT_ID, "relativePosition": "off"}},
+
+    {"step_name": "case_direct_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75_on", "participantId": PARTICIPANT_ID, "relativePosition": "on"}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75_on", "participantId": PARTICIPANT_ID, "relativePosition": "on"}},
+
+    {"step_name": "case_direct_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75_off", "participantId": PARTICIPANT_ID, "relativePosition": "off"}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75_off", "participantId": PARTICIPANT_ID, "relativePosition": "off"}},
+
+    # {"step_name": "case_direct_finger_for",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_75", "participantId": PARTICIPANT_ID}},
+    # # {"step_name": "case_indirect_hand_for",
+    # #  "config": {"buttonSize": 0.5, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "dir_50", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect_finger_for",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_75", "participantId": PARTICIPANT_ID}},
 
     
     # {"step_name": "case_direct",
@@ -48,6 +59,8 @@ base_config = [
     # {"step_name": "case_indirect_no_hand",
     #  "config": {"buttonSize": 0.75, "trialsPerItem": TRIALS_PER_ITEM, "conditionId": "indir_noh_75", "participantId": PARTICIPANT_ID}},
 ]
+
+base_config_categorization = [[0, 2, 4, 6], [1, 3, 5, 7]]
 # latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
 #                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
 #                 [3, 1, 2, 6, 4, 5, 9, 7, 8],
@@ -63,30 +76,55 @@ latin_square = [[1, 2, 3, 4],
                 [4, 3, 2, 1],
                 [2, 1, 4, 3]]
 
-_init_config = [# {"step_name": "configuration",
-                #  "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
-    {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training1", "participantId": PARTICIPANT_ID}},
-    {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training2", "participantId": PARTICIPANT_ID}},]
+_init_config = [
+    {"step_name": "configuration",
+     "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
+    ]
+    # {"step_name": "case_direct_finger_for",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training1", "participantId": PARTICIPANT_ID}},
+    # {"step_name": "case_indirect_finger_for",
+    #  "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training2", "participantId": PARTICIPANT_ID}},]
 
-_final_config = [{"step_name": "configuration",
+_final_config = [{"step_name": "rating",
                  "config": {"participantId": PARTICIPANT_ID, "conditionId": "final"}}]
 iterator = None
 stage = None
 initconfig_move = 0
 
-def _construct_latin_square(config, participant_id, latin_square):
+
+def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None):
     if participant_id < 1:
         participant_id = 1
-    config = [base_config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
-    return config
+    if use_latin_square:
+        _config = [base_config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
+    else:
+        if participant_id % len(config_categorization) == 0:
+            init_condition = config_categorization[0][:]
+            other_condition = config_categorization[1][:]
+        else:
+            init_condition = config_categorization[1][:]
+            other_condition = config_categorization[0][:]
+        random.shuffle(init_condition)
+        random.shuffle(other_condition)
+        
+        init_condition_train = init_condition[0].copy()
+        init_condition_train["trialsPerItem"] = 0.3
+        init_condition_train["relativePosition"] = "none"
+
+        other_condition_train = init_condition[0].copy()
+        other_condition_train["trialsPerItem"] = 0.3
+        other_condition_train["relativePosition"] = "none"
+
+        _config_list = [init_condition_train] + init_condition + [other_condition_train] + other_condition
+        _config = [base_config[i] for i in _config_list]
+    return _config
+
 
 def _init_api(host="127.0.0.1", port="5000", calibration_data_file_path="calibration_data_file.json"):
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
     log.i(f"Loading latin_square {PARTICIPANT_ID}: \n{latin_square[(PARTICIPANT_ID - 1) % len(base_config)]}")
-    config = _init_config + _construct_latin_square(base_config, PARTICIPANT_ID, latin_square)
+    config = _init_config + _construct_participant_condition(base_config, PARTICIPANT_ID, latin_square) + _final_config
     config = base_config
 
     if Path(calibration_data_file_path).exists():
