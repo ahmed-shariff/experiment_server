@@ -14,7 +14,6 @@ from ._calibration import get_calibration_offsets
 
 
 PARTICIPANT_ID = 0
-TRIALS_PER_ITEM = 2
 
 # latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
 #                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
@@ -31,17 +30,6 @@ latin_square = [[1, 2, 3, 4],
                 [4, 3, 2, 1],
                 [2, 1, 4, 3]]
 
-_init_config = [
-    {"step_name": "configuration",
-     "config": {"participantId": PARTICIPANT_ID, "conditionId": "training"}},
-    ]
-    # {"step_name": "case_direct_finger_for",
-    #  "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training1", "participantId": PARTICIPANT_ID}},
-    # {"step_name": "case_indirect_finger_for",
-    #  "config": {"buttonSize": 0.75, "trialsPerItem": 1, "conditionId": "training2", "participantId": PARTICIPANT_ID}},]
-
-_final_config = [{"step_name": "rating",
-                 "config": {"participantId": PARTICIPANT_ID, "conditionId": "final"}}]
 iterator = None
 stage = None
 initconfig_move = 0
@@ -177,15 +165,15 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
             global iterator, stage
             try:
                 stage = next(iterator)
-                log.i(f"Lading step: {stage}")
+                log.i(f"Lading step: {stage}\n")
                 return {"step_name": stage["step_name"]}
             except TypeError:
                 iterator = iter(config)
                 stage = next(iterator)
-                log.i(f"Lading step: {stage}")
+                log.i(f"Lading step: {stage}\n")
                 return {"step_name": stage["step_name"]}
             except StopIteration:
-                log.i(f"Lading step: MainScene{stage}")
+                log.i(f"Lading step: MainScene{stage}\n")
                 return {"step_name": "MainScene"}
             # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
 
