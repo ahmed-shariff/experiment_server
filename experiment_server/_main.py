@@ -208,6 +208,8 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
                 initconfig_move = 2
             elif action == "previous":
                 initconfig_move = 3
+            elif action == "done":
+                initconfig_move = 4
             else:
                 return "", 404
             
