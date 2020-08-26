@@ -18,8 +18,9 @@ def test():
 @click.command()
 @click.option("-h", "--host", default='127.0.0.1')
 @click.option("-p", "--port", default='5000')
-def server(host, port):
-    _init_api(host, port)
+@click.option("-c", "--config-file", default="config_file.txt")
+def server(host, port, config_file):
+    _init_api(host, port, config_file)
 
 
 # _main.add_command(test)

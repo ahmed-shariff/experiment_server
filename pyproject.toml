@@ -21,17 +21,17 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
 ]
-include = ["experiment_server/static/initconfig.html"]
+include = ["experiment_server/static/initconfig.html",
+	   "experiment_server/static/base_config.expconfig"]
 
 [tool.poetry.dependencies]
 
 python = "^3.6.1"
 
-# TODO: Remove these and add your library's requirements
 click = "^6.0"
 minilog = "^1.5"
 flask_restful = "^0.3.8"
-pandas = "^1.0.5"
+pandas = "^1.1"
 
 [tool.poetry.dev-dependencies]
 
