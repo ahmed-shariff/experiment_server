@@ -35,14 +35,14 @@ stage = None
 initconfig_move = 0
 
 
-def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None):
+def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
     if participant_id < 1:
         participant_id = 1
     if use_latin_square:
         _config = [config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
     else:
         assert len(config_categorization) == 2
-        if participant_id % len(config_categorization) == 0:
+        if not randomize or participant_id % len(config_categorization) == 0:
             init_condition = config_categorization[0][:]
             other_condition = config_categorization[1][:]
         else:
@@ -100,6 +100,12 @@ def _process_config_file(f, participant_id):
 
     # config = json.loads(_replace_template_values(loaded_configurations["init_configuration"], template_values))
     config_categorization = json.loads(loaded_configurations["order"])
+    settings = json.loads(loaded_configurations["settings"])
+    if "randomize" in settings:
+        randomize = settings["randomize"]
+    else:
+        randomize = True
+
     if "default_configuration" in loaded_configurations:
         default_configuration = json.loads(_replace_template_values(loaded_configurations["default_configuration"], template_values))
     else:
@@ -111,7 +117,7 @@ def _process_config_file(f, participant_id):
         log.e(loaded_configurations["main_configuration"])
         log.e(_replace_template_values(loaded_configurations["main_configuration"], template_values))
         raise
-    main_configuration = _construct_participant_condition(main_configuration, participant_id, config_categorization=config_categorization, default_configuration=default_configuration)
+    main_configuration = _construct_participant_condition(main_configuration, participant_id, config_categorization=config_categorization, default_configuration=default_configuration, randomize=randomize)
 
     if "init_configuration" in loaded_configurations:
         init_configuration = json.loads(_replace_template_values(loaded_configurations["init_configuration"], template_values))
