@@ -41,6 +41,7 @@ def _construct_participant_condition(config, participant_id, use_latin_square=Fa
     if use_latin_square:
         _config = [config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
     else:
+        assert len(config_categorization) == 2
         if participant_id % len(config_categorization) == 0:
             init_condition = config_categorization[0][:]
             other_condition = config_categorization[1][:]
