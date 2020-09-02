@@ -168,21 +168,35 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
                 return "", 404
 
     class ExperimentRouter(Resource):
-        def get(self):
+        def get(self, action=None, param=None):
             global iterator, stage
-            try:
-                stage = next(iterator)
-                log.i(f"Lading step: {stage}\n")
-                return {"step_name": stage["step_name"]}
-            except TypeError:
-                iterator = iter(config)
-                stage = next(iterator)
-                log.i(f"Lading step: {stage}\n")
-                return {"step_name": stage["step_name"]}
-            except StopIteration:
-                log.i(f"Lading step: MainScene{stage}\n")
-                return {"step_name": "MainScene"}
-            # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
+            if action == "next":
+                try:
+                    iterator += 1
+                    stage = config[iterator]
+                    log.i(f"Lading step: {stage}\n")
+                    return {"step_name": stage["step_name"]}
+                except TypeError:
+                    iterator = 0
+                    stage = config[iterator]
+                    log.i(f"Lading step: {stage}\n")
+                    return {"step_name": stage["step_name"]}
+                except IndexError:
+                    log.i(f"Lading step: MainScene{stage}\n")
+                    return {"step_name": "MainScene"}
+                # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
+            elif action == "switch":
+                if param is None:
+                    return "param cannot be None", 404
+                if int(param) >= len(config):
+                    return "param max is " + len(config), 404
+                iterator = int(param)
+                stage = config[iterator]
+                return stage
+            elif action == "itemsCount":
+                return len(config)
+            else:
+                return "n/a", 404
 
     class ExperimentInitConfiguration(Resource):
         def get(self):
@@ -221,7 +235,7 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
                 return "", 404
             
     api.add_resource(ExperimentConfig, '/config')
-    api.add_resource(ExperimentRouter, '/next')
+    api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>')
     api.add_resource(ExperimentInitConfiguration, '/initconfig')
     api.add_resource(ExperimentInitConfigurationMove, '/initconfig/<string:action>')
     app.run(host=host, port=int(port))
