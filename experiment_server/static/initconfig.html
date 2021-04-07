@@ -10,26 +10,10 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 	<script>
 	 function displayText (data, status){
-	     $('#output').text(JSON.stringify(data));
+	     output = $('#output').text(JSON.stringify(data, null, 4));
 	 }
 	 
 	 $(document).ready(function() {
-	     $("#btnNext").click(function(){
-		 $.get("/initconfig/move", null);
-	     });
-	     
-	     $("#btnPause").click(function(){
-		 $.get("/initconfig/pause", null);
-	     });
-	     
-	     $("#btnPrev").click(function(){
-		 $.get("/initconfig/previous", null);
-	     });
-
-	     $("#btnDone").click(function(){
-		 $.get("/initconfig/done", null);
-	     });
-
 	     $("#btnSwitch").click(function(){
 		 $.get("/switch/" + $('#txtSwitch').val(), displayText);
 	     });
@@ -38,39 +22,10 @@
 	</script>
     </head>
     <body>
-
 	<div class="container">
 	    <div class="row">
 		<div class="col-sm-12 mt-4">
-		    <div class="alert alert-info" id="output"></div>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-2">
-		    <button id="btnNext" type="button" style="width:100%" class="btn btn-primary">Next</button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-2">
-		    <button id="btnPrev" type="button" style="width:100%" class="btn btn-primary">Previous</button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-2">
-		    <button id="btnDone" type="button" style="width:100%" class="btn btn-primary">Done</button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-5">
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-5">
-		    <button id="btnPause" type="button" style="width:100%" class="btn btn-primary">Pause</button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12 mt-5">
+		    <div class="alert alert-info" style="white-space: pre-wrap" id="output"></div>
 		</div>
 	    </div>
 	    <div class="row">

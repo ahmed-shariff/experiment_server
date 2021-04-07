@@ -2,7 +2,7 @@
 
 """Main script."""
 
-import log
+from loguru import logger
 import random
 from pathlib import Path
 
@@ -10,7 +10,6 @@ from flask import Flask, request, send_from_directory, send_file
 from flask_restful import Resource, Api
 
 import json
-from ._calibration import get_calibration_offsets
 
 
 PARTICIPANT_ID = 0
@@ -32,14 +31,13 @@ latin_square = [[1, 2, 3, 4],
 
 iterator = None
 stage = None
-initconfig_move = 0
 
 
 def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
     if participant_id < 1:
         participant_id = 1
     if use_latin_square:
-        _config = [config[i - 1] for i in latin_square[(participant_id - 1) % len(base_config)]]
+        _config = [config[i - 1] for i in latin_square[(participant_id - 1) % len(config)]]
     else:
         assert len(config_categorization) == 2
         if not randomize or participant_id % len(config_categorization) == 0:
@@ -92,7 +90,7 @@ def _process_config_file(f, participant_id):
                 try:
                     current_blob += line.rstrip()
                 except TypeError:
-                    log.e("The file should start with a section header.")
+                    logger.error("The file should start with a section header.")
                     return None
         loaded_configurations[current_section] = current_blob
     template_values = json.loads(loaded_configurations["template_values"])
@@ -114,8 +112,8 @@ def _process_config_file(f, participant_id):
     try:
         main_configuration = json.loads(_replace_template_values(loaded_configurations["main_configuration"], template_values))
     except:
-        log.e(loaded_configurations["main_configuration"])
-        log.e(_replace_template_values(loaded_configurations["main_configuration"], template_values))
+        logger.error(loaded_configurations["main_configuration"])
+        logger.error(_replace_template_values(loaded_configurations["main_configuration"], template_values))
         raise
     main_configuration = _construct_participant_condition(main_configuration, participant_id, config_categorization=config_categorization, default_configuration=default_configuration, randomize=randomize)
 
@@ -157,7 +155,7 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
         def get(self):
             try:
                 config = stage["config"]
-                log.i(f"Config returned (sans calibration): {config}")
+                logger.info(f"Config returned (sans calibration): {config}")
                 try:
                     config.update(calibration_data[str(PARTICIPANT_ID)])
                 except KeyError:
@@ -174,15 +172,15 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
                 try:
                     iterator += 1
                     stage = config[iterator]
-                    log.i(f"Lading step: {stage}\n")
+                    logger.info(f"Lading step: {stage}\n")
                     return {"step_name": stage["step_name"]}
                 except TypeError:
                     iterator = 0
                     stage = config[iterator]
-                    log.i(f"Lading step: {stage}\n")
+                    logger.info(f"Lading step: {stage}\n")
                     return {"step_name": stage["step_name"]}
                 except IndexError:
-                    log.i(f"Lading step: MainScene{stage}\n")
+                    logger.info(f"Lading step: MainScene{stage}\n")
                     return {"step_name": "MainScene"}
                 # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
             elif action == "switch":
@@ -195,49 +193,13 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
                 return stage
             elif action == "itemsCount":
                 return len(config)
+            elif action == "index":
+                return send_file(Path(__file__).parent  / "static" / "initconfig.html")
             else:
                 return "n/a", 404
 
-    class ExperimentInitConfiguration(Resource):
-        def get(self):
-            global initconfig_move
-            message = {"move": initconfig_move}
-            initconfig_move = 0
-            return message
-
-        def post(self):
-            data = request.form["data"]  # .splitlines()
-            with open("temp.csv", "w") as f:
-                f.write(data)
-            calibration_offsets, fix_calibration_offsets = get_calibration_offsets("temp.csv")
-            calibration_data[PARTICIPANT_ID] = {"calibrationOffsets": calibration_offsets,   
-                                                 "fixCaliberationOffsets": fix_calibration_offsets}
-            log.i(f"Caliberarion Data: {calibration_data[PARTICIPANT_ID]}")
-            with open(calibration_data_file_path, "w") as f:
-                json.dump(calibration_data, f)
-            print(calibration_data)
-            
-
-    class ExperimentInitConfigurationMove(Resource):
-        def get(self, action):
-            global initconfig_move
-            if action == "index":
-                return send_file(Path(__file__).parent  / "static" / "initconfig.html")
-            elif action == "move":
-                initconfig_move = 1
-            elif action == "pause":
-                initconfig_move = 2
-            elif action == "previous":
-                initconfig_move = 3
-            elif action == "done":
-                initconfig_move = 4
-            else:
-                return "", 404
-            
     api.add_resource(ExperimentConfig, '/config')
     api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>')
-    api.add_resource(ExperimentInitConfiguration, '/initconfig')
-    api.add_resource(ExperimentInitConfigurationMove, '/initconfig/<string:action>')
     app.run(host=host, port=int(port))
 
 
