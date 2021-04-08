@@ -1,6 +1,5 @@
-from pkg_resources import get_distribution, DistributionNotFound
+__version__ = '0.1.0-alpha.0'
 
-try:
-    __version__ = get_distribution('vicon_nexus_unity_stream_py').version
-except DistributionNotFound:
-    __version__ = '(local)'
+from ._main import _init_api
+
+__all__ = [_init_api]
