@@ -2,7 +2,7 @@
 
 import click
 
-from ._main import main, _init_api
+from ._main import _init_api
 
 @click.group()
 def _main():

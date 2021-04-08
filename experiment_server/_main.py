@@ -12,8 +12,6 @@ from flask_restful import Resource, Api
 import json
 
 
-PARTICIPANT_ID = 0
-
 # latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
 #                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
 #                 [3, 1, 2, 6, 4, 5, 9, 7, 8],
@@ -28,9 +26,6 @@ latin_square = [[1, 2, 3, 4],
                 [3, 4, 1, 2],
                 [4, 3, 2, 1],
                 [2, 1, 4, 3]]
-
-iterator = None
-stage = None
 
 
 def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
@@ -139,11 +134,10 @@ def _replace_template_values(string, template_values):
 
 
 def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.expconfig", calibration_data_file_path="calibration_data_file.json"):
-    global PARTICIPANT_ID
-    PARTICIPANT_ID = int(input("participant id: "))
+    participant_id = int(input("participant id: "))
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
-    config = _process_config_file(config_file, PARTICIPANT_ID)
+    config = _process_config_file(config_file, participant_id)
     
     if Path(calibration_data_file_path).exists():
         with open(calibration_data_file_path) as f:
@@ -151,61 +145,79 @@ def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.exp
     else:
         calibration_data = {}
 
-    class ExperimentConfig(Resource):
-        def get(self):
-            try:
-                config = stage["config"]
-                logger.info(f"Config returned (sans calibration): {config}")
-                try:
-                    config.update(calibration_data[str(PARTICIPANT_ID)])
-                except KeyError:
-                    config.update({"calibration_offsets": {},
-                                   "fix_calibration_offsets": {}})
-                return config
-            except TypeError:
-                return "", 404
+    resource_parameters = {"globalState": GlobalState(config, calibration_data)}
 
-    class ExperimentRouter(Resource):
-        def get(self, action=None, param=None):
-            global iterator, stage
-            if action == "next":
-                try:
-                    iterator += 1
-                    stage = config[iterator]
-                    logger.info(f"Lading step: {stage}\n")
-                    return {"step_name": stage["step_name"]}
-                except TypeError:
-                    iterator = 0
-                    stage = config[iterator]
-                    logger.info(f"Lading step: {stage}\n")
-                    return {"step_name": stage["step_name"]}
-                except IndexError:
-                    logger.info(f"Lading step: MainScene{stage}\n")
-                    return {"step_name": "MainScene"}
-                # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
-            elif action == "switch":
-                if param is None:
-                    return "param cannot be None", 404
-                if int(param) >= len(config):
-                    return "param max is " + len(config), 404
-                iterator = int(param)
-                stage = config[iterator]
-                return stage
-            elif action == "itemsCount":
-                return len(config)
-            elif action == "index":
-                return send_file(Path(__file__).parent  / "static" / "initconfig.html")
-            else:
-                return "n/a", 404
-
-    api.add_resource(ExperimentConfig, '/config')
-    api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>')
+    api.add_resource(ExperimentConfig, '/config', resource_class_kwargs=resource_parameters)
+    api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>', resource_class_kwargs=resource_parameters)
     app.run(host=host, port=int(port))
 
 
-def main():
-    pass
+class GlobalState:
+    def __init__(self, config, calibration_data):
+        self.participant_id = -1
+        self._step_id = None
+        self.step = None
+        self.calibration_data = calibration_data
+        self.config = config
+
+    def setStep(self, step_id):
+        self._step_id = step_id
+        self.step = self.config[step_id]
+
+    def moveToNextStep(self):
+        self.setStep(self._step_id + 1)
+        
+
+class ExperimentConfig(Resource):
+    def __init__(self, globalState):
+        self.globalState = globalState
+
+    def get(self):
+        try:
+            config = self.globalState.step["config"]
+            logger.info(f"Config returned (sans calibration): {config}")
+            config.update(self.globalState.calibration_data[str(self.globalState.participant_id)])
+            return config
+        except TypeError:
+            return "", 404
 
 
-if __name__ == '__main__':  # pragma: no cover
-    main()
+class ExperimentRouter(Resource):
+    def __init__(self, globalState):
+        self.globalState = globalState
+
+    def get(self, action=None, param=None):
+        if action == "move_to_next":
+            try:
+                self.globalState.moveToNextStep()
+                logger.info(f"Loading step: {self.globalState.step}\n")
+                return {"step_name": self.globalState.step["step_name"]}
+            except TypeError:
+                self.globalState.setStep(0)
+                logger.info(f"Loading step: {self.globalState.step}\n")
+                return {"step_name": self.globalState.step["step_name"]}
+            except IndexError:
+                logger.info("Loading step: {'step_name': 'end'}\n")
+                return {"step_name": "end"}
+            # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
+        elif action == "move":
+            if param is None:
+                return "Need paramter", 404
+            if int(param) >= len(self.globalState.config):
+                return "param max is " + len(self.globalState.config), 404
+            self.globalState.setStep(int(param))
+            return self.globalState.step
+        elif action == "itemsCount":
+            return len(self.globalState.config)
+        elif action == "index":
+            return send_file(Path(__file__).parent  / "static" / "initconfig.html")
+        else:
+            return "n/a", 404
+
+
+# From: https://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
