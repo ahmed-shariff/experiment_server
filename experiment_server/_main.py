@@ -132,20 +132,14 @@ def _replace_template_values(string, template_values):
     return string
 
 
-def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig", calibration_data_file_path="calibration_data_file.json"):
+def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
     if participant_id is None:
         participant_id = int(input("participant id: "))
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
     config = _process_config_file(config_file, participant_id)
-    
-    if Path(calibration_data_file_path).exists():
-        with open(calibration_data_file_path) as f:
-            calibration_data = json.load(f)
-    else:
-        calibration_data = {}
 
-    resource_parameters = {"globalState": GlobalState(config, calibration_data)}
+    resource_parameters = {"globalState": GlobalState(config)}
 
     api.add_resource(ExperimentConfig, '/config', resource_class_kwargs=resource_parameters)
     api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>', resource_class_kwargs=resource_parameters)
@@ -153,11 +147,10 @@ def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="s
 
 
 class GlobalState:
-    def __init__(self, config, calibration_data):
+    def __init__(self, config):
         self.participant_id = -1
         self._step_id = None
         self.step = None
-        self.calibration_data = calibration_data
         self.config = config
 
     def setStep(self, step_id):
@@ -175,8 +168,7 @@ class ExperimentConfig(Resource):
     def get(self):
         try:
             config = self.globalState.step["config"]
-            logger.info(f"Config returned (sans calibration): {config}")
-            config.update(self.globalState.calibration_data[str(self.globalState.participant_id)])
+            logger.info(f"Config returned: {config}")
             return config
         except TypeError:
             return "", 404
@@ -197,6 +189,7 @@ class ExperimentRouter(Resource):
                 logger.info(f"Loading step: {self.globalState.step}\n")
                 return {"step_name": self.globalState.step["step_name"]}
             except IndexError:
+                self.globalState.step = {"step_name": "end"}
                 logger.info("Loading step: {'step_name': 'end'}\n")
                 return {"step_name": "end"}
             # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
@@ -204,13 +197,17 @@ class ExperimentRouter(Resource):
             if param is None:
                 return "Need paramter", 404
             if int(param) >= len(self.globalState.config):
-                return "param max is " + len(self.globalState.config), 404
+                return "param max is " + str(len(self.globalState.config)), 404
             self.globalState.setStep(int(param))
             return self.globalState.step
         elif action == "itemsCount":
             return len(self.globalState.config)
         elif action == "index":
             return send_file(Path(__file__).parent  / "static" / "initconfig.html")
+        elif action == "shutdown":
+            shutdown_server()
+        elif action == "active":
+            return True
         else:
             return "n/a", 404
 
