@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """Main script."""
 
 from loguru import logger
@@ -133,8 +132,9 @@ def _replace_template_values(string, template_values):
     return string
 
 
-def _init_api(host="127.0.0.1", port="5000", config_file="static/base_config.expconfig", calibration_data_file_path="calibration_data_file.json"):
-    participant_id = int(input("participant id: "))
+def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig", calibration_data_file_path="calibration_data_file.json"):
+    if participant_id is None:
+        participant_id = int(input("participant id: "))
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
     config = _process_config_file(config_file, participant_id)
