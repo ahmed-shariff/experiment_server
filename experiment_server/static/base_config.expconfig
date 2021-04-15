@@ -1,34 +1,31 @@
 //main_configuration
 [
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_on", "participantId": {PARTICIPANT_ID}, "relativePosition": "on"}},
+     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_on", "relativePosition": "on"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_on", "participantId": {PARTICIPANT_ID}, "relativePosition": "on"}},
+     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_on", "relativePosition": "on"}},
 
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_off", "participantId": {PARTICIPANT_ID}, "relativePosition": "off"}},
+     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_off", "relativePosition": "off"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_off", "participantId": {PARTICIPANT_ID}, "relativePosition": "off"}},
+     "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_off", "relativePosition": "off"}},
 
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_on", "participantId": {PARTICIPANT_ID}, "relativePosition": "on"}},
+     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_on", "relativePosition": "on"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_on", "participantId": {PARTICIPANT_ID}, "relativePosition": "on"}},
+     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_on", "relativePosition": "on"}},
 
     {"step_name": "case_direct_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_off", "participantId": {PARTICIPANT_ID}, "relativePosition": "off"}},
+     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_off", "relativePosition": "off"}},
     {"step_name": "case_indirect_finger_for",
-     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_off", "participantId": {PARTICIPANT_ID}, "relativePosition": "off"}}
+     "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_off", "relativePosition": "off"}}
 ]
 
 //init_configuration
-[{"step_name": "configuration", "config": {"participantId": {PARTICIPANT_ID}, "conditionId": "training"}}]
+[{"step_name": "configuration", "config": {"conditionId": "training"}}]
 
 //final_configuration
-[{"step_name": "rating", "config": {"participantId": {PARTICIPANT_ID}, "conditionId": "final"}}]
-
-//default_configuration
-[{"step_name": "configuration", "config": {"participantId": {PARTICIPANT_ID}, "conditionId": "training", "relativePosition": "none", "trialsPerItem": 0.3}}]
+[{"step_name": "rating", "config": {"conditionId": "final"}}]
 
 //template_values
 {"TRIALS_PER_ITEM": 3}

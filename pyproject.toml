@@ -31,11 +31,12 @@ loguru = "^0.5.3"
 click = "^6.0"
 flask_restful = "^0.3.8"
 pandas = "^1.1"
+easydict = "^1.9"
 
 
 [tool.poetry.scripts]
 
-experiment-server = "experiment_server.cli:_main"
+experiment-server = "experiment_server.cli:cli"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.3"
