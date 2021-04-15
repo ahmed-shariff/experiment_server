@@ -38,6 +38,7 @@ pandas = "^1.1"
 experiment-server = "experiment_server.cli:_main"
 
 [tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

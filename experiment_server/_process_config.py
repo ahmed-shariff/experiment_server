@@ -1,9 +1,13 @@
-from experiment_server._participant_ordering import _construct_participant_condition
+from experiment_server._participant_ordering import construct_participant_condition
+from experiment_server.utils import ExperimentServerConfigurationExcetion
 from loguru import logger
 import json
 
 
 def process_config_file(f, participant_id):
+    if participant_id < 1:
+        raise ExperimentServerConfigurationExcetion(f"Participant id needs to be greater than 0, got {participant_id}")
+    
     loaded_configurations = {}
     current_blob = None
     current_section = None

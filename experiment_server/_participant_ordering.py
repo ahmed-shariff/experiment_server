@@ -1,4 +1,7 @@
 import random
+import itertools
+
+from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 # latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
 #                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
@@ -16,7 +19,23 @@ latin_square = [[1, 2, 3, 4],
                 [2, 1, 4, 3]]
 
 
-def _construct_participant_condition(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
+def construct_participant_condition(config, participant_id, order, randomize_within_groups=False, randomize_groups=False):
+    if not all([isinstance(group, list) for group in order]):
+        raise ExperimentServerConfigurationExcetion(f"Each group in order needs to be list, got {order}")
+    if not all([isinstance(g, int) for group in order for g in group]):
+        raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int`, got {order}")
+
+    if randomize_groups:
+        random.shuffle(order)
+
+    if randomize_within_groups:
+        for group in order:
+            random.shuffle(group)
+
+    return [config[i] for i in list(itertools.chain(*order))]
+    
+    
+def _construct_participant_condition_old(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
     if participant_id < 1:
         participant_id = 1
     if use_latin_square:
