@@ -26,12 +26,12 @@ include = ["experiment_server/static/initconfig.html",
 
 [tool.poetry.dependencies]
 
-python = "^3.8"
-loguru = "^0.5.3"
-click = "^6.0"
-flask_restful = "^0.3.8"
-pandas = "^1.1"
-easydict = "^1.9"
+python = ">=3.8"
+loguru = "^0.5"
+click = ">=6.0"
+flask_restful = "^0.3"
+pandas = "^1"
+easydict = "^1"
 
 
 [tool.poetry.scripts]
