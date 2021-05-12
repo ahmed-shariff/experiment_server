@@ -44,7 +44,10 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, A
         raise ExperimentServerConfigurationExcetion(f"Participant id needs to be greater than 0, got {participant_id}")
 
     loaded_configurations = get_sections(f)
-    template_values = json.loads(loaded_configurations["template_values"])
+    if "template_values" in loaded_configurations:
+        template_values = json.loads(loaded_configurations["template_values"])
+    else:
+        template_values = {}
     
     # config = json.loads(_replace_template_values(loaded_configurations["init_configuration"], template_values))
     if "order" in loaded_configurations:
