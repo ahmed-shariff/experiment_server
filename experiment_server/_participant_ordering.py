@@ -1,19 +1,33 @@
 import random
 import itertools
+from easydict import EasyDict as edict
 
-from experiment_server.utils import ExperimentServerConfigurationExcetion
+from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
 
 
-def construct_participant_condition(config, participant_id, order, randomize_within_groups=False, randomize_groups=False):
+ORDERING_BEHAVIOUR = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
+
+
+def construct_participant_condition(config, participant_id, order, within_groups=None, groups=None):
+    if within_groups is None:
+        within_groups = ORDERING_BEHAVIOUR.as_is
+    if groups is None:
+        groups = ORDERING_BEHAVIOUR.as_is
+
+    if within_groups not in list(ORDERING_BEHAVIOUR.values()):
+        raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_BEHAVIOUR.values()}, for {within_groups}")
+    if groups not in list(ORDERING_BEHAVIOUR.values()):
+        raise ExperimentServerConfigurationExcetion(f"Allowed values for `groups` are {ORDERING_BEHAVIOUR.values()}, for {groups}")
+    
     if not all([isinstance(group, list) for group in order]):
         raise ExperimentServerConfigurationExcetion(f"Each group in order needs to be list, got {order}")
     if not all([isinstance(g, int) for group in order for g in group]):
         raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int`, got {order}")
 
-    if randomize_groups:
+    if groups == ORDERING_BEHAVIOUR.randomize:
         random.shuffle(order)
 
-    if randomize_within_groups:
+    if within_groups == ORDERING_BEHAVIOUR.randomize:
         for group in order:
             random.shuffle(group)
 

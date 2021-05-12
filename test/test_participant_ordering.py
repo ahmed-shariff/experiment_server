@@ -1,6 +1,6 @@
 import pytest
 
-from experiment_server._participant_ordering import construct_participant_condition
+from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
 from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
 
 
@@ -24,9 +24,9 @@ def test_checks(order):
 
 @pytest.mark.parametrize(
     "order, randomize_within_groups, randomize_groups",[
-        ([[0], [1], [2], [3]], False, True),
-        ([[0, 1, 2, 3]], True, False),
-        ([[0, 1], [2, 3]], True, True)])
+        ([[0], [1], [2], [3]], ORDERING_BEHAVIOUR.as_is, ORDERING_BEHAVIOUR.randomize),
+        ([[0, 1, 2, 3]], ORDERING_BEHAVIOUR.randomize, ORDERING_BEHAVIOUR.as_is),
+        ([[0, 1], [2, 3]], ORDERING_BEHAVIOUR.randomize, ORDERING_BEHAVIOUR.randomize)])
 def test_group_randomization(order, randomize_within_groups, randomize_groups):
     config = generate_test_config()
     out_config_1 = [c["step_name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]

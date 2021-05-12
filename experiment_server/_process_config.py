@@ -1,7 +1,7 @@
 from pathlib import Path
 from shutil import ExecError
 from typing import Any, Dict, Union
-from experiment_server._participant_ordering import construct_participant_condition
+from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 from loguru import logger
 from easydict import EasyDict as edict
@@ -59,8 +59,8 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, A
     else:
         settings = edict()
 
-    settings.randomize_groups = settings.get("randomize_groups", False)
-    settings.randomize_within_groups = settings.get("randomize_within_groups", False)
+    settings.groups = settings.get("groups", ORDERING_BEHAVIOUR.as_is)
+    settings.within_groups = settings.get("within_groups", ORDERING_BEHAVIOUR.as_is)
 
     logger.info(f"Settings used: \n {json.dumps(settings, indent=4)}")
 
@@ -71,8 +71,8 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, A
         logger.error(_replace_template_values(loaded_configurations["main_configuration"], template_values))
         raise
     main_configuration = construct_participant_condition(main_configuration, participant_id, order=order,
-                                                         randomize_groups=settings.randomize_groups,
-                                                         randomize_within_groups=settings.randomize_within_groups)
+                                                         groups=settings.groups,
+                                                         within_groups=settings.within_groups)
 
     if "init_configuration" in loaded_configurations:
         init_configuration = json.loads(_replace_template_values(loaded_configurations["init_configuration"], template_values))
