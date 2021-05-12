@@ -4,11 +4,11 @@ from experiment_server._participant_ordering import construct_participant_condit
 from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
 
 
-def generate_test_config():
+def generate_test_config(size=4):
     config = []
-    for i in range(4):
+    for i in range(size):
         config.append({"step_name": i,
-                       "config": {"participantId": 1}})
+                       "config": {"value": 1}})
     return config
 
 
@@ -18,9 +18,10 @@ def generate_test_config():
         [[2], [3], 1, [0]],
         [[1], [2], [3], "str"],
         [[1], [[2]], ["str"], [4]]])
-def test_checks(order):
+def test_order_checks(order):
     with pytest.raises(ExperimentServerConfigurationExcetion):
         construct_participant_condition(generate_test_config(), 1, order=order)
+
 
 @pytest.mark.parametrize(
     "order, randomize_within_groups, randomize_groups",[
@@ -54,3 +55,22 @@ def test_balanced_latin_square(number_of_conditions, latin_square):
 
     for entry in latin_square:
         assert entry in generated_latin_square
+
+
+@pytest.mark.parametrize(
+    "size, order", [
+        [6, [[0, 1], [2, 3], [4, 5]]],
+        [8, [[0, 1], [2, 3], [4, 5], [6, 7]]],
+        ])
+def test_group_latin_square(size, order):
+    collected_configs = []
+
+    # Making sure the participants are rotated the same conditions
+    for participant_id in range(size):
+        config_a = construct_participant_condition(generate_test_config(size), participant_id, order, None, ORDERING_BEHAVIOUR.latin_square)
+        config_b = construct_participant_condition(generate_test_config(size), participant_id + size, order, None, ORDERING_BEHAVIOUR.latin_square)
+        assert config_a == config_b
+        collected_configs.append("".join([str(c["step_name"]) for c in config_a]))
+
+    # Making sure the different conditions are different for each participant within the number of conditions
+    assert len(set(collected_configs)) == len(order)

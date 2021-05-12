@@ -26,10 +26,18 @@ def construct_participant_condition(config, participant_id, order, within_groups
 
     if groups == ORDERING_BEHAVIOUR.randomize:
         random.shuffle(order)
+    elif groups == ORDERING_BEHAVIOUR.latin_square:
+        _latin_square = balanced_latin_square(len(order))
+        _participant_order = _latin_square[(participant_id - 1) % len(order)]
+        print(_latin_square, _participant_order, participant_id)
+        
+        order = [order[idx] for idx in _participant_order]
 
     if within_groups == ORDERING_BEHAVIOUR.randomize:
         for group in order:
             random.shuffle(group)
+    elif within_groups == ORDERING_BEHAVIOUR.latin_square:
+        raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups`")
 
     return [config[i] for i in list(itertools.chain(*order))]
     
