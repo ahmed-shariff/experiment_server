@@ -1,6 +1,6 @@
 from pathlib import Path
 from shutil import ExecError
-from typing import Any, Union
+from typing import Any, Dict, Union
 from experiment_server._participant_ordering import construct_participant_condition
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 from loguru import logger
@@ -13,7 +13,7 @@ SECTIONS = ["main_configuration", "init_configuration", "final_configuration", "
 ALLOWED_SETTINGS = ["randomize_within_groups", "randomize_groups"]
 
 
-def get_sections(f: Union[str, Path]) -> dict[str, str]:
+def get_sections(f: Union[str, Path]) -> Dict[str, str]:
     loaded_configurations = {}
     current_blob = None
     current_section = None
@@ -39,7 +39,7 @@ def get_sections(f: Union[str, Path]) -> dict[str, str]:
     return loaded_configurations
 
 
-def process_config_file(f: Union[str, Path], participant_id: int) -> dict[str, Any]:
+def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, Any]:
     if participant_id < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant id needs to be greater than 0, got {participant_id}")
 

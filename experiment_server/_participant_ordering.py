@@ -3,21 +3,6 @@ import itertools
 
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
-# latin_square = [[1, 2, 3, 4, 5, 6, 7, 8, 9],
-#                 [2, 3, 1, 5, 6, 4, 8, 9, 7],
-#                 [3, 1, 2, 6, 4, 5, 9, 7, 8],
-#                 [4, 5, 6, 7, 8, 9, 1, 2, 3],
-#                 [5, 6, 4, 8, 9, 7, 2, 3, 1],
-#                 [6, 4, 5, 9, 7, 8, 3, 1, 2],
-#                 [7, 8, 9, 1, 2, 3, 4, 5, 6],
-#                 [8, 9, 7, 2, 3, 1, 5, 6, 4],
-#                 [9, 7, 8, 3, 1, 2, 6, 4, 5]]
-
-latin_square = [[1, 2, 3, 4],
-                [3, 4, 1, 2],
-                [4, 3, 2, 1],
-                [2, 1, 4, 3]]
-
 
 def construct_participant_condition(config, participant_id, order, randomize_within_groups=False, randomize_groups=False):
     if not all([isinstance(group, list) for group in order]):
