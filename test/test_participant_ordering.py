@@ -74,3 +74,14 @@ def test_group_latin_square(size, order):
 
     # Making sure the different conditions are different for each participant within the number of conditions
     assert len(set(collected_configs)) == len(order)
+
+@pytest.mark.parametrize(
+    "size, participant_id, order, expected_order", [
+        [4, 1, {1: [[0, 1]], 2: [[2, 3]]}, [0, 1]],
+        [4, 2, {1: [[0, 1]], 2: [[2, 3]]}, [2, 3]],
+        [4, 3, {1: [[0, 1]], 2: [[2, 3]]}, [0, 1]],
+        [4, 4, {1: [[0, 1]], 2: [[2, 3]]}, [2, 3]],
+        ])
+def test_dict_order(size, participant_id, order, expected_order):
+    config = construct_participant_condition(generate_test_config(size), participant_id, order)
+    assert [c["step_name"] for c in config] == expected_order

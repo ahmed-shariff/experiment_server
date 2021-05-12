@@ -1,5 +1,6 @@
 import random
 import itertools
+from typing import Dict, List, Union
 from easydict import EasyDict as edict
 
 from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
@@ -8,7 +9,7 @@ from experiment_server.utils import ExperimentServerConfigurationExcetion, balan
 ORDERING_BEHAVIOUR = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
 
 
-def construct_participant_condition(config, participant_id, order, within_groups=None, groups=None):
+def construct_participant_condition(config: List[Dict], participant_id: int, order: Union[dict, list], within_groups:str =None, groups:str =None) -> List:
     if within_groups is None:
         within_groups = ORDERING_BEHAVIOUR.as_is
     if groups is None:
@@ -18,28 +19,47 @@ def construct_participant_condition(config, participant_id, order, within_groups
         raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_BEHAVIOUR.values()}, for {within_groups}")
     if groups not in list(ORDERING_BEHAVIOUR.values()):
         raise ExperimentServerConfigurationExcetion(f"Allowed values for `groups` are {ORDERING_BEHAVIOUR.values()}, for {groups}")
-    
-    if not all([isinstance(group, list) for group in order]):
-        raise ExperimentServerConfigurationExcetion(f"Each group in order needs to be list, got {order}")
-    if not all([isinstance(g, int) for group in order for g in group]):
-        raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int`, got {order}")
+
+    if isinstance(order, list):
+        if not all([isinstance(group, list) for group in order]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in order needs to be list, got {order}")
+        if not all([isinstance(g, int) for group in order for g in group]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int`, got {order}")
+        
+        _filtered_order = order
+        
+    elif isinstance(order, dict):
+        order = {int(k):v for k, v in order.items()}
+        if not all([isinstance(group, list) for _order in order.values() for group in _order]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be list, got {order}")
+        if not all([isinstance(g, int) for _order in order.values() for group in _order for g in group]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int`, got {order}")
+
+        if not all([idx+1 in order.keys() for idx in range(len(order))]):
+            raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {list(range(len(order)))}")
+
+        if groups != ORDERING_BEHAVIOUR.as_is:
+            raise ExperimentServerConfigurationExcetion(f"Ordering behaviour for groups should be {ORDERING_BEHAVIOUR.as_is} when order is a dictionary. Got {groups}")
+        _key = ((participant_id - 1) % len(order)) + 1
+        _filtered_order = order[_key]
+
 
     if groups == ORDERING_BEHAVIOUR.randomize:
-        random.shuffle(order)
+            random.shuffle(_filtered_order)
     elif groups == ORDERING_BEHAVIOUR.latin_square:
-        _latin_square = balanced_latin_square(len(order))
-        _participant_order = _latin_square[(participant_id - 1) % len(order)]
+        _latin_square = balanced_latin_square(len(_filtered_order))
+        _participant_order = _latin_square[(participant_id - 1) % len(_filtered_order)]
         print(_latin_square, _participant_order, participant_id)
-        
-        order = [order[idx] for idx in _participant_order]
+
+        _filtered_order = [_filtered_order[idx] for idx in _participant_order]
 
     if within_groups == ORDERING_BEHAVIOUR.randomize:
-        for group in order:
+        for group in _filtered_order:
             random.shuffle(group)
     elif within_groups == ORDERING_BEHAVIOUR.latin_square:
         raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups`")
 
-    return [config[i] for i in list(itertools.chain(*order))]
+    return [config[i] for i in list(itertools.chain(*_filtered_order))]
     
     
 def _construct_participant_condition_old(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):

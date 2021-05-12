@@ -1,0 +1,41 @@
+//main_configuration
+[
+    {"step_name": "case_direct_finger_for",
+     "config": {}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {}},
+
+    {"step_name": "case_direct_finger_for",
+     "config": {}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {}},
+
+    {"step_name": "case_direct_finger_for",
+     "config": {}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {}},
+
+    {"step_name": "case_direct_finger_for",
+     "config": {}},
+    {"step_name": "case_indirect_finger_for",
+     "config": {}}
+]
+
+//init_configuration
+[{"step_name": "configuration", "config": {"conditionId": "training"}}]
+
+//final_configuration
+[{"step_name": "rating", "config": {"conditionId": "final"}}]
+
+//template_values
+{"TRIALS_PER_ITEM": 3}
+
+//order
+{
+    "1":[
+        [0, 2, 4, 6]
+    ],
+    "2":[
+        [1, 3, 5, 7]
+    ]
+}
