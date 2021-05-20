@@ -105,15 +105,18 @@ def _replace_template_values(string, template_values):
 
 def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:
     import pandas as pd
+    from tabulate import tabulate
     with logger.catch(reraise=False, message="Config verification failed"):
         config_steps = {}
         for participant_id in range(1,6):
-            config = process_config_file(f, 1)
+            config = process_config_file(f, participant_id=participant_id)
             config_steps[participant_id] = {f"trial_{idx + 1}": c["step_name"] for idx, c in enumerate(config)}
             if test_func is not None:
                 test_result, reason = test_func(config)
                 assert test_result, f"test_func failed for {participant_id} with reason, {reason}"
-        logger.info(f"Ordering for 5 participants: \n\n{pd.DataFrame(config_steps)}\n")
-        logger.info("Config file verification successful")
+        df = pd.DataFrame(config_steps)
+        df.style.set_properties(**{'text-align': 'left'}).set_table_styles([ dict(selector='th', props=[('text-align', 'left')])])
+        logger.info(f"Ordering for 5 participants: \n\n{tabulate(df, headers='keys', tablefmt='fancy_grid')}\n")
+        logger.info(f"Config file verification successful for {f}")
         return True
     return False

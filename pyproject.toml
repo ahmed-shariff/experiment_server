@@ -1,7 +1,7 @@
 [tool.poetry]
 
 name = "experiment_server"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 description = "Server for experiments to get configuarations from"
 
 license = ""
@@ -32,6 +32,7 @@ click = ">=6.0"
 pandas = "^1"
 easydict = "^1"
 Flask-RESTful = "^0.3.9"
+tabulate = "^0.8.9"
 
 
 [tool.poetry.scripts]

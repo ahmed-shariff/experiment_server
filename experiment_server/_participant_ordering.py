@@ -49,7 +49,6 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
     elif groups == ORDERING_BEHAVIOUR.latin_square:
         _latin_square = balanced_latin_square(len(_filtered_order))
         _participant_order = _latin_square[(participant_id - 1) % len(_filtered_order)]
-        print(_latin_square, _participant_order, participant_id)
 
         _filtered_order = [_filtered_order[idx] for idx in _participant_order]
 
