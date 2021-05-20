@@ -91,6 +91,7 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, A
 
     for c in config:
         c["config"]["participant_id"] = participant_id
+        c["config"]["step_name"] = c["step_name"]
     
     logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(config)]))
     return config
