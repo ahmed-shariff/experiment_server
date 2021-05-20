@@ -1,6 +1,6 @@
 from pathlib import Path
 from shutil import ExecError
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 from loguru import logger
@@ -39,7 +39,7 @@ def get_sections(f: Union[str, Path]) -> Dict[str, str]:
     return loaded_configurations
 
 
-def process_config_file(f: Union[str, Path], participant_id: int) -> Dict[str, Any]:
+def process_config_file(f: Union[str, Path], participant_id: int) -> List[Dict[str, Any]]:
     if participant_id < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant id needs to be greater than 0, got {participant_id}")
 
@@ -103,9 +103,17 @@ def _replace_template_values(string, template_values):
     return string
 
 
-def verify_config(f: Union[str, Path]) -> bool:
+def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:
+    import pandas as pd
     with logger.catch(reraise=False, message="Config verification failed"):
-        process_config_file(f, 1)
+        config_steps = {}
+        for participant_id in range(1,6):
+            config = process_config_file(f, 1)
+            config_steps[participant_id] = {f"trial_{idx + 1}": c["step_name"] for idx, c in enumerate(config)}
+            if test_func is not None:
+                test_result, reason = test_func(config)
+                assert test_result, f"test_func failed for {participant_id} with reason, {reason}"
+        logger.info(f"Ordering for 5 participants: \n\n{pd.DataFrame(config_steps)}\n")
         logger.info("Config file verification successful")
         return True
     return False
