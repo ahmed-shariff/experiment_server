@@ -19,14 +19,14 @@ def get_sections(f: Union[str, Path]) -> Dict[str, str]:
     current_section = None
     with open(f) as fp:
         for line in fp.readlines():
-            if line.lstrip().startswith("//"):
-                if current_blob is not None:
-                    loaded_configurations[current_section] = current_blob
-                current_blob = ""
-                current_section = line.lstrip().rstrip().lstrip("//")
-                
-                if current_section not in SECTIONS:  # Lines starting with // are considered comments
-                    continue
+            stripped_line = line.strip()
+            if stripped_line.startswith("//"):
+                stripped_line = stripped_line.lstrip("//")
+                if stripped_line in SECTIONS:   # Lines starting with // are considered comments
+                    if current_blob is not None:
+                        loaded_configurations[current_section] = current_blob
+                    current_blob = ""
+                    current_section = stripped_line
             else:
                 try:
                     current_blob += line.rstrip()
