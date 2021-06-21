@@ -1,4 +1,4 @@
-__version__ = '0.1.0-alpha.5'
+__version__ = '0.1.0.alpha.6'
 
 import logging
 from loguru import logger
