@@ -1,23 +1,23 @@
 //main_configuration
 [
-    {"step_name": "case_direct_finger_for",
+    {"step_name": "case_direct_finger_for_1",
      "config": {}},
-    {"step_name": "case_indirect_finger_for",
-     "config": {}},
-
-    {"step_name": "case_direct_finger_for",
-     "config": {}},
-    {"step_name": "case_indirect_finger_for",
+    {"step_name": "case_indirect_finger_for_2",
      "config": {}},
 
-    {"step_name": "case_direct_finger_for",
+    {"step_name": "case_direct_finger_for_3",
      "config": {}},
-    {"step_name": "case_indirect_finger_for",
+    {"step_name": "case_indirect_finger_for_4",
      "config": {}},
 
-    {"step_name": "case_direct_finger_for",
+    {"step_name": "case_direct_finger_for_5",
      "config": {}},
-    {"step_name": "case_indirect_finger_for",
+    {"step_name": "case_indirect_finger_for_6",
+     "config": {}},
+
+    {"step_name": "case_direct_finger_for_7",
+     "config": {}},
+    {"step_name": "case_indirect_finger_for_8",
      "config": {}}
 ]
 

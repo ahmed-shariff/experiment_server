@@ -1,0 +1,31 @@
+//main_configuration
+[
+    {"step_name": "0",
+     "config": {}},
+    {"step_name": "1",
+     "config": {}},
+
+    {"step_name": "2",
+     "config": {}},
+    {"step_name": "3",
+     "config": {}},
+
+    {"step_name": "4",
+     "config": {}},
+    {"step_name": "5",
+     "config": {}},
+
+    {"step_name": "6",
+     "config": {}},
+    {"step_name": "7",
+     "config": {}}
+]
+
+
+//order
+[["0", "1"], ["2", "3"], ["4", "5"], [6, 7]]
+
+//settings
+{
+    "groups": "latin_square"
+}

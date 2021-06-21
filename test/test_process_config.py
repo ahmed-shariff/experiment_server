@@ -14,7 +14,9 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
         (Path(__file__).parent / "test_files/working_file_2.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_3.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", True),
-        (Path(__file__).parent / "test_files/failing_config.expconfig", False)])
+        (Path(__file__).parent / "test_files/working_file_5.expconfig", True),
+        (Path(__file__).parent / "test_files/failing_config.expconfig", False),
+        (Path(__file__).parent / "test_files/failing_config_2.expconfig", False)])
 def test_verify_config(f, expected):
     out = verify_config(f)
     assert out == expected

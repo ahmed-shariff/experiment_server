@@ -1,3 +1,4 @@
+import itertools
 import pytest
 
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
@@ -17,10 +18,41 @@ def generate_test_config(size=4):
         [0, 1, 2, 3],
         [[2], [3], 1, [0]],
         [[1], [2], [3], "str"],
-        [[1], [[2]], ["str"], [4]]])
-def test_order_checks(order):
+        [[1], [[2]], ["str"], [4]],
+        [["2"], ["3"], "1", ["0"]],
+        [["2"], ["3"], 1, ["0"]],
+        [["2"], ["3"], [1], ["0"]],
+        {"1": [0], "2":[1], "3":[4]},
+        {"1": [[0]], "2":[[1]], "3":[4]},
+        {"1": [0], "2":[1], "3":4},
+        {"2":[[1]], "3":[[4]]},
+        {"1": [[0]], "2":[["1"]], "3":[["4"]]},
+        {"1": [[0]], "2":[["1"]], "3":[[4]]},
+        [["2"], ["3"], "1", ["0"]]])
+def test_order_fail_checks(order):
     with pytest.raises(ExperimentServerConfigurationExcetion):
         construct_participant_condition(generate_test_config(), 1, order=order)
+
+
+@pytest.mark.parametrize(
+    "order",[
+        [[0], [1], [2], [3]],
+        [["0"], ["1"], ["2"], ["3"]],
+        {"1": [[0]], "2":[[1]], "3":[[3]]},
+        {"1": [["0"]], "2":[["1"]], "3":[["3"]]}])
+def test_order_pass_checks(order):
+    try:
+        config = construct_participant_condition(generate_test_config(), 1, order=order)
+        assert config[0]["step_name"] == "0"
+    except ExperimentServerConfigurationExcetion:
+        assert False, "Raised ExperimentServerConfigurationExcetion"
+
+
+def test_duplicate_step_name_fail():
+    config = generate_test_config()
+    config[1]["step_name"] = "0"
+    with pytest.raises(ExperimentServerConfigurationExcetion):
+        construct_participant_condition(config, 1, order=[])
 
 
 @pytest.mark.parametrize(
@@ -32,13 +64,15 @@ def test_group_randomization(order, randomize_within_groups, randomize_groups):
     config = generate_test_config()
     out_config_1 = [c["step_name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
     out_config_2 = [c["step_name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
-    assert any([c1 !=  c2 for c1, c2 in zip(out_config_1, out_config_2)]), "Due to randomization behaviour, this can fail, consider re runnning test"
+    out_config_3 = [c["step_name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
+    out_config_4 = [c["step_name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
+    assert any([pair[0] != pair[1]  for c in zip(out_config_1, out_config_2, out_config_3, out_config_4) for pair in itertools.combinations(c, 2)])
 
 
 def test_return_all_configs():
     config = generate_test_config()
     out_config_idx = [c["step_name"] for c in construct_participant_condition(config, 1, [[0, 1, 2, 3]])]
-    assert all([idx in out_config_idx for idx in range(4)])
+    assert all([str(idx) in out_config_idx for idx in range(4)])
 
 
 # Latin squares generated from https://cs.uwaterloo.ca/~dmasson/tools/latin_square/
@@ -77,10 +111,10 @@ def test_group_latin_square(size, order):
 
 @pytest.mark.parametrize(
     "size, participant_id, order, expected_order", [
-        [4, 1, {1: [[0, 1]], 2: [[2, 3]]}, [0, 1]],
-        [4, 2, {1: [[0, 1]], 2: [[2, 3]]}, [2, 3]],
-        [4, 3, {1: [[0, 1]], 2: [[2, 3]]}, [0, 1]],
-        [4, 4, {1: [[0, 1]], 2: [[2, 3]]}, [2, 3]],
+        [4, 1, {1: [[0, 1]], 2: [[2, 3]]}, ["0", "1"]],
+        [4, 2, {1: [[0, 1]], 2: [[2, 3]]}, ["2", "3"]],
+        [4, 3, {1: [[0, 1]], 2: [[2, 3]]}, ["0", "1"]],
+        [4, 4, {1: [[0, 1]], 2: [[2, 3]]}, ["2", "3"]],
         ])
 def test_dict_order(size, participant_id, order, expected_order):
     config = construct_participant_condition(generate_test_config(size), participant_id, order)

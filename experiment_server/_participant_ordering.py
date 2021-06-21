@@ -15,6 +15,16 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
     if groups is None:
         groups = ORDERING_BEHAVIOUR.as_is
 
+    step_names = {}
+
+    # To make sure the string based indexing works
+    for idx, c in enumerate(config):
+        c["step_name"] = str(c["step_name"])
+        step_names[c["step_name"]] = idx
+
+    if len(set(step_names.values()).symmetric_difference(list(range(len(config))))) != 0:
+        raise ExperimentServerConfigurationExcetion("Duplicate step names: {}".format(set([c["step_name"] for idx, c in enumerate(config) if idx not in step_names.values()])))
+
     if within_groups not in list(ORDERING_BEHAVIOUR.values()):
         raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_BEHAVIOUR.values()}, for {within_groups}")
     if groups not in list(ORDERING_BEHAVIOUR.values()):
@@ -23,17 +33,17 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
     if isinstance(order, list):
         if not all([isinstance(group, list) for group in order]):
             raise ExperimentServerConfigurationExcetion(f"Each group in order needs to be list, got {order}")
-        if not all([isinstance(g, int) for group in order for g in group]):
-            raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int`, got {order}")
+        if not all([isinstance(g, int) for group in order for g in group]) and not all([isinstance(g, str) for group in order for g in group]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int` or list of `str`, got {order}")
         
         _filtered_order = order
         
     elif isinstance(order, dict):
         order = {int(k):v for k, v in order.items()}
-        if not all([isinstance(group, list) for _order in order.values() for group in _order]):
+        if not all([isinstance(_order, list) for _order in order.values()]) or not all([isinstance(group, list) for _order in order.values() for group in _order]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be list, got {order}")
-        if not all([isinstance(g, int) for _order in order.values() for group in _order for g in group]):
-            raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int`, got {order}")
+        if not all([isinstance(g, int) for _order in order.values() for group in _order for g in group]) and not all([isinstance(g, str) for _order in order.values() for group in _order for g in group]):
+            raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int` or list of `str`, got {order}")
 
         if not all([idx+1 in order.keys() for idx in range(len(order))]):
             raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {list(range(len(order)))}")
@@ -45,7 +55,7 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
 
 
     if groups == ORDERING_BEHAVIOUR.randomize:
-            random.shuffle(_filtered_order)
+        random.shuffle(_filtered_order)
     elif groups == ORDERING_BEHAVIOUR.latin_square:
         _latin_square = balanced_latin_square(len(_filtered_order))
         _participant_order = _latin_square[(participant_id - 1) % len(_filtered_order)]
@@ -58,9 +68,13 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
     elif within_groups == ORDERING_BEHAVIOUR.latin_square:
         raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups`")
 
-    return [config[i] for i in list(itertools.chain(*_filtered_order))]
+    chained_order = list(itertools.chain(*_filtered_order))
+    if isinstance(chained_order[0], int):
+        return [config[i] for i in chained_order]
+    else:
+        return [config[step_names[i]] for i in chained_order]
     
-    
+
 def _construct_participant_condition_old(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
     if participant_id < 1:
         participant_id = 1
