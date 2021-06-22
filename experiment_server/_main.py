@@ -3,6 +3,7 @@
 
 from loguru import logger
 from pathlib import Path
+from multiprocessing import Process
 
 from flask import Flask, request, send_file
 from flask_restful import Resource, Api
@@ -10,9 +11,7 @@ from flask_restful import Resource, Api
 from experiment_server._process_config import process_config_file
 
 
-def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
-    if participant_id is None:
-        participant_id = int(input("participant id: "))
+def _create_app(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
     config = process_config_file(config_file, participant_id)
@@ -21,7 +20,19 @@ def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="s
 
     api.add_resource(ExperimentConfig, '/config', resource_class_kwargs=resource_parameters)
     api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>', resource_class_kwargs=resource_parameters)
+    return app
+
+
+def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+    if participant_id is None:
+        participant_id = int(input("participant id: "))
+    app = _create_app(participant_id=participant_id, host=host, port=port, config_file=config_file)
     app.run(host=host, port=int(port))
+
+
+def server_process(config_file, participant_id=None, host="127.0.0.1", port="5000"):
+    p = Process(target=_init_api, kwargs={"participant_id":participant_id, "host":host, "port":port, "config_file":config_file})
+    return p
 
 
 class GlobalState:
@@ -57,6 +68,16 @@ class ExperimentRouter(Resource):
         self.globalState = globalState
 
     def get(self, action=None, param=None):
+        if action == "itemsCount":
+            return len(self.globalState.config)
+        elif action == "index":
+            return send_file(Path(__file__).parent  / "static" / "initconfig.html")
+        elif action == "active":
+            return True
+        else:
+            return "n/a", 404
+
+    def post(self, action=None, param=None):
         if action == "move_to_next":
             try:
                 self.globalState.moveToNextStep()
@@ -74,18 +95,16 @@ class ExperimentRouter(Resource):
         elif action == "move":
             if param is None:
                 return "Need paramter", 404
-            if int(param) >= len(self.globalState.config):
-                return "param max is " + str(len(self.globalState.config)), 404
-            self.globalState.setStep(int(param))
-            return self.globalState.step
-        elif action == "itemsCount":
-            return len(self.globalState.config)
-        elif action == "index":
-            return send_file(Path(__file__).parent  / "static" / "initconfig.html")
+            try:
+                param = int(param)
+                if param >= len(self.globalState.config):
+                    return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
+                self.globalState.setStep(int(param))
+                return int(param)
+            except ValueError:
+                return f"param should be a integer, got {param}", 404
         elif action == "shutdown":
             shutdown_server()
-        elif action == "active":
-            return True
         else:
             return "n/a", 404
 

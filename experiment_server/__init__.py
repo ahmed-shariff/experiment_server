@@ -1,4 +1,4 @@
-__version__ = '0.1.0.alpha.6'
+__version__ = '0.1.rc.1'
 
 import logging
 from loguru import logger
@@ -21,7 +21,7 @@ class __InterceptHandler(logging.Handler):
 
 logging.basicConfig(handlers=[__InterceptHandler()], level=0)
 
-from ._main import _init_api
+from experiment_server._main import server_process
+from experiment_server._client import Client
 
-
-__all__ = [_init_api]
+__all__ = [server_process, Client]
