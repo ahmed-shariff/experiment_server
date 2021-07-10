@@ -29,7 +29,9 @@ def get_sections(f: Union[str, Path]) -> Dict[str, str]:
                     current_section = stripped_line
             else:
                 try:
-                    current_blob += line.rstrip()
+                    line = line.rstrip()
+                    if len(line) > 0:
+                        current_blob += line
                 except TypeError:
                     raise ExperimentServerConfigurationExcetion("The file should start with a section header.")
                     
