@@ -66,7 +66,15 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
         for group in _filtered_order:
             random.shuffle(group)
     elif within_groups == ORDERING_BEHAVIOUR.latin_square:
-        raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups`")
+        elements_in_group = set([len(_g) for _g  in _filtered_order])
+        if len(elements_in_group) != 1:
+            raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups` when the number of elements in all groups are not the same")
+        else:
+            _elements_count = elements_in_group.pop()
+            _latin_square = balanced_latin_square(_elements_count)
+            _group_order = _latin_square[(participant_id - 1) % _elements_count]
+
+            _filtered_order = [[_g[idx] for idx in _group_order] for _g in _filtered_order]
 
     chained_order = list(itertools.chain(*_filtered_order))
     if isinstance(chained_order[0], int):
