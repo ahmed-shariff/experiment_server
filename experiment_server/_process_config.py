@@ -69,12 +69,19 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> List[Dict[s
 
     logger.info(f"Settings used: \n {json.dumps(settings, indent=4)}")
 
+    _raw_main_configuration = loaded_configurations["main_configuration"]
+    _templated_main_configuration = _replace_template_values(_raw_main_configuration, template_values)
     try:
-        main_configuration = json.loads(_replace_template_values(loaded_configurations["main_configuration"], template_values))
-    except:
-        logger.error(loaded_configurations["main_configuration"])
-        logger.error(_replace_template_values(loaded_configurations["main_configuration"], template_values))
-        raise
+        main_configuration = json.loads(_templated_main_configuration)
+    except Exception as e:
+        logger.error("Raw main config: " + _raw_main_configuration)
+        logger.error("Main config with template values passed: " + _templated_main_configuration)
+        if isinstance(e, json.decoder.JSONDecodeError):
+            raise ExperimentServerConfigurationExcetion("JSONDecodeError at position {}: `... {} ...`".format(
+                e.pos,
+                _templated_main_configuration[max(0, e.pos - 40):min(len(_templated_main_configuration), e.pos + 40)]))
+        else:
+            raise
     main_configuration = construct_participant_condition(main_configuration, participant_id, order=order,
                                                          groups=settings.groups,
                                                          within_groups=settings.within_groups)
