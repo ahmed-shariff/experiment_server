@@ -108,7 +108,7 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> List[Dict[s
 
 def _replace_template_values(string, template_values):
     for k, v in template_values.items():
-        string = string.replace("{" + k + "}", str(v))
+        string = string.replace("{" + k + "}", json.dumps(v))
     return string
 
 
