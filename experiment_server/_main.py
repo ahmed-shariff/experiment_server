@@ -18,7 +18,6 @@ def _create_app(participant_id=None, host="127.0.0.1", port="5000", config_file=
 
     resource_parameters = {"globalState": GlobalState(config)}
 
-    api.add_resource(ExperimentConfig, '/config', resource_class_kwargs=resource_parameters)
     api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>', resource_class_kwargs=resource_parameters)
     return app
 
@@ -48,19 +47,6 @@ class GlobalState:
 
     def moveToNextStep(self):
         self.setStep(self._step_id + 1)
-        
-
-class ExperimentConfig(Resource):
-    def __init__(self, globalState):
-        self.globalState = globalState
-
-    def get(self):
-        try:
-            config = self.globalState.step["config"]
-            logger.info(f"Config returned: {config}")
-            return config
-        except TypeError:
-            return "", 404
 
 
 class ExperimentRouter(Resource):
@@ -74,6 +60,14 @@ class ExperimentRouter(Resource):
             return send_file(Path(__file__).parent  / "static" / "initconfig.html")
         elif action == "active":
             return True
+        elif action == "config":
+            try:
+                config = self.globalState.step["config"]
+                logger.info(f"Config returned: {config}")
+                return config
+            except TypeError as e:
+                logger.error(e)
+                return "A call to `/move_to_next` must be made before calling `/config`", 406
         else:
             return "n/a", 404
 
