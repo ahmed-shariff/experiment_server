@@ -1,35 +1,26 @@
 //main_configuration
 [
-// comment about first step
-    {"step_name": "step_1",
+    // Direct conditions
+    {"step_name": "direct100",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 1}},
-    {"step_name": "step_2",
+    {"step_name": "direct75",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 2}},
 
-    {"step_name": "step_3",
+    // Indirect conditions
+    {"step_name": "indirect100",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 3}},
-    {"step_name": "step_4",
-     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 4}},
-    // another comment 
-    {"step_name": "step_5",
-     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 5}},
-    {"step_name": "step_6",
-     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 6}},
-
-    {"step_name": "step_7",
-     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 7}},
-    {"step_name": "step_8",
-     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 8}}
+    {"step_name": "indirect75",
+     "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 4}}
 ]
 
-//init_configuration
-[{"step_name": "configuration", "config": {"conditionId": "training"}}]
-
-//final_configuration
-[{"step_name": "final", "config": {"conditionId": "final"}}]
+//order
+[["direct100", "indirect100"], ["direct75", "indirect75"]]
 
 //template_values
 {"TRIALS_PER_ITEM": 3}
 
-//order
-[[0, 2, 4, 6], [1, 3, 5, 7]]
+//settings
+{
+    "groups": "latin_square",
+    "within_groups": "randomize"
+}
