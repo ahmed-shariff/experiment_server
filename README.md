@@ -32,3 +32,7 @@ $ experiment-server sample_config.expconfig
 
 # The Experiment Configuration
 TBA
+
+
+# Wishlist
+- Single application where the participant_id can be updated and the server would keep running.

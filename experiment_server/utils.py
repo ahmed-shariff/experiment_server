@@ -33,3 +33,40 @@ def balanced_latin_square(number_of_conditions):
             latin_square.append(trials[::-1])
 
     return latin_square
+
+
+def merge_dicts(dict_a, dict_b):
+    """
+    Merge the values from dict_a and dict_b recursively. If there is a conflict, 
+    the value in dict_a will be selected.
+    """
+    new_dict = {}
+    keys = []
+
+    if isinstance(dict_a, dict):
+        keys += list(dict_a.keys())
+    if isinstance(dict_b, dict):
+        keys += list(dict_b.keys())
+
+    for k in keys:
+        try:
+            value_a = dict_a[k]
+        except (TypeError, KeyError):
+            value_a = None
+
+        try:
+            value_b = dict_b[k]
+        except (TypeError, KeyError):
+            value_b = None
+
+        value_a_is_dict = isinstance(value_a, dict)
+        value_b_is_dict = isinstance(value_b, dict)
+
+        if value_a_is_dict and value_b_is_dict:
+            value = merge_dicts(value_a, value_b)
+        else: # If only one is a dict, still it's treated the same, the value a is priority
+            value = value_a if value_a is not None else value_b  # Whichever is not None, prioritizing value_a
+
+        new_dict[k] = value
+
+    return new_dict

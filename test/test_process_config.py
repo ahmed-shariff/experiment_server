@@ -1,8 +1,10 @@
 import pytest
 from pathlib import Path
 import pytest_mock
+from deepdiff import DeepDiff
 
-from experiment_server._process_config import verify_config, get_sections, process_config_file
+from experiment_server._process_config import verify_config, get_sections, process_config_file, resolve_extends
+from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
 MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_id", "step_name"]
@@ -15,6 +17,7 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
         (Path(__file__).parent / "test_files/working_file_3.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_5.expconfig", True),
+        (Path(__file__).parent / "test_files/working_file_6.expconfig", True),
         (Path(__file__).parent / "test_files/failing_config.expconfig", False),
         (Path(__file__).parent / "test_files/failing_config_2.expconfig", False)])
 def test_verify_config(f, expected):
@@ -53,6 +56,7 @@ def test_verify_config_with_test_func(f, expected):
 @pytest.mark.parametrize(
     "f, expected",[
         (Path(__file__).parent / "test_files/working_file.expconfig", ['main_configuration', 'init_configuration', 'final_configuration', 'template_values', 'order']),
+        (Path(__file__).parent / "test_files/working_file_6.expconfig", ['main_configuration', 'order']),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", ['main_configuration', 'init_configuration', 'final_configuration', 'template_values', 'order']),
         ])
 def test_get_sections(f, expected):
@@ -66,7 +70,7 @@ def test_get_sections(f, expected):
         (Path(__file__).parent / "test_files/working_file.expconfig", 1),
         (Path(__file__).parent / "test_files/working_file.expconfig", 2),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", 1),
-        (Path(__file__).parent / "test_files/working_file_4.expconfig", 2),        
+        (Path(__file__).parent / "test_files/working_file_4.expconfig", 2),
         ])
 def test_process_config(mocker, f, pid):
     import experiment_server._process_config
@@ -87,3 +91,42 @@ def test_process_config(mocker, f, pid):
     for step_id in range(1, 10):
         keys = set(config[step_id]["config"].keys())
         assert len(keys.difference(MAIN_CONFIG_KEYS)) == 0
+
+
+@pytest.mark.parametrize(
+    "config, expected", [
+        ([{"step_name": "a", "param1": "2", "param2": "foo"},
+          {"step_name": "b", "param1": "3", "param2": "bar"},
+          {"step_name": "c", "extends": "a", "param2": "baz"}],
+         [{"step_name": "a", "param1": "2", "param2": "foo"},
+          {"step_name": "b", "param1": "3", "param2": "bar"},
+          {"step_name": "c", "extends": "a", "param1": "2", "param2": "baz"}]),
+        ([{"step_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
+          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
+         [{"step_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
+          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}]),
+        ([{"step_name": "a", "extends": "c", "param1": "2", "param3": "foo"},
+          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
+         [{"step_name": "a", "extends": "c", "param1": "2", "param2": {"x": "bar"}, "param3": "foo"},
+          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}, "param3": "foo"}]),
+        ([{"step_name": "a", "extends": "b", "param1": "0"},
+          {"step_name": "b", "extends": "c", "param2": "0"},
+          {"step_name": "c", "extends": "a", "param3": "0"}],
+         [{"step_name": "a", "extends": "b", "param1": "0", "param2": "0", "param3": "0"},
+          {"step_name": "b", "extends": "c", "param1": "0", "param2": "0", "param3": "0"},
+          {"step_name": "c", "extends": "a", "param1": "0", "param2": "0", "param3": "0"}],
+          )
+    ])
+def test_resolve_extends(config, expected):
+    output = resolve_extends(config)
+    assert DeepDiff(output, expected) == {}
+
+
+@pytest.mark.parametrize(
+    "config, expected", [
+        ([{"step_name": "a", "param1": "2", "param2": "foo"},
+          {"step_name": "c", "extends": "b", "param2": "baz"}], "`b` is not a valid name. It must be a `step_name`.")
+    ])
+def test_resolve_extends_exceptions(config, expected):
+    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+        resolve_extends(config)

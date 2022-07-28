@@ -2,13 +2,13 @@ from pathlib import Path
 from shutil import ExecError
 from typing import Any, Callable, Dict, List, Tuple, Union
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
-from experiment_server.utils import ExperimentServerConfigurationExcetion
+from experiment_server.utils import ExperimentServerConfigurationExcetion, merge_dicts
 from loguru import logger
 from easydict import EasyDict as edict
 import json
 
 
-TOP_LEVEL_RESERVED_KEYS = ["step_name", "config", "repeat"]
+TOP_LEVEL_RESERVED_KEYS = ["step_name", "config", "extends"]
 SECTIONS = ["main_configuration", "init_configuration", "final_configuration", "template_values", "order", "settings"]
 ALLOWED_SETTINGS = ["randomize_within_groups", "randomize_groups"]
 
@@ -97,6 +97,7 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> List[Dict[s
         final_configuration = []
 
     config = init_configuration + main_configuration + final_configuration
+    config = resolve_extends(config)
 
     for c in config:
         c["config"]["participant_id"] = participant_id
@@ -104,6 +105,40 @@ def process_config_file(f: Union[str, Path], participant_id: int) -> List[Dict[s
     
     logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(config)]))
     return config
+
+
+def _resolve_extends(c, configs, seen_configs):
+    """
+    Recursively go through all dependents and collect all values. 
+    If cyclic dependancy is encountered, it will simply merge all configs along the dependancy path.
+    """
+    if "extends" not in c or c["extends"] in seen_configs:
+        return c, configs, seen_configs
+
+    dict_a = c
+    try:
+        dict_b = [_c for _c in configs if _c["step_name"] == c["extends"]][0]
+    except IndexError:
+        raise ExperimentServerConfigurationExcetion("`{}` is not a valid name. It must be a `step_name`.".format(c["extends"]))
+
+    dict_b, configs, seen_configs = _resolve_extends(dict_b, configs, seen_configs + [dict_b["step_name"]])
+    configs[dict_a["step_idx"]] = merge_dicts(dict_a, dict_b)
+    return configs[dict_a["step_idx"]], configs, seen_configs
+
+
+def resolve_extends(configs):
+    # Adding idx to track the configs
+    for idx, c in enumerate(configs):
+        c["step_idx"] = idx
+
+    for c in configs:
+        configs[c["step_idx"]] = _resolve_extends(c, configs, [c["step_name"]])[0]
+
+    # Removing idx
+    for c in configs:
+        del c["step_idx"]
+
+    return configs
 
 
 def _replace_template_values(string, template_values):
