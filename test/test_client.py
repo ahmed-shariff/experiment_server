@@ -13,13 +13,13 @@ def config_file():
 
 
 @pytest.fixture(scope="session")
-def participant_id():
+def participant_index():
     return 1
 
 
 @pytest.fixture(scope="class", autouse=True)
-def server(config_file, participant_id):
-    p = server_process(config_file=config_file, participant_id=participant_id)
+def server(config_file, participant_index):
+    p = server_process(config_file=config_file, participant_index=participant_index)
     p.start()
     for i in range(10) :
         time.sleep(0.1)
@@ -40,8 +40,8 @@ class TestClient:
         return Client("127.0.0.1", "5000")
 
     @pytest.fixture(scope="class")
-    def exp_config(self, config_file, participant_id):
-        return process_config_file(config_file, participant_id)
+    def exp_config(self, config_file, participant_index):
+        return process_config_file(config_file, participant_index)
 
     def test_is_active(self, client):
         ret, out = client.server_is_active()

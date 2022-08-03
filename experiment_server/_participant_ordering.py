@@ -9,7 +9,7 @@ from experiment_server.utils import ExperimentServerConfigurationExcetion, balan
 ORDERING_BEHAVIOUR = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
 
 
-def construct_participant_condition(config: List[Dict], participant_id: int, order: Union[dict, list], within_groups:str =None, groups:str =None) -> List:
+def construct_participant_condition(config: List[Dict], participant_index: int, order: Union[dict, list], within_groups:str =None, groups:str =None) -> List:
     if within_groups is None:
         within_groups = ORDERING_BEHAVIOUR.as_is
     if groups is None:
@@ -50,7 +50,7 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
 
         if groups != ORDERING_BEHAVIOUR.as_is:
             raise ExperimentServerConfigurationExcetion(f"Ordering behaviour for groups should be {ORDERING_BEHAVIOUR.as_is} when order is a dictionary. Got {groups}")
-        _key = ((participant_id - 1) % len(order)) + 1
+        _key = ((participant_index - 1) % len(order)) + 1
         _filtered_order = order[_key]
 
 
@@ -58,7 +58,7 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
         random.shuffle(_filtered_order)
     elif groups == ORDERING_BEHAVIOUR.latin_square:
         _latin_square = balanced_latin_square(len(_filtered_order))
-        _participant_order = _latin_square[(participant_id - 1) % len(_filtered_order)]
+        _participant_order = _latin_square[(participant_index - 1) % len(_filtered_order)]
 
         _filtered_order = [_filtered_order[idx] for idx in _participant_order]
 
@@ -72,7 +72,7 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
         else:
             _elements_count = elements_in_group.pop()
             _latin_square = balanced_latin_square(_elements_count)
-            _group_order = _latin_square[(participant_id - 1) % _elements_count]
+            _group_order = _latin_square[(participant_index - 1) % _elements_count]
 
             _filtered_order = [[_g[idx] for idx in _group_order] for _g in _filtered_order]
 
@@ -83,14 +83,14 @@ def construct_participant_condition(config: List[Dict], participant_id: int, ord
         return [config[step_names[i]] for i in chained_order]
     
 
-def _construct_participant_condition_old(config, participant_id, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
-    if participant_id < 1:
-        participant_id = 1
+def _construct_participant_condition_old(config, participant_index, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
+    if participant_index < 1:
+        participant_index = 1
     if use_latin_square:
-        _config = [config[i - 1] for i in latin_square[(participant_id - 1) % len(config)]]
+        _config = [config[i - 1] for i in latin_square[(participant_index - 1) % len(config)]]
     else:
         assert len(config_categorization) == 2
-        if not randomize or participant_id % len(config_categorization) == 0:
+        if not randomize or participant_index % len(config_categorization) == 0:
             init_condition = config_categorization[0][:]
             other_condition = config_categorization[1][:]
         else:

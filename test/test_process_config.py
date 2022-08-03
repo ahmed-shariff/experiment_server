@@ -7,7 +7,7 @@ from experiment_server._process_config import verify_config, get_sections, proce
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
-MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_id", "step_name"]
+MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "step_name"]
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ def test_verify_config(f, expected):
 
 
 def _test_func(config):
-    other_config_keys = ["conditionId", "participant_id", "step_name"]
+    other_config_keys = ["conditionId", "participant_index", "step_name"]
     for c in config:
         if c["step_name"] in ["rating", "configuration"]:
             config_keys = other_config_keys
@@ -85,8 +85,8 @@ def test_process_config(mocker, f, pid):
         assert "config" in c
         assert "step_name" in c
         assert "step_name" in c["config"]
-        assert "participant_id" in c["config"]
-        assert c["config"]["participant_id"] == pid
+        assert "participant_index" in c["config"]
+        assert c["config"]["participant_index"] == pid
     
     for step_id in range(1, 10):
         keys = set(config[step_id]["config"].keys())

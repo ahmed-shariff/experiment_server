@@ -11,10 +11,10 @@ from flask_restful import Resource, Api
 from experiment_server._process_config import process_config_file
 
 
-def _create_app(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+def _create_app(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
     app = Flask("unity-exp-server", static_url_path='')
     api = Api(app)
-    config = process_config_file(config_file, participant_id)
+    config = process_config_file(config_file, participant_index)
 
     resource_parameters = {"globalState": GlobalState(config)}
 
@@ -22,21 +22,21 @@ def _create_app(participant_id=None, host="127.0.0.1", port="5000", config_file=
     return app
 
 
-def _init_api(participant_id=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
-    if participant_id is None:
-        participant_id = int(input("participant id: "))
-    app = _create_app(participant_id=participant_id, host=host, port=port, config_file=config_file)
+def _init_api(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+    if participant_index is None:
+        participant_index = int(input("participant id: "))
+    app = _create_app(participant_index=participant_index, host=host, port=port, config_file=config_file)
     app.run(host=host, port=int(port))
 
 
-def server_process(config_file, participant_id=None, host="127.0.0.1", port="5000"):
-    p = Process(target=_init_api, kwargs={"participant_id":participant_id, "host":host, "port":port, "config_file":config_file})
+def server_process(config_file, participant_index=None, host="127.0.0.1", port="5000"):
+    p = Process(target=_init_api, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
     return p
 
 
 class GlobalState:
     def __init__(self, config):
-        self.participant_id = -1
+        self.participant_index = -1
         self._step_id = None
         self.step = None
         self.config = config
