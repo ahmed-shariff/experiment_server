@@ -5,32 +5,46 @@ from loguru import logger
 from pathlib import Path
 from multiprocessing import Process
 
-from flask import Flask, request, send_file
-from flask_restful import Resource, Api
+from tornado.web import RequestHandler, Application, StaticFileHandler
+import tornado.ioloop
+import asyncio
+import json
 
 from experiment_server._process_config import process_config_file
 
 
-def _create_app(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
-    app = Flask("unity-exp-server", static_url_path='')
-    api = Api(app)
+def _create_app(participant_index=None, config_file="static/base_config.expconfig"):
+    if participant_index is None:
+        participant_index = int(input("participant id: "))
+        
     config = process_config_file(config_file, participant_index)
 
     resource_parameters = {"globalState": GlobalState(config)}
 
-    api.add_resource(ExperimentRouter, '/<string:action>', '/<string:action>/<int:param>', resource_class_kwargs=resource_parameters)
-    return app
+    static_location = (Path(__file__).parent  / "static" ).absolute()
+    
+    application = Application([
+        (r"/()",StaticFileHandler, {'path': str(static_location / "initconfig.html")}),
+        (r"/index()",StaticFileHandler, {'path': str(static_location / "initconfig.html")}),
+        (r"/api/([^/]+)", ExperimentHandler, resource_parameters),
+        (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, resource_parameters),
+        (r"/(.*)",StaticFileHandler, {'path': static_location, 'default_filename': "initconfig.html"})
+    ])
+    return application
 
 
-def _init_api(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
-    if participant_index is None:
-        participant_index = int(input("participant id: "))
-    app = _create_app(participant_index=participant_index, host=host, port=port, config_file=config_file)
-    app.run(host=host, port=int(port))
+async def _init_api(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+    application = _create_app(participant_index, config_file)
+    application.listen(port=port, address=host)
+    await asyncio.Event().wait()
+
+
+def _main(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+    asyncio.run(_init_api(participant_index, host, port, config_file))
 
 
 def server_process(config_file, participant_index=None, host="127.0.0.1", port="5000"):
-    p = Process(target=_init_api, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
+    p = Process(target=_main, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
     return p
 
 
@@ -49,63 +63,71 @@ class GlobalState:
         self.setStep(self._step_id + 1)
 
 
-class ExperimentRouter(Resource):
-    def __init__(self, globalState):
+class ExperimentHandler(RequestHandler):
+    def initialize(self, globalState):
         self.globalState = globalState
 
-    def get(self, action=None, param=None):
+    def get(self, action=None):
         if action == "itemsCount":
-            return len(self.globalState.config)
-        elif action == "index":
-            return send_file(Path(__file__).parent  / "static" / "initconfig.html")
+            self.write(json.dumps(len(self.globalState.config)))
         elif action == "active":
-            return True
+            self.write(json.dumps(True))
         elif action == "config":
             try:
                 config = self.globalState.step["config"]
                 logger.info(f"Config returned: {config}")
-                return config
+                self.write(config)
             except TypeError as e:
                 logger.error(e)
-                return "A call to `/move_to_next` must be made before calling `/config`", 406
+                self.set_status(406)
+                self.write("A call to `/move_to_next` must be made before calling `/config`")
         else:
-            return "n/a", 404
+            self.set_status(404)
+            self.write("N/A")
 
     def post(self, action=None, param=None):
         if action == "move_to_next":
             try:
                 self.globalState.moveToNextStep()
                 logger.info(f"Loading step: {self.globalState.step}\n")
-                return {"step_name": self.globalState.step["step_name"]}
+                self.write({"step_name": self.globalState.step["step_name"]})
             except TypeError:
                 self.globalState.setStep(0)
                 logger.info(f"Loading step: {self.globalState.step}\n")
-                return {"step_name": self.globalState.step["step_name"]}
+                self.write({"step_name": self.globalState.step["step_name"]})
             except IndexError:
                 self.globalState.step = {"step_name": "end"}
                 logger.info("Loading step: {'step_name': 'end'}\n")
-                return {"step_name": "end"}
+                self.write({"step_name": "end"})
             # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
         elif action == "move":
             if param is None:
-                return "Need paramter", 404
+                self.set_status(404)
+                self.write("Need paramter")
             try:
                 param = int(param)
                 if param >= len(self.globalState.config):
                     return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
                 self.globalState.setStep(int(param))
-                return int(param)
+                self.write(str(param))
             except ValueError:
-                return f"param should be a integer, got {param}", 404
+                self.set_status(404)
+                self.write(f"param should be a integer, got {param}")
         elif action == "shutdown":
             shutdown_server()
         else:
-            return "n/a", 404
+            self.set_status(404)
+            self.write("n/a")
 
 
-# From: https://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
+# # From: https://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
+# def shutdown_server():
+#     func = request.environ.get('werkzeug.server.shutdown')
+#     if func is None:
+#         raise RuntimeError('Not running with the Werkzeug Server')
+#     func()
+
+
+# from https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server    
 def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
+    tornado.ioloop.IOLoop.instance().stop()

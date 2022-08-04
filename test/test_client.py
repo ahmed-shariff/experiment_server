@@ -33,7 +33,8 @@ def server(config_file, participant_index):
     p.kill()
     p.join()
 
-    
+
+# TODO: Convert to tornado.testing.AsyncHTTPTestCase
 class TestClient:
     @pytest.fixture(scope="class")
     def client(self):

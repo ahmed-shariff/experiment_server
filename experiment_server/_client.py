@@ -8,7 +8,7 @@ class Client:
         self._server_url = f"http://{server_host}:{server_port}"
 
     def _request(self, end_point:str, get:bool=True) -> Tuple[bool, dict]:
-        url = self._server_url + f"/{end_point}"
+        url = self._server_url + f"/api/{end_point}"
         if get:
             r = requests.get(url)
         else:
@@ -16,7 +16,7 @@ class Client:
 
         if r.status_code != 200:
             return False, {"message": f"status {r.status_code} with text: {r.text}"}
-        return True, json.loads(r.text)
+        return True, json.loads(r.text) if len(r.text) > 0 else ""
     
     def _get(self, end_point:str) -> Tuple[bool, dict]:
         return self._request(end_point, True)

@@ -15,10 +15,10 @@
 	 
 	 $(document).ready(function() {
 	     $("#btnSwitch").click(function(){
-		 $.post("/move/" + $('#txtSwitch').val(), displayText);
+		 $.post("/api/move/" + $('#txtSwitch').val(), displayText);
 	     });
 	     $("#btnConfig").click(function(){
-		 $.get("/config" , displayText);
+		 $.get("/api/config" , displayText);
 	     });
 	 });
 	</script>
