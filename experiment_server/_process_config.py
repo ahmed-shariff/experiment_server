@@ -43,7 +43,7 @@ def get_sections(f: Union[str, Path]) -> Dict[str, str]:
 
 def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dict[str, Any]]:
     if participant_index < 1:
-        raise ExperimentServerConfigurationExcetion(f"Participant id needs to be greater than 0, got {participant_index}")
+        raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
 
     loaded_configurations = get_sections(f)
     if "template_values" in loaded_configurations:

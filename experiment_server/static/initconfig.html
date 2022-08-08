@@ -12,38 +12,53 @@
 	 function displayText (data, status){
 	     output = $('#output').text(JSON.stringify(data, null, 4));
 	 }
+
+         function errorDisplay (error) {
+             $('#output').text(error['responseText']);
+         }
 	 
 	 $(document).ready(function() {
 	     $("#btnSwitch").click(function(){
-		 $.post("/api/move/" + $('#txtSwitch').val(), displayText);
+		 $.post("/api/move/" + $('#txtSwitch').val(), displayText).fail(errorDisplay);;
 	     });
 	     $("#btnConfig").click(function(){
-		 $.get("/api/config" , displayText);
+		 $.get("/api/config" , displayText).fail(errorDisplay);
+	     });
+	     $("#btnChangeParticipantIdx").click(function(){
+		 $.post("/api/change_participant_index/" + $('#txtChangeParticipantIdx').val(), displayText).fail(errorDisplay);
 	     });
 	 });
 	</script>
     </head>
-    <body>
-	<div class="container">
-	    <div class="row">
-		<div class="col-sm-12 mt-4">
-		    <div class="alert alert-info" style="white-space: pre-wrap" id="output"></div>
+	<body>
+	    <div class="container">
+		<div class="row">
+		    <div class="col-sm-12 mt-4">
+			<div class="alert alert-info" style="white-space: pre-wrap" id="output"></div>
+		    </div>
 		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-6 mt-2">
-		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary">Move to step: </button>
+		<div class="row">
+		    <div class="col-sm-6 mt-2">
+			<button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary">Move to step: </button>
+		    </div>
+		    
+		    <div class="col-sm-6 mt-2">
+			<input type="text" id="txtSwitch" name="txtSwitch" class="form-control">
+		    </div>
 		</div>
-		
-		<div class="col-sm-6 mt-2">
-		    <input type="text" id="txtSwitch" name="txtSwitch" class="form-control">
+		<div class="row">
+		    <div class="col-sm-6 mt-2">
+			<button id="btnConfig" type="button" style="width:100%" class="btn btn-primary">Config</button>
+		    </div>
 		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-6 mt-2">
-		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary">Config</button>
+		<div class="row my-4">
+		    <div class="col-sm-6 mt-2">
+			<button id="btnChangeParticipantIdx" type="button" style="width:100%" class="btn btn-primary">Change participant index</button>
+		    </div>
+		    <div class="col-sm-6 mt-2">
+			<input type="text" id="txtChangeParticipantIdx" name="txtChangeParticipantIdx" class="form-control">
+		    </div>
 		</div>
-	    </div>
 	</div>
 
     </body>

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `_process_config.resolve_extends`
   - `_process_config._resolve_extends`
 - Adding test cases to cli
+- Adding `change_participant_index` to api
 
 ### Changed
 - ExperimentConfig was refactored into ExperimentRouter

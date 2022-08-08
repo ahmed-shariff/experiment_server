@@ -11,6 +11,7 @@ import asyncio
 import json
 
 from experiment_server._process_config import process_config_file
+from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
 def _create_app(participant_index=None, config_file="static/base_config.expconfig"):
@@ -117,7 +118,12 @@ class ExperimentHandler(RequestHandler):
         elif action == "change_participant_index":
             new_participant_index = self._get_int_from_param(param)
             if new_participant_index is not None:
-                self.globalState.change_participant_index(new_participant_index)
+                try:
+                    self.globalState.change_participant_index(new_participant_index)
+                    self.write(f"Config for new participant (participant_index: {new_participant_index}) loaded.")
+                except ExperimentServerConfigurationExcetion as e:
+                    self.set_status(406)
+                    self.write(e.args[0][0])
         else:
             self.set_status(404)
             self.write("n/a")
