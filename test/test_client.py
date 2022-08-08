@@ -1,20 +1,10 @@
 import time
 import requests
 import pytest
-from pathlib import Path
 from experiment_server import Client
 from experiment_server._main import server_process
 from experiment_server._process_config import process_config_file
-
-
-@pytest.fixture(scope="session")
-def config_file():
-    return Path(__file__).parent / "test_files/working_file.expconfig"
-
-
-@pytest.fixture(scope="session")
-def participant_index():
-    return 1
+from .fixtures import config_file, participant_index
 
 
 @pytest.fixture(scope="class", autouse=True)
@@ -74,9 +64,28 @@ class TestClient:
         assert ret
         assert out == exp_config[3]["config"]
 
-    def test_move_to_step_fail(self, client, exp_config):
+    def test_move_to_step_fail_outside_range(self, client, exp_config):
         ret, out = client.move_to_step(len(exp_config) + 4)
         assert not ret
+
+    def test_move_to_step_fail_empty(self, client):
+        with pytest.raises(AssertionError) as exc_info:
+            client.move_to_step(None)
+
+    def test_move_to_step_fail_non_number(self, client):
+        with pytest.raises(AssertionError) as exc_info:
+            client.move_to_step("ha")
+
+    def test_change_participant_index_fail_empty(self, client):
+        with pytest.raises(AssertionError) as exc_info:
+            client.change_participant_index(None)
+
+    def test_change_participant_index_fail_non_number(self, client):
+        with pytest.raises(AssertionError) as exc_info:
+            client.change_participant_index(None)
+
+    def test_change_participant_index(self, client, participant_index):
+        ret, out = client.change_participant_index(0)
 
     def test_shutdown(self, client):
         ret, out = client.shutdown()

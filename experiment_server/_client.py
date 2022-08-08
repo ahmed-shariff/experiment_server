@@ -37,8 +37,12 @@ class Client:
         return self._get("itemsCount")
 
     def move_to_step(self, step: int) -> Tuple[bool, dict]:
-        assert isinstance(step, int)
+        assert isinstance(step, int), "`step` should be a int"
         return self._post(f"move/{step}")
+
+    def change_participant_index(self, step: int) -> Tuple[bool, dict]:
+        assert isinstance(step, int), "`step` should be a int"
+        return self._post(f"change_participant_index/{step}")
 
     def shutdown(self) -> Tuple[bool, dict]:
         return self._post("shutdown")

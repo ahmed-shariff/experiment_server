@@ -17,9 +17,7 @@ def _create_app(participant_index=None, config_file="static/base_config.expconfi
     if participant_index is None:
         participant_index = int(input("participant id: "))
         
-    config = process_config_file(config_file, participant_index)
-
-    resource_parameters = {"globalState": GlobalState(config)}
+    resource_parameters = {"globalState": GlobalState(config_file, participant_index)}
 
     static_location = (Path(__file__).parent  / "static" ).absolute()
     
@@ -49,11 +47,15 @@ def server_process(config_file, participant_index=None, host="127.0.0.1", port="
 
 
 class GlobalState:
-    def __init__(self, config):
-        self.participant_index = -1
+    def __init__(self, config_file, participant_index):
+        self.config_file = config_file
+        self.change_participant_index(participant_index)
+
+    def change_participant_index(self, participant_index):
+        self._participant_index = participant_index
         self._step_id = None
         self.step = None
-        self.config = config
+        self.config = process_config_file(self.config_file, participant_index)
 
     def setStep(self, step_id):
         self._step_id = step_id
@@ -104,20 +106,30 @@ class ExperimentHandler(RequestHandler):
             if param is None:
                 self.set_status(404)
                 self.write("Need paramter")
-            try:
-                param = int(param)
+            param = self._get_int_from_param(param)
+            if param is not None:
                 if param >= len(self.globalState.config):
                     return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
                 self.globalState.setStep(int(param))
                 self.write(str(param))
-            except ValueError:
-                self.set_status(404)
-                self.write(f"param should be a integer, got {param}")
         elif action == "shutdown":
             shutdown_server()
+        elif action == "change_participant_index":
+            new_participant_index = self._get_int_from_param(param)
+            if new_participant_index is not None:
+                self.globalState.change_participant_index(new_participant_index)
         else:
             self.set_status(404)
             self.write("n/a")
+
+    def _get_int_from_param(self, param):
+        try:
+            param = int(param)
+            return param
+        except ValueError:
+            self.set_status(404)
+            self.write(f"param should be an integer, got {param}")
+            return None
 
 
 # # From: https://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
