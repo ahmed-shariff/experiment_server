@@ -35,3 +35,8 @@ class TestGlobalState:
         state.setStep(1)
         state.moveToNextStep()
         assert state._step_id == 2
+
+    def test_get_global_data(self, state, participant_index):
+        out = state.get_global_data()
+        assert out["participant_index"] == participant_index
+        assert out["config_lenght"] == 10

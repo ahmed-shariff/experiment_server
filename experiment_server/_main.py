@@ -65,6 +65,12 @@ class GlobalState:
     def moveToNextStep(self):
         self.setStep(self._step_id + 1)
 
+    def get_global_data(self):
+        return {
+            "participant_index": self._participant_index,
+            "config_lenght": len(self.config)
+        }
+
 
 class ExperimentHandler(RequestHandler):
     def initialize(self, globalState):
@@ -84,6 +90,8 @@ class ExperimentHandler(RequestHandler):
                 logger.error(e)
                 self.set_status(406)
                 self.write("A call to `/move_to_next` must be made before calling `/config`")
+        elif action == "globalData":
+            self.write(self.globalState.get_global_data())
         else:
             self.set_status(404)
             self.write("N/A")
