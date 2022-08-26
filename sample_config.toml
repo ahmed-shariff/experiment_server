@@ -1,39 +1,48 @@
+# The `configuration` table contains settings of the study itself
 [configuration]
-order = [["direct100", "indirect100"], ["direct75", "indirect75"]]
-
-[configuration.variables]
-TRIALS_PER_ITEM = 3
-
-[configuration.options]
+# The `order` is an array of block names or an array of array of block names.
+order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
+# The `groups` and `within_groups` keys allows you to define how the conditions specified
+# in `order` will be managed. `groups` would dictate how the top level array of `order`
+# will be handled. `within_groups` would dictate how the conditions in the nested arrays
+# (if specified) would be managed. These keys can have one of the following values.
+# - "latin_square": Apply latin square to balance the values.
+# - "randomize": For each participant randomize the order of the values in the array.
+# - "as_is": Use the order of the values as specified.
 groups = "latin_square"
 within_groups= "randomize"
 
-# Direct conditions
-[[blocks]]
-name = "direct100"
+# The subtable `variabels` are values that can be used anywhere when defining the blocks.
+# Any variable can be used by appending "$" before the variable name in the blocks. See 
+# below for how exmaple of how the variables can be used
+[configuration.variables]
+TRIALS_PER_ITEM = 3
 
+# Blocks are defined as an array of tables. Each block must contain `name` and the 
+# subtable `config`. Optionally, a block can also specify `extends`, whish is a `name` of
+# another block. See below for more explanation on how `extends` works
+
+# Block: Condition A
+[[blocks]]
+name = "conditionA"
+
+# The `config` subtable can have any key-values. Note that `name` and `participant_index`
+# will be added to the `config` when this file is being processed. Hence, those keys 
+# will be overwritten if used in this subtable.
 [blocks.config]
 trialsPerItem = "$TRIALS_PER_ITEM"
 param1 = 1
+param2 = 1
+param3 = 1
 
+# Block: Condition B
 [[blocks]]
-name = "direct75"
+name = "conditionB"
+extends = "conditionA"
 
+# Since "conditionB" is extending "conditionA", the keys in the `config` subtable of 
+# the block "conditionA" not defined in the `config` subtable of "conditionB" will be copied
+# to the `config` subtable of "conditionB". In this example, `param1`, `param2` and 
+# `trialsPerItem` will be copied over here.
 [blocks.config]
-trialsPerItem = "$TRIALS_PER_ITEM"
-param1 = 2
-
-# Indirect conditions
-[[blocks]]
-name = "indirect100"
-
-[blocks.config]
-trialsPerItem = "$TRIALS_PER_ITEM"
-param1 = 3
-
-[[blocks]]
-name = "indirect75"
-
-[blocks.config]
-trialsPerItem = "$TRIALS_PER_ITEM"
-param1 = 4
+param3 = 2

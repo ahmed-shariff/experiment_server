@@ -1,6 +1,6 @@
 # Overview
 
-Server for experiments to get configuarations from
+Server for experiments to get configurations from
 
 # Setup
 
@@ -23,16 +23,141 @@ $ poetry add experiment-server
 ```
 
 # Usage
+## Configuration of an experiment
+The configuration id defined in a [toml](https://toml.io/en/) file. See example `.toml` below for how the configuration can be defined.
+```toml
+# The `configuration` table contains settings of the study itself
+[configuration]
+# The `order` is an array of block names or an array of array of block names.
+order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
+# The `groups` and `within_groups` keys allows you to define how the conditions specified
+# in `order` will be managed. `groups` would dictate how the top level array of `order`
+# will be handled. `within_groups` would dictate how the conditions in the nested arrays
+# (if specified) would be managed. These keys can have one of the following values.
+# - "latin_square": Apply latin square to balance the values.
+# - "randomize": For each participant randomize the order of the values in the array.
+# - "as_is": Use the order of the values as specified.
+groups = "latin_square"
+within_groups= "randomize"
+
+# The subtable `variabels` are values that can be used anywhere when defining the blocks.
+# Any variable can be used by appending "$" before the variable name in the blocks. See 
+# below for how exmaple of how the variables can be used
+[configuration.variables]
+TRIALS_PER_ITEM = 3
+
+# Blocks are defined as an array of tables. Each block must contain `name` and the 
+# subtable `config`. Optionally, a block can also specify `extends`, whish is a `name` of
+# another block. See below for more explanation on how `extends` works
+
+# Block: Condition A
+[[blocks]]
+name = "conditionA"
+
+# The `config` subtable can have any key-values. Note that `name` and `participant_index`
+# will be added to the `config` when this file is being processed. Hence, those keys 
+# will be overwritten if used in this subtable.
+[blocks.config]
+trialsPerItem = "$TRIALS_PER_ITEM"
+param1 = 1
+param2 = 1
+param3 = 1
+
+# Block: Condition B
+[[blocks]]
+name = "conditionB"
+extends = "conditionA"
+
+# Since "conditionB" is extending "conditionA", the keys in the `config` subtable of 
+# the block "conditionA" not defined in the `config` subtable of "conditionB" will be copied
+# to the `config` subtable of "conditionB". In this example, `param1`, `param2` and 
+# `trialsPerItem` will be copied over here.
+[blocks.config]
+param3 = 2
+```
+
+The above config file would result in the following list of blocks:
+```json
+[
+  {
+    "name": "conditionB",
+    "extends": "conditionA",
+    "config": {
+      "param3": 2,
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": 1,
+      "participant_index": 1,
+      "name": "conditionB"
+    }
+  },
+  {
+    "name": "conditionB",
+    "extends": "conditionA",
+    "config": {
+      "param3": 2,
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": 1,
+      "participant_index": 1,
+      "name": "conditionB"
+    }
+  },
+  {
+    "name": "conditionA",
+    "config": {
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": 1,
+      "param3": 1,
+      "participant_index": 1,
+      "name": "conditionA"
+    }
+  },
+  {
+    "name": "conditionA",
+    "config": {
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": 1,
+      "param3": 1,
+      "participant_index": 1,
+      "name": "conditionA"
+    }
+  }
+]
+```
+
+## Loading experiment through local server
+A config file can be validated by running:
+```sh
+$ experiment-server verify-config-file sample_config.toml
+```
+This will show how the expanded config looks like for the first 5 participant.
 
 After installation, the server can used as:
 
-```text
-$ experiment-server sample_config.expconfig
+```sh
+$ experiment-server run sample_config.toml
 ```
 
-# The Experiment Configuration
-TBA
+A simple web interface can be accessed at `/` or `/index`
 
+The server exposes the following REST API:
+- [GET] `/itemsCount`: The total number of blocks. Returns an integer
+- [GET] `/active`: Test if the server is working. Returns boolean
+- [GET] `/config`: Return the `config` subtable in the configuration file of the current block as a json object. Note that `move_to_next` has to be called atleast once before this can be called.
+- [GET] `/globalData`: Returns a json object, with the following keys: 
+  - "participant_index": the participant index
+  - "config_length": same value `/itemsCount`
+- [POST] `/move_to_next`: Sets the current block to the next block in the list of blocks. Returns a json object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
+- [POST] `/move/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
+- [POST] `/shutdown`: Shutdown the server.
+- [POST] `/change_participant_index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
+
+
+## Loading experiment through API
+A configuration can be loaded and managed by importing `experiment_server.Experiment`.
 
 # Wishlist
-- Single application where the participant_id can be updated and the server would keep running.
+- Serve multiple participants at the same time.
