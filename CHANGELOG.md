@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Renaming `step` to `block` and `step_name` to `name`
 - Refactor: `GlobalState`'s camel case to snake case
+- Fixed same condition being reused causing issues with `resolve_extends` as the reused dicts are references.
 
 ## [0.1] - 2022-08-25
 ### Adding

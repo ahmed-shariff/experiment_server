@@ -76,7 +76,8 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
     final_blocks = _replace_variables(loaded_configuration.get("final_blocks", []), variables)
 
     blocks = init_blocks + blocks + final_blocks
-    blocks = resolve_extends(blocks)
+    # Using merge_dicts to ensure the values are references
+    blocks = resolve_extends([merge_dicts(b, {}) for b in blocks])
 
     for c in blocks:
         c["config"]["participant_index"] = participant_index

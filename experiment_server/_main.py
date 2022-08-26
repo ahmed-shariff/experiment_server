@@ -87,7 +87,7 @@ class ExperimentHandler(RequestHandler):
         elif action == "globalData":
             self.write({
                 "participant_index": self.globalState._participant_index,
-                "config_lenght": len(self.globalState.config)
+                "config_length": len(self.globalState.config)
             })
         else:
             self.set_status(404)
