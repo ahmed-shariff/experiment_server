@@ -38,43 +38,43 @@ class TestClient:
         ret, out = client.server_is_active()
         assert ret
 
-    def test_step_0_config(self, client):
+    def test_block_0_config(self, client):
         ret, out = client.get_config()
         assert not ret
 
-    def test_step_through_all(self, client, exp_config):
+    def test_block_through_all(self, client, exp_config):
         for idx, c in enumerate(exp_config):
             ret, out = client.move_to_next()
-            assert ret, f"step {idx}"
-            assert out["step_name"] == c["step_name"], f"step {idx}"
+            assert ret, f"block {idx}"
+            assert out["block_name"] == c["block_name"], f"block {idx}"
             ret, out = client.get_config()
-            assert ret, f"step {idx}"
-            assert out == c["config"], f"step {idx}"
+            assert ret, f"block {idx}"
+            assert out == c["config"], f"block {idx}"
             
-    def test_get_total_step_count(self, client, exp_config):
-        ret, out = client.get_total_steps_count()
+    def test_get_total_block_count(self, client, exp_config):
+        ret, out = client.get_total_blocks_count()
         assert ret
         assert out == len(exp_config)
 
-    def test_move_to_step_correct(self, client, exp_config):
-        ret, out = client.move_to_step(3)
+    def test_move_to_block_correct(self, client, exp_config):
+        ret, out = client.move_to_block(3)
         assert ret
         assert out == 3
         ret, out = client.get_config()
         assert ret
         assert out == exp_config[3]["config"]
 
-    def test_move_to_step_fail_outside_range(self, client, exp_config):
-        ret, out = client.move_to_step(len(exp_config) + 4)
+    def test_move_to_block_fail_outside_range(self, client, exp_config):
+        ret, out = client.move_to_block(len(exp_config) + 4)
         assert not ret
 
-    def test_move_to_step_fail_empty(self, client):
+    def test_move_to_block_fail_empty(self, client):
         with pytest.raises(AssertionError) as exc_info:
-            client.move_to_step(None)
+            client.move_to_block(None)
 
-    def test_move_to_step_fail_non_number(self, client):
+    def test_move_to_block_fail_non_number(self, client):
         with pytest.raises(AssertionError) as exc_info:
-            client.move_to_step("ha")
+            client.move_to_block("ha")
 
     def test_change_participant_index_fail_empty(self, client):
         with pytest.raises(AssertionError) as exc_info:

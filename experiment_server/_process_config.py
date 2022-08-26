@@ -8,7 +8,7 @@ from easydict import EasyDict as edict
 import json
 
 
-TOP_LEVEL_RESERVED_KEYS = ["step_name", "config", "extends"]
+TOP_LEVEL_RESERVED_KEYS = ["block_name", "config", "extends"]
 SECTIONS = ["main_configuration", "init_configuration", "final_configuration", "template_values", "order", "settings"]
 ALLOWED_SETTINGS = ["randomize_within_groups", "randomize_groups"]
 
@@ -101,7 +101,7 @@ def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dic
 
     for c in config:
         c["config"]["participant_index"] = participant_index
-        c["config"]["step_name"] = c["step_name"]
+        c["config"]["block_name"] = c["block_name"]
     
     logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(config)]))
     return config
@@ -117,26 +117,26 @@ def _resolve_extends(c, configs, seen_configs):
 
     dict_a = c
     try:
-        dict_b = [_c for _c in configs if _c["step_name"] == c["extends"]][0]
+        dict_b = [_c for _c in configs if _c["block_name"] == c["extends"]][0]
     except IndexError:
-        raise ExperimentServerConfigurationExcetion("`{}` is not a valid name. It must be a `step_name`.".format(c["extends"]))
+        raise ExperimentServerConfigurationExcetion("`{}` is not a valid name. It must be a `block_name`.".format(c["extends"]))
 
-    dict_b, configs, seen_configs = _resolve_extends(dict_b, configs, seen_configs + [dict_b["step_name"]])
-    configs[dict_a["step_idx"]] = merge_dicts(dict_a, dict_b)
-    return configs[dict_a["step_idx"]], configs, seen_configs
+    dict_b, configs, seen_configs = _resolve_extends(dict_b, configs, seen_configs + [dict_b["block_name"]])
+    configs[dict_a["block_idx"]] = merge_dicts(dict_a, dict_b)
+    return configs[dict_a["block_idx"]], configs, seen_configs
 
 
 def resolve_extends(configs):
     # Adding idx to track the configs
     for idx, c in enumerate(configs):
-        c["step_idx"] = idx
+        c["block_idx"] = idx
 
     for c in configs:
-        configs[c["step_idx"]] = _resolve_extends(c, configs, [c["step_name"]])[0]
+        configs[c["block_idx"]] = _resolve_extends(c, configs, [c["block_name"]])[0]
 
     # Removing idx
     for c in configs:
-        del c["step_idx"]
+        del c["block_idx"]
 
     return configs
 
@@ -151,14 +151,14 @@ def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]]
     import pandas as pd
     from tabulate import tabulate
     with logger.catch(reraise=False, message="Config verification failed"):
-        config_steps = {}
+        config_blocks = {}
         for participant_index in range(1,6):
             config = process_config_file(f, participant_index=participant_index)
-            config_steps[participant_index] = {f"trial_{idx + 1}": c["step_name"] for idx, c in enumerate(config)}
+            config_blocks[participant_index] = {f"trial_{idx + 1}": c["block_name"] for idx, c in enumerate(config)}
             if test_func is not None:
                 test_result, reason = test_func(config)
                 assert test_result, f"test_func failed for {participant_index} with reason, {reason}"
-        df = pd.DataFrame(config_steps)
+        df = pd.DataFrame(config_blocks)
         df.style.set_properties(**{'text-align': 'left'}).set_table_styles([ dict(selector='th', props=[('text-align', 'left')])])
         logger.info(f"Ordering for 5 participants: \n\n{tabulate(df, headers='keys', tablefmt='fancy_grid')}\n")
         logger.info(f"Config file verification successful for {f}")

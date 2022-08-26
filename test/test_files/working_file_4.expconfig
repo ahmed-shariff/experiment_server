@@ -1,32 +1,32 @@
 //main_configuration
 [
-// comment about step 1
-    {"step_name": "case_direct_finger_for_1",
+// comment about block 1
+    {"block_name": "case_direct_finger_for_1",
      "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_on", "relativePosition": "on"}},
-    {"step_name": "case_indirect_finger_for_2",
+    {"block_name": "case_indirect_finger_for_2",
      "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_on", "relativePosition": "on"}},
 
-    {"step_name": "case_direct_finger_for_3",
+    {"block_name": "case_direct_finger_for_3",
      "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_100_off", "relativePosition": "off"}},
-    {"step_name": "case_indirect_finger_for_4",
+    {"block_name": "case_indirect_finger_for_4",
      "config": {"buttonSize": 1, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_100_off", "relativePosition": "off"}},
     // another comment 
-    {"step_name": "case_direct_finger_for_5",
+    {"block_name": "case_direct_finger_for_5",
      "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_on", "relativePosition": "on"}},
-    {"step_name": "case_indirect_finger_for_6",
+    {"block_name": "case_indirect_finger_for_6",
      "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_on", "relativePosition": "on"}},
 
-    {"step_name": "case_direct_finger_for_7",
+    {"block_name": "case_direct_finger_for_7",
      "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "dir_75_off", "relativePosition": "off"}},
-    {"step_name": "case_indirect_finger_for_8",
+    {"block_name": "case_indirect_finger_for_8",
      "config": {"buttonSize": 0.75, "trialsPerItem": {TRIALS_PER_ITEM}, "conditionId": "indir_75_off", "relativePosition": "off"}}
 ]
 
 //init_configuration
-[{"step_name": "configuration", "config": {"conditionId": "training"}}]
+[{"block_name": "configuration", "config": {"conditionId": "training"}}]
 
 //final_configuration
-[{"step_name": "rating", "config": {"conditionId": "final"}}]
+[{"block_name": "rating", "config": {"conditionId": "final"}}]
 
 //template_values
 {"TRIALS_PER_ITEM": 3}

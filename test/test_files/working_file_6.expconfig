@@ -1,11 +1,11 @@
 //main_configuration
 [
-    {"step_name": "1",
+    {"block_name": "1",
      "config": {"p1": 1, "p2": 3, "p3": 4}},
-    {"step_name": "2",
+    {"block_name": "2",
      "extends": "1",
      "config": {"p2": 5}},
-    {"step_name": "3",
+    {"block_name": "3",
      "extends": "1",
      "config": {"p3": 5}}
 ]

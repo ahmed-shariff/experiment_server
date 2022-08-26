@@ -7,7 +7,7 @@ from experiment_server._process_config import verify_config, get_sections, proce
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
-MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "step_name"]
+MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "block_name"]
 
 
 @pytest.mark.parametrize(
@@ -26,9 +26,9 @@ def test_verify_config(f, expected):
 
 
 def _test_func(config):
-    other_config_keys = ["conditionId", "participant_index", "step_name"]
+    other_config_keys = ["conditionId", "participant_index", "block_name"]
     for c in config:
-        if c["step_name"] in ["rating", "configuration"]:
+        if c["block_name"] in ["rating", "configuration"]:
             config_keys = other_config_keys
         else:
             config_keys = MAIN_CONFIG_KEYS
@@ -78,43 +78,43 @@ def test_process_config(mocker, f, pid):
     config = process_config_file(f, pid)
     spy_get_sections.assert_called_once_with(f)
     assert len(config) == 10
-    assert config[0]["step_name"] == "configuration"
-    assert config[-1]["step_name"] == "rating"
+    assert config[0]["block_name"] == "configuration"
+    assert config[-1]["block_name"] == "rating"
 
     for c in config:
         assert "config" in c
-        assert "step_name" in c
-        assert "step_name" in c["config"]
+        assert "block_name" in c
+        assert "block_name" in c["config"]
         assert "participant_index" in c["config"]
         assert c["config"]["participant_index"] == pid
     
-    for step_id in range(1, 10):
-        keys = set(config[step_id]["config"].keys())
+    for block_id in range(1, 10):
+        keys = set(config[block_id]["config"].keys())
         assert len(keys.difference(MAIN_CONFIG_KEYS)) == 0
 
 
 @pytest.mark.parametrize(
     "config, expected", [
-        ([{"step_name": "a", "param1": "2", "param2": "foo"},
-          {"step_name": "b", "param1": "3", "param2": "bar"},
-          {"step_name": "c", "extends": "a", "param2": "baz"}],
-         [{"step_name": "a", "param1": "2", "param2": "foo"},
-          {"step_name": "b", "param1": "3", "param2": "bar"},
-          {"step_name": "c", "extends": "a", "param1": "2", "param2": "baz"}]),
-        ([{"step_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
-          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
-         [{"step_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
-          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}]),
-        ([{"step_name": "a", "extends": "c", "param1": "2", "param3": "foo"},
-          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
-         [{"step_name": "a", "extends": "c", "param1": "2", "param2": {"x": "bar"}, "param3": "foo"},
-          {"step_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}, "param3": "foo"}]),
-        ([{"step_name": "a", "extends": "b", "param1": "0"},
-          {"step_name": "b", "extends": "c", "param2": "0"},
-          {"step_name": "c", "extends": "a", "param3": "0"}],
-         [{"step_name": "a", "extends": "b", "param1": "0", "param2": "0", "param3": "0"},
-          {"step_name": "b", "extends": "c", "param1": "0", "param2": "0", "param3": "0"},
-          {"step_name": "c", "extends": "a", "param1": "0", "param2": "0", "param3": "0"}],
+        ([{"block_name": "a", "param1": "2", "param2": "foo"},
+          {"block_name": "b", "param1": "3", "param2": "bar"},
+          {"block_name": "c", "extends": "a", "param2": "baz"}],
+         [{"block_name": "a", "param1": "2", "param2": "foo"},
+          {"block_name": "b", "param1": "3", "param2": "bar"},
+          {"block_name": "c", "extends": "a", "param1": "2", "param2": "baz"}]),
+        ([{"block_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
+          {"block_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
+         [{"block_name": "a", "extends": "c", "param1": "2", "param2": "foo"},
+          {"block_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}]),
+        ([{"block_name": "a", "extends": "c", "param1": "2", "param3": "foo"},
+          {"block_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}}],
+         [{"block_name": "a", "extends": "c", "param1": "2", "param2": {"x": "bar"}, "param3": "foo"},
+          {"block_name": "c", "extends": "a", "param1": "3", "param2": {"x": "bar"}, "param3": "foo"}]),
+        ([{"block_name": "a", "extends": "b", "param1": "0"},
+          {"block_name": "b", "extends": "c", "param2": "0"},
+          {"block_name": "c", "extends": "a", "param3": "0"}],
+         [{"block_name": "a", "extends": "b", "param1": "0", "param2": "0", "param3": "0"},
+          {"block_name": "b", "extends": "c", "param1": "0", "param2": "0", "param3": "0"},
+          {"block_name": "c", "extends": "a", "param1": "0", "param2": "0", "param3": "0"}],
           )
     ])
 def test_resolve_extends(config, expected):
@@ -124,8 +124,8 @@ def test_resolve_extends(config, expected):
 
 @pytest.mark.parametrize(
     "config, expected", [
-        ([{"step_name": "a", "param1": "2", "param2": "foo"},
-          {"step_name": "c", "extends": "b", "param2": "baz"}], "`b` is not a valid name. It must be a `step_name`.")
+        ([{"block_name": "a", "param1": "2", "param2": "foo"},
+          {"block_name": "c", "extends": "b", "param2": "baz"}], "`b` is not a valid name. It must be a `block_name`.")
     ])
 def test_resolve_extends_exceptions(config, expected):
     with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):

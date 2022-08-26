@@ -54,16 +54,16 @@ class GlobalState:
 
     def change_participant_index(self, participant_index):
         self._participant_index = participant_index
-        self._step_id = None
-        self.step = None
+        self._block_id = None
+        self.block = None
         self.config = process_config_file(self.config_file, participant_index)
 
-    def setStep(self, step_id):
-        self._step_id = step_id
-        self.step = self.config[step_id]
+    def setBlock(self, block_id):
+        self._block_id = block_id
+        self.block = self.config[block_id]
 
-    def moveToNextStep(self):
-        self.setStep(self._step_id + 1)
+    def moveToNextBlock(self):
+        self.setBlock(self._block_id + 1)
 
     def get_global_data(self):
         return {
@@ -83,7 +83,7 @@ class ExperimentHandler(RequestHandler):
             self.write(json.dumps(True))
         elif action == "config":
             try:
-                config = self.globalState.step["config"]
+                config = self.globalState.block["config"]
                 logger.info(f"Config returned: {config}")
                 self.write(config)
             except TypeError as e:
@@ -99,18 +99,18 @@ class ExperimentHandler(RequestHandler):
     def post(self, action=None, param=None):
         if action == "move_to_next":
             try:
-                self.globalState.moveToNextStep()
-                logger.info(f"Loading step: {self.globalState.step}\n")
-                self.write({"step_name": self.globalState.step["step_name"]})
+                self.globalState.moveToNextBlock()
+                logger.info(f"Loading block: {self.globalState.block}\n")
+                self.write({"block_name": self.globalState.block["block_name"]})
             except TypeError:
-                self.globalState.setStep(0)
-                logger.info(f"Loading step: {self.globalState.step}\n")
-                self.write({"step_name": self.globalState.step["step_name"]})
+                self.globalState.setBlock(0)
+                logger.info(f"Loading block: {self.globalState.block}\n")
+                self.write({"block_name": self.globalState.block["block_name"]})
             except IndexError:
-                self.globalState.step = {"step_name": "end"}
-                logger.info("Loading step: {'step_name': 'end'}\n")
-                self.write({"step_name": "end"})
-            # return  {"step_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
+                self.globalState.block = {"block_name": "end"}
+                logger.info("Loading block: {'block_name': 'end'}\n")
+                self.write({"block_name": "end"})
+            # return  {"block_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
         elif action == "move":
             if param is None:
                 self.set_status(404)
@@ -119,7 +119,7 @@ class ExperimentHandler(RequestHandler):
             if param is not None:
                 if param >= len(self.globalState.config):
                     return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
-                self.globalState.setStep(int(param))
+                self.globalState.setBlock(int(param))
                 self.write(str(param))
         elif action == "shutdown":
             shutdown_server()
