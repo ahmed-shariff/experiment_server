@@ -46,7 +46,7 @@ class TestClient:
         for idx, c in enumerate(exp_config):
             ret, out = client.move_to_next()
             assert ret, f"block {idx}"
-            assert out["block_name"] == c["block_name"], f"block {idx}"
+            assert out["name"] == c["name"], f"block {idx}"
             ret, out = client.get_config()
             assert ret, f"block {idx}"
             assert out == c["config"], f"block {idx}"

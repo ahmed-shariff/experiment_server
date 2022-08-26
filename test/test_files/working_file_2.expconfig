@@ -1,31 +1,31 @@
 //main_configuration
 [
-    {"block_name": "case_direct_finger_for_1",
+    {"name": "case_direct_finger_for_1",
      "config": {}},
-    {"block_name": "case_indirect_finger_for_2",
-     "config": {}},
-
-    {"block_name": "case_direct_finger_for_3",
-     "config": {}},
-    {"block_name": "case_indirect_finger_for_4",
+    {"name": "case_indirect_finger_for_2",
      "config": {}},
 
-    {"block_name": "case_direct_finger_for_5",
+    {"name": "case_direct_finger_for_3",
      "config": {}},
-    {"block_name": "case_indirect_finger_for_6",
+    {"name": "case_indirect_finger_for_4",
      "config": {}},
 
-    {"block_name": "case_direct_finger_for_7",
+    {"name": "case_direct_finger_for_5",
      "config": {}},
-    {"block_name": "case_indirect_finger_for_8",
+    {"name": "case_indirect_finger_for_6",
+     "config": {}},
+
+    {"name": "case_direct_finger_for_7",
+     "config": {}},
+    {"name": "case_indirect_finger_for_8",
      "config": {}}
 ]
 
 //init_configuration
-[{"block_name": "configuration", "config": {"conditionId": "training"}}]
+[{"name": "configuration", "config": {"conditionId": "training"}}]
 
 //final_configuration
-[{"block_name": "rating", "config": {"conditionId": "final"}}]
+[{"name": "rating", "config": {"conditionId": "final"}}]
 
 //template_values
 {"TRIALS_PER_ITEM": 3}

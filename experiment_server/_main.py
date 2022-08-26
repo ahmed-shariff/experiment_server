@@ -101,16 +101,16 @@ class ExperimentHandler(RequestHandler):
             try:
                 self.globalState.moveToNextBlock()
                 logger.info(f"Loading block: {self.globalState.block}\n")
-                self.write({"block_name": self.globalState.block["block_name"]})
+                self.write({"name": self.globalState.block["name"]})
             except TypeError:
                 self.globalState.setBlock(0)
                 logger.info(f"Loading block: {self.globalState.block}\n")
-                self.write({"block_name": self.globalState.block["block_name"]})
+                self.write({"name": self.globalState.block["name"]})
             except IndexError:
-                self.globalState.block = {"block_name": "end"}
-                logger.info("Loading block: {'block_name': 'end'}\n")
-                self.write({"block_name": "end"})
-            # return  {"block_name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
+                self.globalState.block = {"name": "end"}
+                logger.info("Loading block: {'name': 'end'}\n")
+                self.write({"name": "end"})
+            # return  {"name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
         elif action == "move":
             if param is None:
                 self.set_status(404)

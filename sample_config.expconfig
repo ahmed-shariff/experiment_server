@@ -1,15 +1,15 @@
 //main_configuration
 [
     // Direct conditions
-    {"step_name": "direct100",
+    {"name": "direct100",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 1}},
-    {"step_name": "direct75",
+    {"name": "direct75",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 2}},
 
     // Indirect conditions
-    {"step_name": "indirect100",
+    {"name": "indirect100",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 3}},
-    {"step_name": "indirect75",
+    {"name": "indirect75",
      "config": {"trialsPerItem": {TRIALS_PER_ITEM}, "param1": 4}}
 ]
 

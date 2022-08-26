@@ -15,15 +15,15 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
     if groups is None:
         groups = ORDERING_BEHAVIOUR.as_is
 
-    block_names = {}
+    names = {}
 
     # To make sure the string based indexing works
     for idx, c in enumerate(config):
-        c["block_name"] = str(c["block_name"])
-        block_names[c["block_name"]] = idx
+        c["name"] = str(c["name"])
+        names[c["name"]] = idx
 
-    if len(set(block_names.values()).symmetric_difference(list(range(len(config))))) != 0:
-        raise ExperimentServerConfigurationExcetion("Duplicate block names: {}".format(set([c["block_name"] for idx, c in enumerate(config) if idx not in block_names.values()])))
+    if len(set(names.values()).symmetric_difference(list(range(len(config))))) != 0:
+        raise ExperimentServerConfigurationExcetion("Duplicate block names: {}".format(set([c["name"] for idx, c in enumerate(config) if idx not in names.values()])))
 
     if within_groups not in list(ORDERING_BEHAVIOUR.values()):
         raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_BEHAVIOUR.values()}, for {within_groups}")
@@ -80,7 +80,7 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
     if isinstance(chained_order[0], int):
         return [config[i] for i in chained_order]
     else:
-        return [config[block_names[i]] for i in chained_order]
+        return [config[names[i]] for i in chained_order]
     
 
 # def _construct_participant_condition_old(config, participant_index, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):

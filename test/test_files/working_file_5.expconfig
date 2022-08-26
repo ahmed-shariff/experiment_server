@@ -1,23 +1,23 @@
 //main_configuration
 [
-    {"block_name": "0",
+    {"name": "0",
      "config": {}},
-    {"block_name": "1",
-     "config": {}},
-
-    {"block_name": "2",
-     "config": {}},
-    {"block_name": "3",
+    {"name": "1",
      "config": {}},
 
-    {"block_name": "4",
+    {"name": "2",
      "config": {}},
-    {"block_name": "5",
+    {"name": "3",
      "config": {}},
 
-    {"block_name": "6",
+    {"name": "4",
      "config": {}},
-    {"block_name": "7",
+    {"name": "5",
+     "config": {}},
+
+    {"name": "6",
+     "config": {}},
+    {"name": "7",
      "config": {}}
 ]
 
