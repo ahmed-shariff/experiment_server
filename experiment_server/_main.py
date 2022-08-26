@@ -58,18 +58,12 @@ class GlobalState:
         self.block = None
         self.config = process_config_file(self.config_file, participant_index)
 
-    def setBlock(self, block_id):
+    def set_block(self, block_id):
         self._block_id = block_id
         self.block = self.config[block_id]
 
-    def moveToNextBlock(self):
-        self.setBlock(self._block_id + 1)
-
-    def get_global_data(self):
-        return {
-            "participant_index": self._participant_index,
-            "config_lenght": len(self.config)
-        }
+    def move_to_next_block(self):
+        self.set_block(self._block_id + 1)
 
 
 class ExperimentHandler(RequestHandler):
@@ -91,7 +85,10 @@ class ExperimentHandler(RequestHandler):
                 self.set_status(406)
                 self.write("A call to `/move_to_next` must be made before calling `/config`")
         elif action == "globalData":
-            self.write(self.globalState.get_global_data())
+            self.write({
+                "participant_index": self.globalState._participant_index,
+                "config_lenght": len(self.globalState.config)
+            })
         else:
             self.set_status(404)
             self.write("N/A")
@@ -99,11 +96,11 @@ class ExperimentHandler(RequestHandler):
     def post(self, action=None, param=None):
         if action == "move_to_next":
             try:
-                self.globalState.moveToNextBlock()
+                self.globalState.move_to_next_block()
                 logger.info(f"Loading block: {self.globalState.block}\n")
                 self.write({"name": self.globalState.block["name"]})
             except TypeError:
-                self.globalState.setBlock(0)
+                self.globalState.set_block(0)
                 logger.info(f"Loading block: {self.globalState.block}\n")
                 self.write({"name": self.globalState.block["name"]})
             except IndexError:
@@ -119,7 +116,7 @@ class ExperimentHandler(RequestHandler):
             if param is not None:
                 if param >= len(self.globalState.config):
                     return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
-                self.globalState.setBlock(int(param))
+                self.globalState.set_block(int(param))
                 self.write(str(param))
         elif action == "shutdown":
             shutdown_server()

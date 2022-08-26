@@ -27,16 +27,11 @@ class TestGlobalState:
         experiment_server._main.process_config_file.assert_called_with(config_file, new_participant_index)
 
     def test_blockBlock(self, state):
-        state.setBlock(9)
+        state.set_block(9)
         assert state._block_id == 9
         assert state.block == "a9"
 
     def test_moveToNextBlock(self, state):
-        state.setBlock(1)
-        state.moveToNextBlock()
+        state.set_block(1)
+        state.move_to_next_block()
         assert state._block_id == 2
-
-    def test_get_global_data(self, state, participant_index):
-        out = state.get_global_data()
-        assert out["participant_index"] == participant_index
-        assert out["config_lenght"] == 10

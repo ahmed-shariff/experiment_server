@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Renaming `step` to `block` and `step_name` to `name`
+- Refactor: `GlobalState`'s camel case to snake case
 
 ## [0.1] - 2022-08-25
 ### Adding

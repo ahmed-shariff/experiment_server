@@ -36,13 +36,13 @@ class Client:
     def get_total_blocks_count(self) -> Tuple[bool, dict]:
         return self._get("itemsCount")
 
-    def move_to_block(self, block: int) -> Tuple[bool, dict]:
-        assert isinstance(block, int), "`block` should be a int"
-        return self._post(f"move/{block}")
+    def move_to_block(self, block_id: int) -> Tuple[bool, dict]:
+        assert isinstance(block_id, int), "`block` should be a int"
+        return self._post(f"move/{block_id}")
 
-    def change_participant_index(self, block: int) -> Tuple[bool, dict]:
-        assert isinstance(block, int), "`block` should be a int"
-        return self._post(f"change_participant_index/{block}")
+    def change_participant_index(self, participant_index: int) -> Tuple[bool, dict]:
+        assert isinstance(participant_index, int), "`block` should be a int"
+        return self._post(f"change_participant_index/{participant_index}")
 
     def shutdown(self) -> Tuple[bool, dict]:
         return self._post("shutdown")
