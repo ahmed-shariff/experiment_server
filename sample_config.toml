@@ -1,0 +1,39 @@
+[configuration]
+order = [["direct100", "indirect100"], ["direct75", "indirect75"]]
+
+[configuration.variables]
+TRIALS_PER_ITEM = 3
+
+[configuration.options]
+groups = "latin_square"
+within_groups= "randomize"
+
+# Direct conditions
+[[blocks]]
+name = "direct100"
+
+[blocks.config]
+trialsPerItem = "$TRIALS_PER_ITEM"
+param1 = 1
+
+[[blocks]]
+name = "direct75"
+
+[blocks.config]
+trialsPerItem = "$TRIALS_PER_ITEM"
+param1 = 2
+
+# Indirect conditions
+[[blocks]]
+name = "indirect100"
+
+[blocks.config]
+trialsPerItem = "$TRIALS_PER_ITEM"
+param1 = 3
+
+[[blocks]]
+name = "indirect75"
+
+[blocks.config]
+trialsPerItem = "$TRIALS_PER_ITEM"
+param1 = 4

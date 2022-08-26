@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest_mock
 from deepdiff import DeepDiff
 
-from experiment_server._process_config import verify_config, get_sections, process_config_file, resolve_extends
+from experiment_server._process_config import verify_config, get_sections, process_config_file, _process_expconfig, _process_toml, resolve_extends
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
@@ -12,6 +12,9 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
 
 @pytest.mark.parametrize(
     "f, expected",[
+        (Path(__file__).parent / "test_files/working_file.toml", True),
+        (Path(__file__).parent / "test_files/working_file.toml", True),
+        (Path(__file__).parent / "test_files/working_file_6.toml", True),
         (Path(__file__).parent / "test_files/working_file.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_2.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_3.expconfig", True),
@@ -43,6 +46,8 @@ def _test_func(config):
 
 @pytest.mark.parametrize(
     "f, expected",[
+        (Path(__file__).parent / "test_files/working_file.toml", True),
+        (Path(__file__).parent / "test_files/working_file.toml", True),
         (Path(__file__).parent / "test_files/working_file.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_2.expconfig", False),
         (Path(__file__).parent / "test_files/working_file_3.expconfig", False),
@@ -72,12 +77,35 @@ def test_get_sections(f, expected):
         (Path(__file__).parent / "test_files/working_file_4.expconfig", 1),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", 2),
         ])
-def test_process_config(mocker, f, pid):
+def test_process_expconfig(mocker, f, pid):
     import experiment_server._process_config
     spy_get_sections = mocker.spy(experiment_server._process_config, "get_sections")
-    config = process_config_file(f, pid)
+    config = _process_expconfig(f, pid)
     spy_get_sections.assert_called_once_with(f)
     assert len(config) == 10
+    assert config[0]["name"] == "configuration"
+    assert config[-1]["name"] == "rating"
+
+    for c in config:
+        assert "config" in c
+        assert "name" in c
+        assert "name" in c["config"]
+        assert "participant_index" in c["config"]
+        assert c["config"]["participant_index"] == pid
+    
+    for block_id in range(1, 10):
+        keys = set(config[block_id]["config"].keys())
+        assert len(keys.difference(MAIN_CONFIG_KEYS)) == 0
+
+
+@pytest.mark.parametrize(
+    "f, pid, l",[
+        (Path(__file__).parent / "test_files/working_file.toml", 1, 10),
+        (Path(__file__).parent / "test_files/working_file.toml", 2, 10),
+        ])
+def test_process_toml(f, pid, l):
+    config = _process_toml(f, pid)
+    assert len(config) == l
     assert config[0]["name"] == "configuration"
     assert config[-1]["name"] == "rating"
 

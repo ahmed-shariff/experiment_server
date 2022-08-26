@@ -1,11 +1,14 @@
 from pathlib import Path
 from shutil import ExecError
 from typing import Any, Callable, Dict, List, Tuple, Union
+
+from tornado.locale import load_translations
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
-from experiment_server.utils import ExperimentServerConfigurationExcetion, merge_dicts
+from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion, merge_dicts
 from loguru import logger
 from easydict import EasyDict as edict
 import json
+import toml
 
 
 TOP_LEVEL_RESERVED_KEYS = ["name", "config", "extends"]
@@ -45,6 +48,45 @@ def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dic
     if participant_index < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
 
+    if Path(f).suffix == ".expconfig":
+        return _process_expconfig(f, participant_index)
+    elif Path(f).suffix == ".toml":
+        return _process_toml(f, participant_index)
+    else:
+        raise ExperimentServerExcetion("Invalid file type. Expected `.expconfig` or `.toml`")
+
+
+def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, Any]]:
+    loaded_configuration = toml.load(f)
+
+    configurations = loaded_configuration.get("configuration", {})
+    variables = configurations.get("variables", {})
+    blocks = _replace_variables(loaded_configuration["blocks"], variables)
+
+    configurations_groups = configurations.get("groups", ORDERING_BEHAVIOUR.as_is)
+    configurations_within_groups = configurations.get("within_groups", ORDERING_BEHAVIOUR.as_is)
+
+    order = configurations.get("order", [list(range(len(blocks)))])
+
+    blocks = construct_participant_condition(blocks, participant_index, order=order,
+                                             groups=configurations_groups,
+                                             within_groups=configurations_within_groups)
+
+    init_blocks = _replace_variables(loaded_configuration.get("init_blocks", []), variables)
+    final_blocks = _replace_variables(loaded_configuration.get("final_blocks", []), variables)
+
+    blocks = init_blocks + blocks + final_blocks
+    blocks = resolve_extends(blocks)
+
+    for c in blocks:
+        c["config"]["participant_index"] = participant_index
+        c["config"]["name"] = c["name"]
+    
+    logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(blocks)]))
+    return blocks
+
+
+def _process_expconfig(f: Union[str, Path], participant_index: int) -> List[Dict[str, Any]]:
     loaded_configurations = get_sections(f)
     if "template_values" in loaded_configurations:
         template_values = json.loads(loaded_configurations["template_values"])
@@ -56,8 +98,6 @@ def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dic
         order = json.loads(loaded_configurations["order"])
     else:
         order = [list(range(len(loaded_configurations)))]
-
-    # TODO: expand repeat parameter
 
     if "settings" in loaded_configurations:
         settings = edict(json.loads(loaded_configurations["settings"]))
@@ -99,9 +139,12 @@ def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dic
     config = init_configuration + main_configuration + final_configuration
     config = resolve_extends(config)
 
-    for c in config:
-        c["config"]["participant_index"] = participant_index
-        c["config"]["name"] = c["name"]
+    try:
+        for c in config:
+            c["config"]["participant_index"] = participant_index
+            c["config"]["name"] = c["name"]
+    except KeyError:
+        raise ExperimentServerConfigurationExcetion("blocks missing keys (config/name)")
     
     logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(config)]))
     return config
@@ -145,6 +188,34 @@ def _replace_template_values(string, template_values):
     for k, v in template_values.items():
         string = string.replace("{" + k + "}", json.dumps(v))
     return string
+
+
+def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict[str, Any]) -> Union[Dict[str, Any], List[Any]]:
+    if isinstance(config, dict):
+        resolved_config = {}
+        for k, v in config.items():
+            if isinstance(v, str) and v.startswith("$"):
+                try:
+                    resolved_config[k] = variabels[v[1:]]
+                except KeyError:
+                    raise ExperimentServerConfigurationExcetion(f"The variable `{v}` does not exsist in `configuration.variables`")
+            elif isinstance(v, dict):
+                resolved_config[k] = _replace_variables(v, variabels)
+            else:
+                resolved_config[k] = v
+    elif isinstance(config, list):
+        resolved_config = []
+        for v in config:
+            if isinstance(v, str) and v.startswith("$"):
+                try:
+                    resolved_config.append(variabels[v[1:]])
+                except KeyError:
+                    raise ExperimentServerConfigurationExcetion(f"The variable `{v}` does not exsist in `configuration.variables`")
+            elif isinstance(v, dict):
+                resolved_config.append(_replace_variables(v, variabels))
+            else:
+                resolved_config.append(v)
+    return resolved_config
 
 
 def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:
