@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Adding
 - `Experiment` class to allow loading and managing script locally.
+- toml based configurations.
+- `-i/--participant-index` as cli option for `run`
 
 ### Changed
 - Renaming `step` to `block` and `step_name` to `name`

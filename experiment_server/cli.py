@@ -12,11 +12,12 @@ def cli():
 
 @cli.command()
 @click.argument("config-file")
+@click.option("-i", "--participant-index", default=0)
 @click.option("-h", "--host", default='127.0.0.1')
 @click.option("-p", "--port", default='5000')
-def run(config_file, host, port):
+def run(participant_index, config_file, host, port):
     """Launch server with the `config-file` used to setup the configurations"""
-    _main(None, host, port, config_file)
+    _main(participant_index if participant_index > 0 else None, host, port, config_file)
 
 
 @cli.command()
