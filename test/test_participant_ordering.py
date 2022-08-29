@@ -15,7 +15,6 @@ def generate_test_config(size=4):
 
 @pytest.mark.parametrize(
     "order",[
-        [0, 1, 2, 3],
         [[2], [3], 1, [0]],
         [[1], [2], [3], "str"],
         [[1], [[2]], ["str"], [4]],
@@ -36,6 +35,8 @@ def test_order_fail_checks(order):
 
 @pytest.mark.parametrize(
     "order",[
+        ["0", "1", "2", "3"],
+        [0, 1, 2, 3],
         [[0], [1], [2], [3]],
         [["0"], ["1"], ["2"], ["3"]],
         {"1": [[0]], "2":[[1]], "3":[[3]]},
