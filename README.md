@@ -26,7 +26,7 @@ $ poetry add experiment-server
 ## Configuration of an experiment
 The configuration id defined in a [toml](https://toml.io/en/) file. See example `.toml` below for how the configuration can be defined.
 ```toml
-# The `configuration` table contains settings of the study itself
+# The `configuration` table contains settings of the study/experiment itself
 [configuration]
 # The `order` is an array of block names or an array of array of block names.
 order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
@@ -42,7 +42,7 @@ within_groups= "randomize"
 
 # The subtable `variabels` are values that can be used anywhere when defining the blocks.
 # Any variable can be used by appending "$" before the variable name in the blocks. See 
-# below for how exmaple of how the variables can be used
+# below for an exmaple of how variables can be used
 [configuration.variables]
 TRIALS_PER_ITEM = 3
 
@@ -76,7 +76,9 @@ extends = "conditionA"
 param3 = 2
 ```
 
-The above config file would result in the following list of blocks:
+See [toml spec](https://toml.io/en/v1.0.0) for more information on the format of a toml file.
+
+The above config file, after being processed, would result in the following list of blocks for participant number 1:
 ```json
 [
   {
@@ -159,5 +161,7 @@ The server exposes the following REST API:
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
 
-# Wishlist
+# Wishlist (todo list?)
 - Serve multiple participants at the same time.
+- Consistant names between different API endpoints.
+- Improved docs
