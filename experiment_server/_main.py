@@ -115,9 +115,11 @@ class ExperimentHandler(RequestHandler):
             param = self._get_int_from_param(param)
             if param is not None:
                 if param >= len(self.globalState.config):
-                    return "param should be >= 0 and < " + str(len(self.globalState.config)), 404
-                self.globalState.set_block(int(param))
-                self.write(str(param))
+                    self.set_status(404)
+                    self.write("param should be >= 0 and < " + str(len(self.globalState.config)))
+                else:
+                    self.globalState.set_block(int(param))
+                    self.write(str(param))
         elif action == "shutdown":
             shutdown_server()
         elif action == "change_participant_index":
