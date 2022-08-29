@@ -25,7 +25,7 @@ class Client:
         return self._request(end_point, False)    
 
     def move_to_next(self) -> Tuple[bool, dict]:
-        return self._post("move_to_next")
+        return self._post("move-to-next")
 
     def get_config(self) -> Tuple[bool, dict]:
         return self._get("config")
@@ -33,16 +33,16 @@ class Client:
     def server_is_active(self) -> Tuple[bool, dict]:
         return self._get("active")
     
-    def get_total_blocks_count(self) -> Tuple[bool, dict]:
-        return self._get("itemsCount")
+    def get_blocks_count(self) -> Tuple[bool, dict]:
+        return self._get("blocks-count")
 
     def move_to_block(self, block_id: int) -> Tuple[bool, dict]:
         assert isinstance(block_id, int), "`block` should be a int"
-        return self._post(f"move/{block_id}")
+        return self._post(f"move-to-block/{block_id}")
 
     def change_participant_index(self, participant_index: int) -> Tuple[bool, dict]:
         assert isinstance(participant_index, int), "`block` should be a int"
-        return self._post(f"change_participant_index/{participant_index}")
+        return self._post(f"change-participant-index/{participant_index}")
 
     def shutdown(self) -> Tuple[bool, dict]:
         return self._post("shutdown")

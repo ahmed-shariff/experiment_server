@@ -146,16 +146,16 @@ $ experiment-server run sample_config.toml
 A simple web interface can be accessed at `/` or `/index`
 
 The server exposes the following REST API:
-- [GET] `/itemsCount`: The total number of blocks. Returns an integer
-- [GET] `/active`: Test if the server is working. Returns boolean
-- [GET] `/config`: Return the `config` subtable in the configuration file of the current block as a json object. Note that `move_to_next` has to be called atleast once before this can be called.
-- [GET] `/globalData`: Returns a json object, with the following keys: 
+- [GET] `/api/items-count`: The total number of blocks. Returns an integer
+- [GET] `/api/active`: Test if the server is working. Returns boolean
+- [GET] `/api/config`: Return the `config` subtable in the configuration file of the current block as a json object. Note that `move-to-next` has to be called atleast once before this can be called.
+- [GET] `/api/global-data`: Returns a json object, with the following keys: 
   - "participant_index": the participant index
-  - "config_length": same value `/itemsCount`
-- [POST] `/move_to_next`: Sets the current block to the next block in the list of blocks. Returns a json object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
-- [POST] `/move/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
-- [POST] `/shutdown`: Shutdown the server.
-- [POST] `/change_participant_index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
+  - "config_length": same value `/items-count`
+- [POST] `/api/move-to-next`: Sets the current block to the next block in the list of blocks. Returns a json object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
+- [POST] `/api/move-to-block/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
+- [POST] `/api/shutdown`: Shutdown the server.
+- [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
 
 
 ## Loading experiment through API
@@ -163,5 +163,5 @@ A configuration can be loaded and managed by importing `experiment_server.Experi
 
 # Wishlist (todo list?)
 - Serve multiple participants at the same time.
-- Consistant names between different API endpoints.
 - Improved docs
+  - Add the option of using dict values in order

@@ -71,7 +71,7 @@ class ExperimentHandler(RequestHandler):
         self.globalState = globalState
 
     def get(self, action=None):
-        if action == "itemsCount":
+        if action == "blocks-count":
             self.write(json.dumps(len(self.globalState.config)))
         elif action == "active":
             self.write(json.dumps(True))
@@ -83,8 +83,8 @@ class ExperimentHandler(RequestHandler):
             except TypeError as e:
                 logger.error(e)
                 self.set_status(406)
-                self.write("A call to `/move_to_next` must be made before calling `/config`")
-        elif action == "globalData":
+                self.write("A call to `/move-to-next` must be made before calling `/config`")
+        elif action == "global-data":
             self.write({
                 "participant_index": self.globalState._participant_index,
                 "config_length": len(self.globalState.config)
@@ -94,7 +94,7 @@ class ExperimentHandler(RequestHandler):
             self.write("N/A")
 
     def post(self, action=None, param=None):
-        if action == "move_to_next":
+        if action == "move-to-next":
             try:
                 self.globalState.move_to_next_block()
                 logger.info(f"Loading block: {self.globalState.block}\n")
@@ -108,7 +108,7 @@ class ExperimentHandler(RequestHandler):
                 logger.info("Loading block: {'name': 'end'}\n")
                 self.write({"name": "end"})
             # return  {"name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
-        elif action == "move":
+        elif action == "move-to-block":
             if param is None:
                 self.set_status(404)
                 self.write("Need paramter")
@@ -122,7 +122,7 @@ class ExperimentHandler(RequestHandler):
                     self.write(str(param))
         elif action == "shutdown":
             shutdown_server()
-        elif action == "change_participant_index":
+        elif action == "change-participant-index":
             new_participant_index = self._get_int_from_param(param)
             if new_participant_index is not None:
                 try:

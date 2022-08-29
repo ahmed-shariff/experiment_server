@@ -20,7 +20,7 @@ class Experiment:
         else:
             return self.global_state.block["config"]
 
-    def get_total_blocks_count(self) -> int:
+    def get_blocks_count(self) -> int:
         """Return the total number of blocks."""
         return len(self.global_state.config)
 

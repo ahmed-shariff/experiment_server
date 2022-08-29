@@ -16,19 +16,19 @@
          function errorDisplay (error) {
              $('#output').text(error['responseText']);
          }
-	 
+
 	 $(document).ready(function() {
 	     $("#btnSwitch").click(function(){
-		 $.post("/api/move/" + $('#txtSwitch').val(), displayText).fail(errorDisplay);;
+		 $.post("/api/move-to-block/" + $('#txtSwitch').val(), displayText).fail(errorDisplay);;
 	     });
 	     $("#btnConfig").click(function(){
 		 $.get("/api/config" , displayText).fail(errorDisplay);
 	     });
 	     $("#btnMoveToNext").click(function(){
-		 $.post("/api/move_to_next" , displayText).fail(errorDisplay);
+		 $.post("/api/move-to-next" , displayText).fail(errorDisplay);
 	     });
 	     $("#btnChangeParticipantIdx").click(function(){
-		 $.post("/api/change_participant_index/" + $('#txtChangeParticipantIdx').val(), displayText).fail(errorDisplay);
+		 $.post("/api/change-participant-index/" + $('#txtChangeParticipantIdx').val(), displayText).fail(errorDisplay);
 	     });
 	 });
 	</script>

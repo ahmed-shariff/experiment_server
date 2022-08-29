@@ -52,7 +52,7 @@ class TestClient:
             assert out == c["config"], f"block {idx}"
             
     def test_get_total_block_count(self, client, exp_config):
-        ret, out = client.get_total_blocks_count()
+        ret, out = client.get_blocks_count()
         assert ret
         assert out == len(exp_config)
 
