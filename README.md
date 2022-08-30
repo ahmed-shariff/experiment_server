@@ -130,18 +130,21 @@ The above config file, after being processed, would result in the following list
 ]
 ```
 
-## Loading experiment through local server
+## Verify config
 A config file can be validated by running:
 ```sh
 $ experiment-server verify-config-file sample_config.toml
 ```
 This will show how the expanded config looks like for the first 5 participant.
 
+## Loading experiment through server
 After installation, the server can used as:
 
 ```sh
 $ experiment-server run sample_config.toml
 ```
+
+See more options with `--help`
 
 A simple web interface can be accessed at `/` or `/index`
 
@@ -152,16 +155,28 @@ The server exposes the following REST API:
 - [GET] `/api/global-data`: Returns a json object, with the following keys: 
   - "participant_index": the participant index
   - "config_length": same value `/items-count`
+- [GET] `/api/all-configs`: Return all `config`s of all the blocks as a list, ordered based on the `order` for the configured participant.
 - [POST] `/api/move-to-next`: Sets the current block to the next block in the list of blocks. Returns a json object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
 - [POST] `/api/move-to-block/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
 - [POST] `/api/shutdown`: Shutdown the server.
 - [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
 
+For a python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
+
+## Generate expanded config files
+A config file (i.e. `.toml` file), can be expanded to json files with the following command
+
+```sh
+$ experiment-server generate-config-json sample_config.toml --participant-range 5
+```
+
+The above will generate the expanded configs for participant indices 1 to 5 as json files. See more options with `--help`
 
 # Wishlist (todo list?)
 - Serve multiple participants at the same time.
 - Improved docs
   - Add the option of using dict values in order
+  - Improve cli help docs
