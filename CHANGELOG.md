@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Adding
 - Generate json files based on config file from cli
 - Get complete config (in server, client and experiment)
+- Watchdog to reload config when it's modified
 
 ### Changed
 - Fix - Allow flat list for order

@@ -37,6 +37,7 @@ tornado = "^6.2"
 asyncio = "^3.4.3"
 Jinja2 = "^3.1.2"
 toml = "^0.10.2"
+watchdog = "^2.1.9"
 
 
 [tool.poetry.scripts]

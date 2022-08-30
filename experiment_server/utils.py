@@ -1,3 +1,27 @@
+from pathlib import Path
+from typing import Callable, Union
+from loguru import logger
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
+
+
+class FileModifiedWatcher(PatternMatchingEventHandler):
+    def __init__(self, config_file: Union[Path, str], callback:Callable) -> None:
+        super().__init__(patterns=[config_file])
+        self._observer = Observer()
+        self._observer.schedule(self, path=Path(config_file).parent, recursive=False)
+        self._observer.start()
+        self._callback = callback
+
+    def on_modified(self, event):
+        logger.info(f"File modified: {event.src_path}")
+        self._callback()
+
+    def end_watch(self):
+        self._observer.stop()
+        self._observer.join()
+
+
 class ExperimentServerExcetion(Exception):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(args, kwargs)

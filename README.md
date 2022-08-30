@@ -161,7 +161,7 @@ The server exposes the following REST API:
 - [POST] `/api/shutdown`: Shutdown the server.
 - [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
 
-For a python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
+For a python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object. Note that the server will reload the config and reset the state to the initial state when the config file loaded is modified.
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.

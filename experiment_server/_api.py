@@ -5,13 +5,18 @@ from experiment_server._process_config import process_config_file
 from pathlib import Path
 import json
 
-from experiment_server.utils import ExperimentServerExcetion
+from experiment_server.utils import ExperimentServerExcetion, FileModifiedWatcher
 
 
 class GlobalState:
     def __init__(self, config_file, participant_index):
         self.config_file = config_file
         self.change_participant_index(participant_index)
+        self.watchdog = FileModifiedWatcher(config_file, self._config_file_modified_callback)
+
+    def _config_file_modified_callback(self):
+        logger.info("Reloading config")
+        self.change_participant_index(self._participant_index)
 
     def change_participant_index(self, participant_index):
         self._participant_index = participant_index

@@ -104,6 +104,7 @@ class ExperimentHandler(RequestHandler):
                     self.globalState.set_block(int(param))
                     self.write(str(param))
         elif action == "shutdown":
+            self.globalState.watchdog.end_watch()
             shutdown_server()
         elif action == "change-participant-index":
             new_participant_index = self._get_int_from_param(param)
