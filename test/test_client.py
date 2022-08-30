@@ -56,6 +56,13 @@ class TestClient:
         assert ret
         assert out == len(exp_config)
 
+    def test_get_all_configs(self, client, exp_config):
+        ret, out = client.get_all_configs()
+        assert ret
+        assert len(out) == len(exp_config)
+        for c1, c2 in zip(exp_config, out):
+            assert c1["config"]["name"] == c2["name"]
+
     def test_move_to_block_correct(self, client, exp_config):
         ret, out = client.move_to_block(3)
         assert ret

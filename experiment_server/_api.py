@@ -1,5 +1,11 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, List, Union
+
+from loguru import logger
 from experiment_server._process_config import process_config_file
+from pathlib import Path
+import json
+
+from experiment_server.utils import ExperimentServerExcetion
 
 
 class GlobalState:
@@ -43,6 +49,10 @@ class Experiment:
         """Return the total number of blocks."""
         return len(self.global_state.config)
 
+    def get_all_configs(self) -> List[dict]:
+        """Return all configs in order for the configured participant index."""
+        return [c["config"] for c in self.global_state.config]
+
     def move_to_block(self, block_id: int) -> None:
         """Move the pointer to the current block to the block in index 
         `block_id` in the list of blocks"""
@@ -53,3 +63,21 @@ class Experiment:
         """Change the index of the participant to"""
         assert isinstance(participant_index, int), "`block` should be a int"
         return self.global_state.change_participant_index(participant_index)
+
+
+def write_to_file(config_file: Union[str, Path], participant_indices:Iterable[int], out_file_location: Union[str, Path, None] = None) -> None:
+    if out_file_location is None:
+        out_file_location = Path(config_file).parent
+    elif not Path(out_file_location).is_dir():
+        raise ExperimentServerExcetion(f"`out_file_location` should be a directory. Got {out_file_location}")
+
+    out_files = []
+    for participant_index in participant_indices:
+        config = process_config_file(config_file, participant_index)
+        out_file = Path(out_file_location) / f"{Path(config_file).stem}-participant_{participant_index}.json"
+        out_files.append(out_file)
+
+        with open(out_file, "w") as f:
+            json.dump([c["config"] for c in config], f, indent=2)
+
+    logger.info("Generated files: \n" + "\n".join([str(f) for f in out_files]))

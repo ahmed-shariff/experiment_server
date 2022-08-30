@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Adding
+- Generate json files based on config file from cli
+- Get complete config (in server, client and experiment)
+
 ### Changed
 - Fix - Allow flat list for order
 - Fix - Inconsistent naming

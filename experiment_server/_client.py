@@ -36,6 +36,9 @@ class Client:
     def get_blocks_count(self) -> Tuple[bool, dict]:
         return self._get("blocks-count")
 
+    def get_all_configs(self) -> Tuple[bool, dict]:
+        return self._get("all-configs")
+
     def move_to_block(self, block_id: int) -> Tuple[bool, dict]:
         assert isinstance(block_id, int), "`block` should be a int"
         return self._post(f"move-to-block/{block_id}")

@@ -70,6 +70,8 @@ class ExperimentHandler(RequestHandler):
                 "participant_index": self.globalState._participant_index,
                 "config_length": len(self.globalState.config)
             })
+        elif action == "all-configs":
+            self.write(json.dumps([c["config"] for c in self.globalState.config]))
         else:
             self.set_status(404)
             self.write("N/A")
