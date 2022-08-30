@@ -21,7 +21,7 @@ class __InterceptHandler(logging.Handler):
 
 logging.basicConfig(handlers=[__InterceptHandler()], level=0)
 
-from experiment_server._main import server_process
+from experiment_server._server import server_process
 from experiment_server._client import Client
 from experiment_server._api import Experiment
 

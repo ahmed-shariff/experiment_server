@@ -10,7 +10,7 @@ import tornado.ioloop
 import asyncio
 import json
 
-from experiment_server._process_config import process_config_file
+from experiment_server._api import GlobalState
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
@@ -38,32 +38,13 @@ async def _init_api(participant_index=None, host="127.0.0.1", port="5000", confi
     await asyncio.Event().wait()
 
 
-def _main(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+def _server(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
     asyncio.run(_init_api(participant_index, host, port, config_file))
 
 
 def server_process(config_file, participant_index=None, host="127.0.0.1", port="5000"):
-    p = Process(target=_main, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
+    p = Process(target=_server, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
     return p
-
-
-class GlobalState:
-    def __init__(self, config_file, participant_index):
-        self.config_file = config_file
-        self.change_participant_index(participant_index)
-
-    def change_participant_index(self, participant_index):
-        self._participant_index = participant_index
-        self._block_id = None
-        self.block = None
-        self.config = process_config_file(self.config_file, participant_index)
-
-    def set_block(self, block_id):
-        self._block_id = block_id
-        self.block = self.config[block_id]
-
-    def move_to_next_block(self):
-        self.set_block(self._block_id + 1)
 
 
 class ExperimentHandler(RequestHandler):

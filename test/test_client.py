@@ -2,7 +2,7 @@ import time
 import requests
 import pytest
 from experiment_server import Client
-from experiment_server._main import server_process
+from experiment_server._server import server_process
 from experiment_server._process_config import process_config_file
 from .fixtures import config_file, participant_index
 

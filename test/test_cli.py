@@ -14,14 +14,14 @@ def runner():
 
 def mock_function(mocker, mock_function):
     mocker.patch(mock_function)
-    # Before the _main method gets imported need to mock them
+    # Before the _server method gets imported need to mock them
     importlib.reload(experiment_server.cli)
 
 
 def test_run(runner, mocker):
-    mock_function(mocker, "experiment_server._main._main")
+    mock_function(mocker, "experiment_server._server._server")
     result = runner.invoke(experiment_server.cli.cli, ["run", "file"])
-    experiment_server._main._main.assert_called_with(None, '127.0.0.1', '5000', "file")
+    experiment_server._server._server.assert_called_with(None, '127.0.0.1', '5000', "file")
 
 
 def test_verify_config(runner, mocker):

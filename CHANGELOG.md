@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Fix - Allow flat list for order
 - Fix - Inconsistent naming
+- Refactor - rename `_main` to `_server`
+- Refactor - moved `GlobalState` to `_api`
 
 ## [0.2] - 2022-08-26
 ### Adding
