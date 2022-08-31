@@ -29,7 +29,10 @@ class GlobalState:
         self.block = self.config[block_id]
 
     def move_to_next_block(self):
-        self.set_block(self._block_id + 1)
+        if self._block_id is not None:
+            self.set_block(self._block_id + 1)
+        else:
+            self.set_block(0)
 
 
 class Experiment:
@@ -37,15 +40,16 @@ class Experiment:
     def __init__(self, config_file:str, participant_index:int) -> None:
         self.global_state = GlobalState(config_file, participant_index)
 
-    def move_to_next(self) -> None:
+    def move_to_next(self) -> str:
         """Moves the pointer to the current block to the next block."""
-        return self.global_state.move_to_next_block()
+        self.global_state.move_to_next_block()
+        return self.global_state.block["name"]
 
     def get_config(self) -> Union[Dict[str, Any], None]:
         """Return the config of the current block. 
         If the experiment has not started (`move_to_next` has not
         been called atleast once), this will return `None`."""
-        if self.global_state is None:
+        if self.global_state.block is None:
             return None
         else:
             return self.global_state.block["config"]
@@ -58,11 +62,12 @@ class Experiment:
         """Return all configs in order for the configured participant index."""
         return [c["config"] for c in self.global_state.config]
 
-    def move_to_block(self, block_id: int) -> None:
+    def move_to_block(self, block_id: int) -> Union[str, None]:
         """Move the pointer to the current block to the block in index 
         `block_id` in the list of blocks"""
         assert isinstance(block_id, int), "`block` should be an int"
-        return self.global_state.set_block(block_id)
+        self.global_state.set_block(block_id)
+        return self.global_state.block["name"]
 
     def change_participant_index(self, participant_index: int) -> None:
         """Change the index of the participant to"""
