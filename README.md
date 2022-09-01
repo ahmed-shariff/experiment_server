@@ -1,6 +1,6 @@
 # Overview
 
-Server for experiments to get configurations from
+This is a python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios. I've used with python, js and [Unity projects](https://github.com/ahmed-shariff/experiment_server/wiki/Using-with-Unity). See [wiki](https://github.com/ahmed-shariff/experiment_server/wiki) for examples.
 
 # Setup
 
@@ -30,13 +30,15 @@ The configuration id defined in a [toml](https://toml.io/en/) file. See example 
 [configuration]
 # The `order` is an array of block names or an array of array of block names.
 order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
-# The `groups` and `within_groups` keys allows you to define how the conditions specified
-# in `order` will be managed. `groups` would dictate how the top level array of `order`
-# will be handled. `within_groups` would dictate how the conditions in the nested arrays
-# (if specified) would be managed. These keys can have one of the following values.
+# The `groups` and `within_groups` are optional keys that allows you to define how the
+# conditions specified in `order` will be managed. `groups` would dictate how the top 
+# level array of `order` will be handled. `within_groups` would dictate how the conditions
+# in the nested arrays (if specified) would be managed. These keys can have one 
+# of the following values.
 # - "latin_square": Apply latin square to balance the values.
 # - "randomize": For each participant randomize the order of the values in the array.
 # - "as_is": Use the order of the values as specified.
+# When not specified, the default value is "as_is" for both keys.
 groups = "latin_square"
 within_groups= "randomize"
 
@@ -174,6 +176,9 @@ $ experiment-server generate-config-json sample_config.toml --participant-range 
 ```
 
 The above will generate the expanded configs for participant indices 1 to 5 as json files. See more options with `--help`
+
+
+For more on the `experiemnt-server` and how it can be used see the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki)
 
 # Wishlist (todo list?)
 - Serve multiple participants at the same time.
