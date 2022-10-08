@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 import pytest_mock
 from deepdiff import DeepDiff
+import random
 
 from experiment_server._process_config import verify_config, get_sections, process_config_file, _process_expconfig, _process_toml, resolve_extends
 from experiment_server.utils import ExperimentServerConfigurationExcetion
@@ -157,3 +158,15 @@ def test_resolve_extends(config, expected):
 def test_resolve_extends_exceptions(config, expected):
     with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
         resolve_extends(config)
+
+
+@pytest.mark.parametrize(
+    "f, seed, pid",[
+        (Path(__file__).parent / "test_files/working_file.toml", 0, 1),
+        (Path(__file__).parent / "test_files/working_file_6.toml", 100, 1),
+        (Path(__file__).parent / "test_files/working_file_6.toml", 100, 2),
+        ])
+def test_random_seed(mocker, f, seed, pid):
+    spy_seed = mocker.spy(random, "seed")
+    _ = _process_toml(f, pid)
+    spy_seed.assert_called_once_with(seed + pid)

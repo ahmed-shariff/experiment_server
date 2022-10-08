@@ -13,6 +13,9 @@ order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
 # When not specified, the default value is "as_is" for both keys.
 groups = "latin_square"
 within_groups= "randomize"
+# The random seed to use for any randomization. Default seed is 0. The seed will be
+# the value of random_seed + participant_index
+random_seed = 0
 
 # The subtable `variabels` are values that can be used anywhere when defining the blocks.
 # Any variable can be used by appending "$" before the variable name in the blocks. See 

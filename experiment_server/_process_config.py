@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 from shutil import ExecError
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -61,11 +62,14 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
 
     configurations = loaded_configuration.get("configuration", {})
     variables = configurations.get("variables", {})
-    blocks = _replace_variables(loaded_configuration["blocks"], variables)
 
     configurations_groups = configurations.get("groups", ORDERING_BEHAVIOUR.as_is)
     configurations_within_groups = configurations.get("within_groups", ORDERING_BEHAVIOUR.as_is)
 
+    random_seed = configurations.get("random_seed", 0)
+    random.seed(random_seed + participant_index)
+
+    blocks = _replace_variables(loaded_configuration["blocks"], variables)
     order = configurations.get("order", [list(range(len(blocks)))])
 
     blocks = construct_participant_condition(blocks, participant_index, order=order,

@@ -14,3 +14,4 @@ config = {p3 = 5}
 
 [configuration]
 order = [["1", "2", "3"]]
+random_seed = 100
