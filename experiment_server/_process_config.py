@@ -82,6 +82,7 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
     blocks = init_blocks + blocks + final_blocks
     # Using merge_dicts to ensure the values are references
     blocks = resolve_extends([merge_dicts(b, {}) for b in blocks])
+    blocks = resolve_function_calls(blocks)
 
     for c in blocks:
         c["config"]["participant_index"] = participant_index
@@ -195,6 +196,7 @@ def _replace_template_values(string, template_values):
     return string
 
 
+# TODO: For "choices" the values can be duplicated. Fix this?
 def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict[str, Any]) -> Union[Dict[str, Any], List[Any]]:
     if isinstance(config, dict):
         resolved_config = {}
@@ -221,6 +223,38 @@ def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict
             else:
                 resolved_config.append(v)
     return resolved_config
+
+
+def resolve_function_calls(configs:list) -> list:
+    return [_resolve_function_calls(c) for c in configs]
+
+
+def _resolve_function_calls(config: dict):
+    resolved_config = {}
+    for k, v in config.items():
+        if isinstance(v, dict):
+            if len(v) == 2 and "function_name" in v and "args" in v:
+                resolved_config[k] = _resolve_function(**v)
+            else:
+                resolved_config[k] = _resolve_function_calls(v)
+        else:
+            resolved_config[k] = v
+    return resolved_config
+
+
+def _resolve_function(function_name:str, args: Union[List,Dict]) -> Any:
+    largs, kwargs = [], {}
+    if isinstance(args, list):
+        largs = args
+    elif isinstance(args, dict):
+        kwargs = args
+    else:
+        raise ExperimentServerConfigurationExcetion(f"Resolving function {function_name} failed; `args` should be a list or a dict. Got {args}")
+
+    if function_name == "choices":
+        return random.choices(*largs, **kwargs)
+    else:
+        raise ExperimentServerConfigurationExcetion(f"Unknown function {function_name}")
 
 
 def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:

@@ -16,6 +16,7 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
         (Path(__file__).parent / "test_files/working_file.toml", True),
         (Path(__file__).parent / "test_files/working_file_6.toml", True),
         (Path(__file__).parent / "test_files/working_file_7.toml", True),
+        (Path(__file__).parent / "test_files/working_file_8.toml", True),
         (Path(__file__).parent / "test_files/working_file.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_2.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_3.expconfig", True),
