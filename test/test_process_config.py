@@ -210,14 +210,10 @@ def test_functions_choices_failed_calls(args, params, expected):
 
 
 def test__resolve_function_unique_calls():
-    caller_1 = {"function_name": "choices", "args": [list(range(5))]}
-    caller_2 = {"function_name": "choices", "args": {"population": list(range(5))}}
+    callers = [{"function_name": "choices", "args": [list(range(5))]},
+               {"function_name": "choices", "args": {"population": list(range(5))}},
+               {"function_name": "choices", "args": [list(range(5))], "id": 1}]
     function_calls = {}
-    _resolve_function(**caller_1, function_calls=function_calls)
-    _resolve_function(**caller_1, function_calls=function_calls)
-    _resolve_function(**caller_1, function_calls=function_calls)
-    _resolve_function(**caller_2, function_calls=function_calls)
-    _resolve_function(**caller_2, function_calls=function_calls)
-    _resolve_function(**caller_2, function_calls=function_calls)
+    [_resolve_function(**caller, function_calls=function_calls) for caller in callers for i in range(3)]
 
-    assert len(function_calls) == 2
+    assert len(function_calls) == len(callers)

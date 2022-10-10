@@ -235,7 +235,7 @@ def _resolve_function_calls(config: dict, function_calls: dict):
     resolved_config = {}
     for k, v in config.items():
         if isinstance(v, dict):
-            if len(v) in (2, 3) and all([_k in ["function_name", "args", "params"] for _k in v.keys()]):
+            if len(v) in (2, 3, 4) and all([_k in ["function_name", "args", "params", "id"] for _k in v.keys()]):
                 resolved_config[k] = _resolve_function(**v, function_calls=function_calls)
             else:
                 resolved_config[k] = _resolve_function_calls(v, function_calls)
@@ -256,9 +256,13 @@ def _unpack_args(args) -> Tuple[list, dict]:
     return largs, kwargs
 
 
-def _resolve_function(function_name:str, args: Union[List,Dict], function_calls: dict, params: Any=None) -> Any:
+def _resolve_function(function_name:str, args: Union[List,Dict], function_calls: dict, params: Any=None, id: Any=None) -> Any:
     """Call the function and return the value."""
-    call_signature = hash(json.dumps({"function_name": function_name, "args": args, "params": params}, sort_keys=True))
+    if id is None:
+        call_signature = hash(json.dumps({"function_name": function_name, "args": args, "params": params}, sort_keys=True))
+    else:
+        call_signature = id
+
     if function_name == "choices":
         try:
             function_call_group = function_calls[call_signature]
