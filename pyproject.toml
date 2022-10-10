@@ -1,19 +1,18 @@
 [tool.poetry]
 
 name = "experiment_server"
-version = "0.2.1"
+version = "0.2.2"
 description = "Server for experiments to get configuarations from"
 
-license = ""
+license = "MIT"
 
 authors = ["Ahmed Shariff <shariff.mfa@outlook.com>"]
 
 readme = "README.md"
 
-keywords = [
-]
+keywords = [ "experiment", "study-design" ]
+
 classifiers = [
-    # TODO: update this list to match your application: https://pypi.org/pypi?%3Aaction=list_classifiers
     "Development Status :: 1 - Planning",
     "Natural Language :: English",
     "Operating System :: OS Independent",
@@ -21,8 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
 ]
-include = ["experiment_server/static/initconfig.html",
-	   "experiment_server/static/base_config.expconfig"]
+include = ["experiment_server/static/initconfig.html"]
 
 [tool.poetry.dependencies]
 

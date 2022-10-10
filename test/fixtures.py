@@ -13,7 +13,7 @@ def caplog(caplog: LogCaptureFixture):
 
 @pytest.fixture(scope="session")
 def config_file():
-    return Path(__file__).parent / "test_files/working_file.expconfig"
+    return Path(__file__).parent / "test_files/working_file.toml"
 
 
 @pytest.fixture(scope="session")

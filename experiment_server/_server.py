@@ -14,7 +14,7 @@ from experiment_server._api import GlobalState
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
-def _create_app(participant_index=None, config_file="static/base_config.expconfig"):
+def _create_app(participant_index, config_file):
     if participant_index is None:
         participant_index = int(input("participant id: "))
         
@@ -32,14 +32,14 @@ def _create_app(participant_index=None, config_file="static/base_config.expconfi
     return application
 
 
-async def _init_api(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
+async def _init_api(config_file, participant_index, host="127.0.0.1", port=5000):
     application = _create_app(participant_index, config_file)
     application.listen(port=port, address=host)
     await asyncio.Event().wait()
 
 
-def _server(participant_index=None, host="127.0.0.1", port="5000", config_file="static/base_config.expconfig"):
-    asyncio.run(_init_api(participant_index, host, port, config_file))
+def _server(config_file, participant_index, host="127.0.0.1", port=5000):
+    asyncio.run(_init_api(config_file, participant_index, host, port))
 
 
 def server_process(config_file, participant_index=None, host="127.0.0.1", port="5000"):
