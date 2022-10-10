@@ -21,14 +21,14 @@ def cli():
 @click.option("-p", "--port", default='5000')
 def run(participant_index, config_file, host, port):
     """Launch server with the `config-file` used to setup the configurations"""
-    _server(participant_index if participant_index > 0 else None, host, port, config_file)
+    _server(participant_index=participant_index if participant_index > 0 else None, host=host, port=port, config_file=config_file)
 
 
 @cli.command()
 @click.argument("config-file", type=click.Path())
 def verify_config_file(config_file):
     """Verify if the config-file provided is valid"""
-    verify_config(config_file)
+    verify_config(f=config_file)
 
 
 @cli.command()
@@ -46,4 +46,4 @@ def generate_config_json(config_file, participant_index, participant_range, out_
         logger.error("Both `participant-index` and `participant-range` provided. Ignoring `participant-index`.")
 
     with logger.catch(ExperimentServerExcetion, reraise=False):
-        write_to_file(config_file, range(1, participant_range + 1) if participant_range is not None else [participant_index, ], out_file_location)
+        write_to_file(config_file=config_file, participant_indices=range(1, participant_range + 1) if participant_range is not None else [participant_index, ], out_file_location=out_file_location)
