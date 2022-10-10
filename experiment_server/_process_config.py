@@ -196,7 +196,6 @@ def _replace_template_values(string, template_values):
     return string
 
 
-# TODO: For "choices" the values can be duplicated. Fix this?
 def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict[str, Any]) -> Union[Dict[str, Any], List[Any]]:
     if isinstance(config, dict):
         resolved_config = {}
@@ -226,35 +225,91 @@ def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict
 
 
 def resolve_function_calls(configs:list) -> list:
-    return [_resolve_function_calls(c) for c in configs]
+    """Checks all function calls and replace the values with the result of the function calls."""
+    function_calls = {}
+    return [_resolve_function_calls(c, function_calls) for c in configs]
 
 
-def _resolve_function_calls(config: dict):
+def _resolve_function_calls(config: dict, function_calls: dict):
+    """Recursive function to go traverse through tree and resolve functions."""
     resolved_config = {}
     for k, v in config.items():
         if isinstance(v, dict):
-            if len(v) == 2 and "function_name" in v and "args" in v:
-                resolved_config[k] = _resolve_function(**v)
+            if len(v) in (2, 3) and all([_k in ["function_name", "args", "params"] for _k in v.keys()]):
+                resolved_config[k] = _resolve_function(**v, function_calls=function_calls)
             else:
-                resolved_config[k] = _resolve_function_calls(v)
+                resolved_config[k] = _resolve_function_calls(v, function_calls)
         else:
             resolved_config[k] = v
     return resolved_config
 
 
-def _resolve_function(function_name:str, args: Union[List,Dict]) -> Any:
+def _unpack_args(args) -> Tuple[list, dict]:
+    """Convert args into list or dict to allow unpacking."""
     largs, kwargs = [], {}
     if isinstance(args, list):
         largs = args
     elif isinstance(args, dict):
         kwargs = args
     else:
-        raise ExperimentServerConfigurationExcetion(f"Resolving function {function_name} failed; `args` should be a list or a dict. Got {args}")
+        raise ExperimentServerConfigurationExcetion(f"`args` should be a list or a dict. Got {args}")
+    return largs, kwargs
 
+
+def _resolve_function(function_name:str, args: Union[List,Dict], function_calls: dict, params: Any=None) -> Any:
+    """Call the function and return the value."""
+    call_signature = hash(json.dumps({"function_name": function_name, "args": args, "params": params}, sort_keys=True))
     if function_name == "choices":
-        return random.choices(*largs, **kwargs)
+        try:
+            function_call_group = function_calls[call_signature]
+        except KeyError:
+            function_call_group = function_calls[call_signature] = ChoicesFunction(args, params)
+        return function_call_group(args, params)
     else:
         raise ExperimentServerConfigurationExcetion(f"Unknown function {function_name}")
+
+
+class ChoicesFunction:
+    """Wrapper for random.choices function call.
+    `args` will be passed to `random.choices`.
+    If `params` has `unique` whose value is True, will ensure no duplicate values seen in any of the choices call."""
+    def __init__(self, args, params) -> None:
+        self.args = args
+        self.largs, self.kwargs = _unpack_args(args)
+        self.unique = False
+        self.params = params
+        if params is not None:
+            if not isinstance(params, dict):
+                raise ExperimentServerConfigurationExcetion(f"`params` for `choices` should be a dict.")
+            if len(params) not in (0, 1):
+                raise ExperimentServerConfigurationExcetion(f"Function `choices` expected 0 or 1 keys in params, got {len(params)}")
+            if len(params) == 1 and "unique" not in params:
+                raise ExperimentServerConfigurationExcetion(f"Unexpected key in `params` of `choices`. Allowed keys: [`unique`]")
+            if "unique" in params:
+                self.unique = params.get("unique")
+        self.previous_choices = []
+
+    def __call__(self, args, params) -> Any:
+        # Sanity check, making sure nothing changes between calls
+        assert self.args == args
+        assert params == self.params
+        choice = random.choices(*self.largs, **self.kwargs)
+        if self.unique:
+            # Making sure there are only unique values
+            i = 0
+            while any([c in self.previous_choices for c in choice]) or len(set(choice)) != len(choice):
+                if i > 20:
+                    # KLUDGE: Chouldn't find unique values?
+                    break
+                i += 1
+                choice = random.choices(*self.largs, **self.kwargs)
+
+            self.previous_choices.extend(choice)
+
+            # Check if it is possible to get unique values.
+            if len(self.previous_choices) != len(set(self.previous_choices)):
+                raise ExperimentServerConfigurationExcetion("There are more calls to `choices` than number of elements in `args`")
+        return choice
 
 
 def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:

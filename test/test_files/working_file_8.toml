@@ -2,7 +2,7 @@
 name = "1"
 
 [blocks.config]
-p1 = { function_name = "choices", args = { population = [1 , 2 , 3 , 4], k = 2 } }
+p1 = { function_name = "choices", args = [[1 , 2 , 3 , 4]], params = { unique = true } }
 p2 = { foo = "test", bar = { function_name = "choices", args = { population = ["w", "x", "y", "z"], k = 1 } } } 
 p3 = "$test"
 

@@ -4,7 +4,7 @@ import pytest_mock
 from deepdiff import DeepDiff
 import random
 
-from experiment_server._process_config import verify_config, get_sections, process_config_file, _process_expconfig, _process_toml, resolve_extends
+from experiment_server._process_config import verify_config, get_sections, process_config_file, _process_expconfig, _process_toml, resolve_extends, ChoicesFunction, _resolve_function
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
@@ -171,3 +171,53 @@ def test_random_seed(mocker, f, seed, pid):
     spy_seed = mocker.spy(random, "seed")
     _ = _process_toml(f, pid)
     spy_seed.assert_called_once_with(seed + pid)
+
+
+@pytest.mark.parametrize(
+    "params, expected", [
+        ("wrong", "should be a dict."),
+        ({"a": 1, "b": 2}, "Function .* expected 0 or 1 keys in params, got [0-9]+"),
+        ({"a": 1}, f"Unexpected key in .*. Allowed keys: .*"),
+    ])
+def test_functions_choices_fail_paramters(params, expected):
+    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+        ChoicesFunction([1, 2, 3], params=params)
+
+
+@pytest.mark.parametrize(
+    "args, params, test_unique", [
+        ([list(range(10))], {"unique": True}, True),
+        ({"population": list(range(10)), "k": 2}, {"unique": True}, True),
+        ([list(range(10))], {"unique": False}, False),
+        ([list(range(10))], None, False),
+    ])
+def test_functions_choices_pass_calls(args, params, test_unique):
+    choices_callable = ChoicesFunction(args, params)
+    out = [c for _ in range(5) for c in choices_callable(args, params)]
+    if test_unique:
+        assert len(set(out)) == len(out)
+
+
+@pytest.mark.parametrize(
+    "args, params, expected", [
+        ([list(range(4))], {"unique": True}, "There are more calls to .choices. than number of elements in .args."),
+        ({"population": list(range(4)), "k": 2}, {"unique": True}, "There are more calls to .choices. than number of elements in .args."),
+    ])
+def test_functions_choices_failed_calls(args, params, expected):
+    choices_callable = ChoicesFunction(args, params)
+    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+        [c for _ in range(5) for c in choices_callable(args, params)]
+
+
+def test__resolve_function_unique_calls():
+    caller_1 = {"function_name": "choices", "args": [list(range(5))]}
+    caller_2 = {"function_name": "choices", "args": {"population": list(range(5))}}
+    function_calls = {}
+    _resolve_function(**caller_1, function_calls=function_calls)
+    _resolve_function(**caller_1, function_calls=function_calls)
+    _resolve_function(**caller_1, function_calls=function_calls)
+    _resolve_function(**caller_2, function_calls=function_calls)
+    _resolve_function(**caller_2, function_calls=function_calls)
+    _resolve_function(**caller_2, function_calls=function_calls)
+
+    assert len(function_calls) == 2
