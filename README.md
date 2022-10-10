@@ -65,8 +65,12 @@ name = "conditionA"
 [blocks.config]
 trialsPerItem = "$TRIALS_PER_ITEM"
 param1 = 1
-param2 = 1
-param3 = 1
+# The value can also be a function call. A function call is represented as a table
+# The following function call will be replaced with a call to 
+# [random.choices](https://docs.python.org/3/library/random.html#random.choices)
+# See `# Function calls` in README for more information.
+param2 = { function_name = "choices", args = { population = [1 , 2 , 3 ], k = 2}}
+param3 = { function_name = "choices", args = [[1 , 2 , 3 ]], params = { unique = true } }
 
 # Block: Condition B
 [[blocks]]
@@ -78,7 +82,7 @@ extends = "conditionA"
 # to the `config` subtable of "conditionB". In this example, `param1`, `param2` and 
 # `trialsPerItem` will be copied over here.
 [blocks.config]
-param3 = 2
+param3 = [2]
 ```
 
 See [toml spec](https://toml.io/en/v1.0.0) for more information on the format of a toml file.
@@ -90,46 +94,66 @@ The above config file, after being processed, would result in the following list
     "name": "conditionB",
     "extends": "conditionA",
     "config": {
-      "param3": 2,
+      "param3": [
+        2
+      ],
       "trialsPerItem": 3,
       "param1": 1,
-      "param2": 1,
+      "param2": [
+        1,
+        2
+      ],
       "participant_index": 1,
       "name": "conditionB"
+    }
+  },
+  {
+    "name": "conditionA",
+    "config": {
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": [
+        2,
+        2
+      ],
+      "param3": [
+        3
+      ],
+      "participant_index": 1,
+      "name": "conditionA"
+    }
+  },
+  {
+    "name": "conditionA",
+    "config": {
+      "trialsPerItem": 3,
+      "param1": 1,
+      "param2": [
+        1,
+        1
+      ],
+      "param3": [
+        2
+      ],
+      "participant_index": 1,
+      "name": "conditionA"
     }
   },
   {
     "name": "conditionB",
     "extends": "conditionA",
     "config": {
-      "param3": 2,
+      "param3": [
+        2
+      ],
       "trialsPerItem": 3,
       "param1": 1,
-      "param2": 1,
+      "param2": [
+        3,
+        1
+      ],
       "participant_index": 1,
       "name": "conditionB"
-    }
-  },
-  {
-    "name": "conditionA",
-    "config": {
-      "trialsPerItem": 3,
-      "param1": 1,
-      "param2": 1,
-      "param3": 1,
-      "participant_index": 1,
-      "name": "conditionA"
-    }
-  },
-  {
-    "name": "conditionA",
-    "config": {
-      "trialsPerItem": 3,
-      "param1": 1,
-      "param2": 1,
-      "param3": 1,
-      "participant_index": 1,
-      "name": "conditionA"
     }
   }
 ]
@@ -180,6 +204,25 @@ $ experiment-server generate-config-json sample_config.toml --participant-range 
 
 The above will generate the expanded configs for participant indices 1 to 5 as json files. See more options with `--help`
 
+## Function calls in config
+A function call in the config is represented by a table, with the following keys 
+- `function_name`: Should be one of the names in the supported functions list below.
+- `args`: The arguments to be passed to the function represented by `function_name`. This can be a list or a table/dict. They should unpack with `*` or `**` respectively when called with the corresponding function.
+- (optional) `params`: function specific configurations to apply with the function calls.
+- (optional) `id`: A unique identifier to group function calls.
+
+A table that has keys other than the above keys would not be treated as a function call. Any function calls in different places of the config with the same `id` would be treated as a single group. Tables without an `id` are grouped based on their key-value pairs. Groups are used to identify how some parameters effect the results (e.g., `unique` for `choices`). Function calls can also be in `configurations.variabels`. Note that all function calls are made after the `extends` are resolved and variables from `configurations.variabels` are replaced.
+
+### Supported functions
+- `choices`: Calls [random.choices](https://docs.python.org/3/library/random.html#random.choices). `params` can be a table/dictionary which can have the key `unique`. The value of `unique` must be `true` or `false`. By default `unique` is `false`. If it's `true`, within a group of function calls, no value from the population passed to `random.choices` is repeated for a given participant.
+
+### Example function calls
+```toml
+param = { function_name = "choices", args = [[1 , 2 , 3 , 4]], params = { unique = true } }
+```
+```toml
+param = { foo = "test", bar = { function_name = "choices", args = { population = ["w", "x", "y", "z"], k = 1 } } }
+```
 
 For more on the `experiemnt-server` and how it can be used see the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki)
 

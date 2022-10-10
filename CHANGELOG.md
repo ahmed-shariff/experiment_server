@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Adding
 - Allow setting random seed in toml config
+- Function calls within configs
 
 ## [0.2.1] - 2022-08-31
 ### Adding

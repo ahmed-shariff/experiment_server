@@ -37,8 +37,12 @@ name = "conditionA"
 [blocks.config]
 trialsPerItem = "$TRIALS_PER_ITEM"
 param1 = 1
-param2 = 1
-param3 = 1
+# The value can also be a function call. A function call is represented as a table
+# The following function call will be replaced with a call to 
+# [random.choices](https://docs.python.org/3/library/random.html#random.choices)
+# See `# Function calls` in README for more information.
+param2 = { function_name = "choices", args = { population = [1 , 2 , 3 ], k = 2}}
+param3 = { function_name = "choices", args = [[1 , 2 , 3 ]], params = { unique = true } }
 
 # Block: Condition B
 [[blocks]]
@@ -50,4 +54,4 @@ extends = "conditionA"
 # to the `config` subtable of "conditionB". In this example, `param1`, `param2` and 
 # `trialsPerItem` will be copied over here.
 [blocks.config]
-param3 = 2
+param3 = [2]
