@@ -51,7 +51,11 @@ class ExperimentHandler(RequestHandler):
     def initialize(self, globalState):
         self.globalState = globalState
 
-    def get(self, action=None):
+    def get(self, action=None, params=None):
+        if params != None:
+            self.set_status(400)
+            self.write("GET request with param is not recognized.")
+
         if action == "blocks-count":
             self.write(json.dumps(len(self.globalState.config)))
         elif action == "active":
