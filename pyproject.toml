@@ -48,6 +48,10 @@ pytest-mock = "^3"
 pytest-cov = "^2"
 deepdiff = "^5.8.1"
 
+[tool.poetry.group.dev.dependencies]
+mypy = "^0.990"
+debugpy = "^1.6.3"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -56,3 +60,6 @@ build-backend = "poetry.core.masonry.api"
 addopts = "--color=yes --durations=5 --code-highlight=yes --showlocals --verbose --cov=experiment_server"
 testpaths = ["test"]
 console_output_style = "progress"
+
+[tool.mypy]
+ignore_missing_imports = true
