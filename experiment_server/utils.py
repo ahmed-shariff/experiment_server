@@ -15,7 +15,10 @@ class FileModifiedWatcher(PatternMatchingEventHandler):
 
     def on_modified(self, event):
         logger.info(f"File modified: {event.src_path}")
-        self._callback()
+        try:
+            self._callback()
+        except:
+            logger.error("Callback after file modified failed")
 
     def end_watch(self):
         self._observer.stop()
