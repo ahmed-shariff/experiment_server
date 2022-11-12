@@ -17,6 +17,7 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
         (Path(__file__).parent / "test_files/working_file_6.toml", True),
         (Path(__file__).parent / "test_files/working_file_7.toml", True),
         (Path(__file__).parent / "test_files/working_file_8.toml", True),
+        (Path(__file__).parent / "test_files/working_file_9.toml", True),
         (Path(__file__).parent / "test_files/working_file.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_2.expconfig", True),
         (Path(__file__).parent / "test_files/working_file_3.expconfig", True),
@@ -72,7 +73,7 @@ def test_get_sections(f, expected):
 
 
 @pytest.mark.parametrize(
-    "f, pid",[
+    "f, pid", [
         (Path(__file__).parent / "test_files/working_file.expconfig", 1),
         (Path(__file__).parent / "test_files/working_file.expconfig", 2),
         (Path(__file__).parent / "test_files/working_file_4.expconfig", 1),
@@ -93,22 +94,23 @@ def test_process_expconfig(mocker, f, pid):
         assert "name" in c["config"]
         assert "participant_index" in c["config"]
         assert c["config"]["participant_index"] == pid
-    
+
     for block_id in range(1, 10):
         keys = set(config[block_id]["config"].keys())
         assert len(keys.difference(MAIN_CONFIG_KEYS)) == 0
 
 
 @pytest.mark.parametrize(
-    "f, pid, l",[
-        (Path(__file__).parent / "test_files/working_file.toml", 1, 10),
-        (Path(__file__).parent / "test_files/working_file.toml", 2, 10),
+    "f, pid, length, first_name, last_name, config_keys", [
+        (Path(__file__).parent / "test_files/working_file.toml", 1, 10, "configuration", "rating", MAIN_CONFIG_KEYS),
+        (Path(__file__).parent / "test_files/working_file.toml", 2, 10, "configuration", "rating", MAIN_CONFIG_KEYS),
+        (Path(__file__).parent / "test_files/working_file_9.toml", 2, 2, "2", "2", ["p1", "p2", "p3", "name", "participant_index"]),
         ])
-def test_process_toml(f, pid, l):
+def test_process_toml(f, pid, length, first_name, last_name, config_keys):
     config = _process_toml(f, pid)
-    assert len(config) == l
-    assert config[0]["name"] == "configuration"
-    assert config[-1]["name"] == "rating"
+    assert len(config) == length
+    assert config[0]["name"] == first_name
+    assert config[-1]["name"] == last_name
 
     for c in config:
         assert "config" in c
@@ -116,10 +118,10 @@ def test_process_toml(f, pid, l):
         assert "name" in c["config"]
         assert "participant_index" in c["config"]
         assert c["config"]["participant_index"] == pid
-    
-    for block_id in range(1, 10):
+
+    for block_id in range(1, length):
         keys = set(config[block_id]["config"].keys())
-        assert len(keys.difference(MAIN_CONFIG_KEYS)) == 0
+        assert len(keys.difference(config_keys)) == 0
 
 
 @pytest.mark.parametrize(

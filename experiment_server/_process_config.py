@@ -69,19 +69,27 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
     random_seed = configurations.get("random_seed", 0)
     random.seed(random_seed + participant_index)
 
-    blocks = _replace_variables(loaded_configuration["blocks"], variables)
-    order = configurations.get("order", [list(range(len(blocks)))])
+    all_blocks = _replace_variables(loaded_configuration["blocks"], variables)
+    order = configurations.get("order", [list(range(len(all_blocks)))])
 
-    blocks = construct_participant_condition(blocks, participant_index, order=order,
+    for c in all_blocks:
+        c["name"] = str(c["name"])
+
+    blocks = construct_participant_condition(all_blocks, participant_index, order=order,
                                              groups=configurations_groups,
                                              within_groups=configurations_within_groups)
 
     init_blocks = _replace_variables(loaded_configuration.get("init_blocks", []), variables)
     final_blocks = _replace_variables(loaded_configuration.get("final_blocks", []), variables)
 
-    blocks = init_blocks + blocks + final_blocks
+    block_names = [c["name"] for c in (init_blocks + blocks + final_blocks)]
     # Using merge_dicts to ensure the values are references
-    blocks = resolve_extends([merge_dicts(b, {}) for b in blocks])
+    resolved_blocks = {c["name"]: c for c in
+                       resolve_extends([merge_dicts(b, {}) for b in
+                                        (init_blocks + all_blocks + final_blocks)])}
+
+    # Use block names to get resolved blocks in the expected order
+    blocks = [resolved_blocks[c] for c in block_names]
     blocks = resolve_function_calls(blocks)
 
     for c in blocks:
@@ -197,6 +205,7 @@ def _replace_template_values(string, template_values):
 
 
 def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict[str, Any]) -> Union[Dict[str, Any], List[Any]]:
+    resolved_config: Union[Dict, List]
     if isinstance(config, dict):
         resolved_config = {}
         for k, v in config.items():
@@ -224,9 +233,9 @@ def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict
     return resolved_config
 
 
-def resolve_function_calls(configs:list) -> list:
-    """Checks all function calls and replace the values with the result of the function calls."""
-    function_calls = {}
+def resolve_function_calls(configs: list) -> list:
+    """Check all function calls and replace the values with the result of the function calls."""
+    function_calls: Dict[Any, Any] = {}
     return [_resolve_function_calls(c, function_calls) for c in configs]
 
 

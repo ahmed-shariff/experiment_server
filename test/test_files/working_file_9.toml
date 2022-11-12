@@ -1,0 +1,19 @@
+# test if extending a block not in order works
+[[blocks]]
+name = "1"
+
+[blocks.config]
+p1 = { function_name = "choices", args = [[1 , 2 , 3 , 4]], params = { unique = true } }
+p2 = { foo = "test", bar = { function_name = "choices", args = { population = ["w", "x", "y", "z"], k = 1 } } } 
+p3 = "$test"
+
+[[blocks]]
+name = "2"
+extends = "1"
+
+[configuration]
+order = [["2", "2"]]
+random_seed = 200
+
+[configuration.variables]
+test = { function_name = "choices", args = { population = ["a", "b", "c", "d"], k = 1 } }
