@@ -33,6 +33,8 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
     if isinstance(order, list):
         if not all([isinstance(group, list) for group in order]):
             order = [order,]
+            # Making sure the stratergy set for groups is used for within groups
+            within_groups = groups
         if not all([isinstance(g, int) for group in order for g in group]) and not all([isinstance(g, str) for group in order for g in group]):
             raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int` or list of `str`, got {order}")
         
