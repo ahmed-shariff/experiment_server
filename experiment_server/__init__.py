@@ -1,7 +1,9 @@
-__version__ = '0.2.3'
-
+from importlib_metadata import version
 import logging
 from loguru import logger
+
+__version__ = version(__package__)
+
 
 class __InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -18,6 +20,7 @@ class __InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
 
 logging.basicConfig(handlers=[__InterceptHandler()], level=0)
 

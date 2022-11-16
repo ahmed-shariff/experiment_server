@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2022-11-15
+### Changing
+- Fix - GET method crashing when getting second parameter meant for POST methods
+- Fix - `extends` not working with names not in `order`
+- Fix - (#1) modification watcher failing when reloading config fails
+- Fix - `group` ordering not used when flat array is used in `order`
+
+### Adding
+- Dev tools (debugger and static analyzer)
+
 ## [0.2.3] - 2022-10-09
 ### Changing
 - Fix call order in cli
