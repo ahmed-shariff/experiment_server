@@ -25,14 +25,23 @@ class GlobalState:
         self.config = process_config_file(self.config_file, participant_index)
 
     def set_block(self, block_id):
-        self._block_id = block_id
-        self.block = self.config[block_id]
+        if (block_id > len(self.config)):
+            self._block_id = len(self.config)
+        else:
+            self._block_id = block_id
+        self.block = self.config[self._block_id]
+
+    def get_block_id(self):
+        return self._block_id
 
     def move_to_next_block(self):
         if self._block_id is not None:
             self.set_block(self._block_id + 1)
         else:
             self.set_block(0)
+
+    def status_string(self):
+        return f'Participant index: {self._participant_index}    \nBlock: {self._block_id} / {len(self.config)}    \n Name: {self.block["name"] if self.block is not None else "N/A"}'
 
 
 class Experiment:

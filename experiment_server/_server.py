@@ -57,14 +57,16 @@ class ExperimentHandler(RequestHandler):
             self.write("GET request with param is not recognized.")
 
         if action == "blocks-count":
-            self.write(json.dumps(len(self.globalState.config)))
+            self.write(json.dumps(len(self.globalState.config), indent=4))
+        elif action == "block-id":
+            self.write(json.dumps(self.globalState.get_block_id(), indent=4))
         elif action == "active":
-            self.write(json.dumps(True))
+            self.write(json.dumps(True, indent=4))
         elif action == "config":
             try:
                 config = self.globalState.block["config"]
                 logger.info(f"Config returned: {config}")
-                self.write(config)
+                self.write(json.dumps(config, indent=4))
             except TypeError as e:
                 logger.error(e)
                 self.set_status(406)
@@ -75,7 +77,9 @@ class ExperimentHandler(RequestHandler):
                 "config_length": len(self.globalState.config)
             })
         elif action == "all-configs":
-            self.write(json.dumps([c["config"] for c in self.globalState.config]))
+            self.write(json.dumps([c["config"] for c in self.globalState.config], indent=4))
+        elif action == "status-string":
+            self.write(self.globalState.status_string().replace("\n", "&nbsp;&nbsp;&nbsp;"))
         else:
             self.set_status(404)
             self.write("N/A")
