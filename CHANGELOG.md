@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2023-08-28
+### Changing
+- Web UI:
+  - Using htmx
+  - Show status
+- Returned json from server is formatted
+
+### Adding
+- `block-id` and `status-string` to api
+
 ## [0.2.4] - 2022-11-15
 ### Changing
 - Fix - GET method crashing when getting second parameter meant for POST methods

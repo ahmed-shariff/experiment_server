@@ -181,6 +181,8 @@ The server exposes the following REST API:
 - [GET] `/api/items-count`: The total number of blocks. Returns an integer
 - [GET] `/api/active`: Test if the server is working. Returns boolean
 - [GET] `/api/config`: Return the `config` subtable in the configuration file of the current block as a json object. Note that `move-to-next` has to be called atleast once before this can be called.
+- [GET] `/api/block-id`: Returns the current block id
+- [GET] `/api/status-string`: Returns the staus as a string
 - [GET] `/api/global-data`: Returns a json object, with the following keys: 
   - "participant_index": the participant index
   - "config_length": same value `/items-count`
