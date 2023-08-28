@@ -4,6 +4,7 @@
 	<title>Bootstrap 4 Example</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="https://kit.fontawesome.com/1e694dd391.js" crossorigin="anonymous"></script>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
@@ -28,18 +29,21 @@
 	 });
 	</script>
     </head>
-	<body>
-	    <div class="container">
-		<div class="row">
-		    <div class="col-sm-12 mt-4">
-			<div class="alert alert-info">
-			    <div id="status" hx-get="/api/status-string" style="font-weight: bold;"
-				     hx-trigger="load delay:0.1s, click from:button delay:0.1s" hx-swap="text">
+    <body>
+	<div class="container">
+	    <div class="row">
+		<div class="col-sm-12 mt-4">
+		    <div class="alert alert-info">
+			<div class="row align-middle">
+			    <button class="btn btn-primary mx-4"><i class="fa-solid fa-arrows-rotate fa-2xs"></i></button>
+			    <div id="status" hx-get="/api/status-string" class="font-weight-bold mt-2"
+				     hx-trigger="load delay:0.1s, click from:button delay:0.1s, every 60s" hx-swap="text">
+			    </div>
 			</div>
 			<hr/>
 			<div id="output"></div>
-			</div>
 		    </div>
+		</div>
 	    </div>
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
