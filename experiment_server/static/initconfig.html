@@ -8,6 +8,7 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+	<script src="https://unpkg.com/htmx.org@1.9.5"></script>
 	<script>
 	 function displayText (data, status){
 	     output = $('#output').text(JSON.stringify(data, null, 4));
@@ -21,12 +22,6 @@
 	     $("#btnSwitch").click(function(){
 		 $.post("/api/move-to-block/" + $('#txtSwitch').val(), displayText).fail(errorDisplay);;
 	     });
-	     $("#btnConfig").click(function(){
-		 $.get("/api/config" , displayText).fail(errorDisplay);
-	     });
-	     $("#btnMoveToNext").click(function(){
-		 $.post("/api/move-to-next" , displayText).fail(errorDisplay);
-	     });
 	     $("#btnChangeParticipantIdx").click(function(){
 		 $.post("/api/change-participant-index/" + $('#txtChangeParticipantIdx').val(), displayText).fail(errorDisplay);
 	     });
@@ -37,36 +32,48 @@
 	    <div class="container">
 		<div class="row">
 		    <div class="col-sm-12 mt-4">
-			<div class="alert alert-info" style="white-space: pre-wrap" id="output"></div>
+			<div class="alert alert-info">
+			    <div id="status" hx-get="/api/status-string" style="font-weight: bold;"
+				     hx-trigger="load delay:0.1s, click from:button delay:0.1s" hx-swap="text">
+			</div>
+			<hr/>
+			<div id="output"></div>
+			</div>
 		    </div>
+	    </div>
+	    <div class="row">
+		<div class="col-sm-6 mt-2">
+		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary">Move to block: </button>
 		</div>
-		<div class="row">
-		    <div class="col-sm-6 mt-2">
-			<button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary">Move to block: </button>
-		    </div>
-		    
-		    <div class="col-sm-6 mt-2">
-			<input type="text" id="txtSwitch" name="txtSwitch" class="form-control">
-		    </div>
+
+		<div class="col-sm-6 mt-2">
+		    <input type="text" id="txtSwitch" name="txtSwitch" class="form-control">
 		</div>
-		<div class="row">
-		    <div class="col-sm-6 mt-2">
-			<button id="btnConfig" type="button" style="width:100%" class="btn btn-primary">Config</button>
-		    </div>
+	    </div>
+	    <div class="row">
+		<div class="col-sm-6 mt-2">
+		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
+			hx-get="/api/config" hx-trigger="click" hx-target="#output" hx-swap="text">
+			Config
+		    </button>
 		</div>
-		<div class="row">
-		    <div class="col-sm-6 mt-2">
-			<button id="btnMoveToNext" type="button" style="width:100%" class="btn btn-primary">Move to next</button>
-		    </div>
+	    </div>
+	    <div class="row">
+		<div class="col-sm-6 mt-2">
+		    <button id="btnMoveToNext" type="button" style="width:100%" class="btn btn-primary"
+			hx-post="/api/move-to-next" hx-trigger="click" hx-target="#output" hx-swap="text">
+			Move to next
+		    </button>
 		</div>
-		<div class="row my-4">
-		    <div class="col-sm-6 mt-2">
-			<button id="btnChangeParticipantIdx" type="button" style="width:100%" class="btn btn-primary">Change participant index</button>
-		    </div>
-		    <div class="col-sm-6 mt-2">
-			<input type="text" id="txtChangeParticipantIdx" name="txtChangeParticipantIdx" class="form-control">
-		    </div>
+	    </div>
+	    <div class="row my-4">
+		<div class="col-sm-6 mt-2">
+		    <button id="btnChangeParticipantIdx" type="button" style="width:100%" class="btn btn-primary">Change participant index</button>
 		</div>
+		<div class="col-sm-6 mt-2">
+		    <input type="text" id="txtChangeParticipantIdx" name="txtChangeParticipantIdx" class="form-control">
+		</div>
+	    </div>
 	</div>
 
     </body>
