@@ -1,14 +1,22 @@
 # Overview
 
-This is a python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios. I've used with python, js and [Unity projects](https://github.com/ahmed-shariff/experiment_server/wiki/Using-with-Unity). See [wiki](https://github.com/ahmed-shariff/experiment_server/wiki) for examples.
+This is a Python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios. I've used it with Python, js and [Unity projects](https://github.com/ahmed-shariff/experiment_server/wiki/Using-with-Unity). See the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki) for examples.
 
-# Setup
+# Content
 
-## Requirements
+- [Overview](#overview)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Configuration of an experiment](#configuration-of-an-experiment)
+  - [Verify config](#verify-config)
+  - [Loading experiment through server](#loading-experiment-through-server)
+  - [Loading experiment through API](#loading-experiment-through-api)
+  - [Generate expanded config files](#generate-expanded-config-files)
+  - [Function calls in config](#function-calls-in-config)
+    - [Supported functions](#supported-functions)
+    - [Example function calls](#example-function-calls)
 
-* Python 3.8+
-
-## Installation
+# Installation
 
 Install it directly into an activated virtual environment:
 
@@ -24,9 +32,10 @@ $ poetry add experiment-server
 
 # Usage
 ## Configuration of an experiment
-The configuration id defined in a [toml](https://toml.io/en/) file. See example `.toml` below for how the configuration can be defined.
+The configuration is defined in a [toml](https://toml.io/en/) file. See example `.toml` below for how the configuration can be defined.
+
 ```toml
-# The `configuration` table contains settings of the study/experiment itself
+# The `configuration` table contains the settings of the study/experiment itself
 [configuration]
 # The `order` is an array of block names or an array of array of block names.
 order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
@@ -164,7 +173,7 @@ A config file can be validated by running:
 ```sh
 $ experiment-server verify-config-file sample_config.toml
 ```
-This will show how the expanded config looks like for the first 5 participant.
+This will show how the expanded config looks like for the first 5 participants.
 
 ## Loading experiment through server
 After installation, the server can used as:
@@ -180,40 +189,39 @@ A simple web interface can be accessed at `/` or `/index`
 The server exposes the following REST API:
 - [GET] `/api/items-count`: The total number of blocks. Returns an integer
 - [GET] `/api/active`: Test if the server is working. Returns boolean
-- [GET] `/api/config`: Return the `config` subtable in the configuration file of the current block as a json object. Note that `move-to-next` has to be called atleast once before this can be called.
+- [GET] `/api/config`: Return the `config` subtable in the configuration file of the current block as a JSON object. Note that `move-to-next` has to be called at least once before this can be called.
 - [GET] `/api/block-id`: Returns the current block id
-- [GET] `/api/status-string`: Returns the staus as a string
-- [GET] `/api/global-data`: Returns a json object, with the following keys: 
+- [GET] `/api/status-string`: Returns the status as a string
+- [GET] `/api/global-data`: Returns a JSON object, with the following keys: 
   - "participant_index": the participant index
   - "config_length": same value `/items-count`
 - [GET] `/api/all-configs`: Return all `config`s of all the blocks as a list, ordered based on the `order` for the configured participant.
-- [POST] `/api/move-to-next`: Sets the current block to the next block in the list of blocks. Returns a json object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
+- [POST] `/api/move-to-next`: Sets the current block to the next block in the list of blocks. Returns a JSON object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
 - [POST] `/api/move-to-block/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
 - [POST] `/api/shutdown`: Shutdown the server.
-- [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the sate back to the initial state as if the server was freshly stared.
-
-For a python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object. Note that the server will reload the config and reset the state to the initial state when the config file loaded is modified.
+- [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the state back to the initial state as if the server was freshly started.
+For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object. Note that the server will reload the config and reset the state to the initial state when the config file loaded is modified.
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
 
 ## Generate expanded config files
-A config file (i.e. `.toml` file), can be expanded to json files with the following command
+A config file (i.e. `.toml` file), can be expanded to JSON files with the following command
 
 ```sh
 $ experiment-server generate-config-json sample_config.toml --participant-range 5
 ```
 
-The above will generate the expanded configs for participant indices 1 to 5 as json files. See more options with `--help`
+The above will generate the expanded configs for participant indices 1 to 5 as JSON files. See more options with `--help`
 
 ## Function calls in config
 A function call in the config is represented by a table, with the following keys 
-- `function_name`: Should be one of the names in the supported functions list below.
+- `function_name`: This should be one of the names in the supported functions list below.
 - `args`: The arguments to be passed to the function represented by `function_name`. This can be a list or a table/dict. They should unpack with `*` or `**` respectively when called with the corresponding function.
-- (optional) `params`: function specific configurations to apply with the function calls.
+- (optional) `params`: function-specific configurations to apply with the function calls.
 - (optional) `id`: A unique identifier to group function calls.
 
-A table that has keys other than the above keys would not be treated as a function call. Any function calls in different places of the config with the same `id` would be treated as a single group. Tables without an `id` are grouped based on their key-value pairs. Groups are used to identify how some parameters effect the results (e.g., `unique` for `choices`). Function calls can also be in `configurations.variabels`. Note that all function calls are made after the `extends` are resolved and variables from `configurations.variabels` are replaced.
+A table that has keys other than the above keys would not be treated as a function call. Any function calls in different places of the config with the same `id` would be treated as a single group. Tables without an `id` are grouped based on their key-value pairs. Groups are used to identify how some parameters affect the results (e.g., `unique` for `choices`). Function calls can also be in `configurations.variabels`. Note that all function calls are made after the `extends` are resolved and variables from `configurations.variabels` are replaced.
 
 ### Supported functions
 - `choices`: Calls [random.choices](https://docs.python.org/3/library/random.html#random.choices). `params` can be a table/dictionary which can have the key `unique`. The value of `unique` must be `true` or `false`. By default `unique` is `false`. If it's `true`, within a group of function calls, no value from the population passed to `random.choices` is repeated for a given participant.
