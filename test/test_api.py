@@ -9,40 +9,43 @@ from .fixtures import config_file, participant_index
 from pathlib import Path
 
 
-class TestGlobalState:
+class TestParticipantState:
     @pytest.fixture()
     def state(self, config_file, participant_index, mocker):
-        process_config_file = mocker.patch("experiment_server._api.process_config_file", return_value=[f"a{i}" for i in range(10)])
-        return experiment_server._api.GlobalState(config_file, participant_index)
+        # process_config_file = mocker.patch("experiment_server._api.process_config_file", return_value=[f"a{i}" for i in range(10)])
+        return experiment_server._api.ParticipantState(process_config_file(config_file, participant_index), participant_index, False)
 
-    def test_init(self, state, config_file, participant_index):
-        assert state.config_file == config_file
-        assert state._participant_index == participant_index
-        assert state.block == None
-        assert state._block_id == None
-        experiment_server._api.process_config_file.assert_called_with(config_file, participant_index)
+    @pytest.fixture(scope="class")
+    def exp_config(self, config_file, participant_index):
+        return process_config_file(config_file, participant_index)
 
-    def test_change_participant_index(self, state, config_file, participant_index):
-        new_participant_index = participant_index + 1
-        state.change_participant_index(new_participant_index)
-        assert state._participant_index == new_participant_index
-        assert state.block == None
-        assert state._block_id == None
-        experiment_server._api.process_config_file.assert_called_with(config_file, new_participant_index)
+    def test_init(self, state, exp_config, participant_index):
+        assert state.config == exp_config
+        assert state.participant_index == participant_index
+        assert state._block_id == -1
+        assert state.active == False
 
     def test_moveToNextBlock0(self, state):
         state.move_to_next_block()
         assert state._block_id == 0
+        assert state.active == True
 
     def test_blockBlock(self, state):
-        state.set_block(9)
+        state.block_id = 9
         assert state._block_id == 9
-        assert state.block == "a9"
+        assert state.block["name"] == "rating"
 
     def test_moveToNextBlock(self, state):
-        state.set_block(1)
+        state.block_id = 1
         state.move_to_next_block()
         assert state._block_id == 2
+
+    def test_activeOnEnd(self, state):
+        state.block_id = 9
+        assert state.active == True
+        state.move_to_next_block()
+        assert state._block_id == 10
+        assert state.active == False
 
 
 class TestExperiment:
@@ -93,19 +96,15 @@ class TestExperiment:
         with pytest.raises(AssertionError) as exc_info:
             experiment.move_to_block("ha")
 
-    def test_change_participant_index_fail_empty(self, experiment):
-        with pytest.raises(AssertionError) as exc_info:
-            experiment.change_participant_index(None)
+    def test_new_participant(self, experiment):
+        val = experiment.get_next_participant()
+        assert val == 2
 
-    def test_change_participant_index_fail_non_number(self, experiment):
-        with pytest.raises(AssertionError) as exc_info:
-            experiment.change_participant_index(None)
-
-    def test_change_participant_index(self, experiment):
-        ret = experiment.change_participant_index(3)
-        assert experiment.global_state._participant_index == 3
-        assert experiment.global_state._block_id == None
-        assert experiment.global_state.block == None
+    def test_adding_participant(self, experiment):
+        added = experiment.add_participant_index(2)
+        assert not added
+        added = experiment.add_participant_index(3)
+        assert added
 
 
 def test_write_to_file(tmp_path, config_file):
