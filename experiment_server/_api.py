@@ -91,6 +91,8 @@ class Experiment:
         return True
 
     def get_participant_state(self, participant_index) -> ParticipantState:
+        if participant_index is None:
+            participant_index = self.default_participant_index
         if participant_index not in self.global_state:
             raise ExperimentServerExcetion(f"participant with index {participant_index} is not set. Consider using `add_participant_index`")
         return self.global_state[participant_index]

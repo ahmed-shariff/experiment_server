@@ -84,9 +84,11 @@ class TestExperiment:
         ret = experiment.get_config()
         assert ret == exp_config[3]["config"]
 
-    def test_move_to_block_fail_outside_range(self, experiment, exp_config):
-        with pytest.raises(IndexError) as exc_info:
-            ret = experiment.move_to_block(len(exp_config) + 4)
+    def test_move_to_block_outside_range(self, experiment, exp_config):
+        ret = experiment.move_to_block(len(exp_config) + 4)
+        assert ret == "END"
+        ret = experiment.move_to_block(-1)
+        assert ret == "START"
 
     def test_move_to_block_fail_empty(self, experiment):
         with pytest.raises(AssertionError) as exc_info:

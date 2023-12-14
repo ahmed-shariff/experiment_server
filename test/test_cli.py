@@ -21,7 +21,7 @@ def mock_function(mocker, mock_function):
 def test_run(runner, mocker):
     mock_function(mocker, "experiment_server._server._server")
     result = runner.invoke(experiment_server.cli.cli, ["run", "file"])
-    experiment_server._server._server.assert_called_with(participant_index=None, host='127.0.0.1', port='5000', config_file='file')
+    experiment_server._server._server.assert_called_with(default_participant_index=1, host='127.0.0.1', port='5000', config_file='file')
 
 
 def test_verify_config(runner, mocker):
