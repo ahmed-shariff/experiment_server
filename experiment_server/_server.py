@@ -10,15 +10,12 @@ import tornado.ioloop
 import asyncio
 import json
 
-from experiment_server._api import GlobalState
-from experiment_server.utils import ExperimentServerConfigurationExcetion
+from experiment_server._api import Experiment
+from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion
 
 
-def _create_app(participant_index, config_file):
-    if participant_index is None:
-        participant_index = int(input("participant id: "))
-        
-    resource_parameters = {"globalState": GlobalState(config_file, participant_index)}
+def _create_app(default_participant_index, config_file):
+    resource_parameters = {"globalState": Experiment(config_file, default_participant_index)}
 
     static_location = (Path(__file__).parent  / "static" ).absolute()
     
@@ -27,105 +24,126 @@ def _create_app(participant_index, config_file):
         (r"/index()",StaticFileHandler, {'path': str(static_location / "initconfig.html")}),
         (r"/api/([^/]+)", ExperimentHandler, resource_parameters),
         (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, resource_parameters),
+        (r"/api/([^/]+)/([0-9]+)/([0-9]+)", ExperimentHandler, resource_parameters),
         (r"/(.*)",StaticFileHandler, {'path': static_location, 'default_filename': "initconfig.html"})
     ])
     return application
 
 
-async def _init_api(config_file, participant_index, host="127.0.0.1", port=5000):
-    application = _create_app(participant_index, config_file)
+async def _init_api(config_file, default_participant_index, host="127.0.0.1", port=5000):
+    application = _create_app(default_participant_index, config_file)
     application.listen(port=port, address=host)
     await asyncio.Event().wait()
 
 
-def _server(config_file, participant_index, host="127.0.0.1", port=5000):
-    asyncio.run(_init_api(config_file, participant_index, host, port))
+def _server(config_file, default_participant_index, host="127.0.0.1", port=5000):
+    asyncio.run(_init_api(config_file, default_participant_index, host, port))
 
 
-def server_process(config_file, participant_index=None, host="127.0.0.1", port="5000"):
-    p = Process(target=_server, kwargs={"participant_index":participant_index, "host":host, "port":port, "config_file":config_file})
+def server_process(config_file, default_participant_index=None, host="127.0.0.1", port="5000"):
+    p = Process(target=_server,
+                kwargs={
+                    "default_participant_index":default_participant_index,
+                    "host":host, "port":port, "config_file":config_file
+                })
     return p
 
 
 class ExperimentHandler(RequestHandler):
-    def initialize(self, globalState):
-        self.globalState = globalState
+    def initialize(self, experiment:Experiment):
+        self.experiment = experiment
 
-    def get(self, action=None, params=None):
-        if params != None:
-            self.set_status(400)
-            self.write("GET request with param is not recognized.")
+    def get(self, action=None, param=None):
+        # The experiment methods treat None as default pp
+        if param is not None:
+            participant_id = self._get_int_from_param(param)
+        else:
+            participant_id = None
+
+        if participant_id is not None and participant_id not in self.experiment.global_state:
+            self.write(f"Participant with ID {participant_id} not know. Consider initializing new participant.")
+            self.set_status(406)
+            return
 
         if action == "blocks-count":
-            self.write(json.dumps(len(self.globalState.config), indent=4))
+            self.write(json.dumps(self.experiment.get_blocks_count(participant_id)))
         elif action == "block-id":
-            self.write(json.dumps(self.globalState.get_block_id(), indent=4))
+            self.write(json.dumps(self.experiment.get_participant_state(participant_id).block_id))
         elif action == "active":
             self.write(json.dumps(True, indent=4))
         elif action == "config":
-            try:
-                config = self.globalState.block["config"]
+            config = self.experiment.get_config(participant_id)
+            if config is not None:
                 logger.info(f"Config returned: {config}")
                 self.write(json.dumps(config, indent=4))
-            except TypeError as e:
-                logger.error(e)
+            else:
                 self.set_status(406)
-                self.write("A call to `/move-to-next` must be made before calling `/config`")
+                self.write(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
         elif action == "global-data":
             self.write({
-                "participant_index": self.globalState._participant_index,
-                "config_length": len(self.globalState.config)
+                "participant_index": participant_id if participant_id is not None else self.experiment.default_participant_index,
+                "config_length": self.experiment.get_blocks_count(participant_id)
             })
         elif action == "all-configs":
-            self.write(json.dumps([c["config"] for c in self.globalState.config], indent=4))
+            self.write(json.dumps(self.experiment.get_all_configs(participant_id), indent=4))
         elif action == "status-string":
-            self.write(self.globalState.status_string().replace("\n", "&nbsp;&nbsp;&nbsp;"))
+            self.write(self.experiment.get_participant_state(participant_id).status_string().replace("\n", "&nbsp;&nbsp;&nbsp;"))
         else:
             self.set_status(404)
             self.write("N/A")
 
-    def post(self, action=None, param=None):
+    def post(self, action=None, param1=None, param2=None):
         if action == "move-to-next":
-            try:
-                self.globalState.move_to_next_block()
-                logger.info(f"Loading block: {self.globalState.block}\n")
-                self.write({"name": self.globalState.block["name"]})
-            except TypeError:
-                self.globalState.set_block(0)
-                logger.info(f"Loading block: {self.globalState.block}\n")
-                self.write({"name": self.globalState.block["name"]})
-            except IndexError:
-                self.globalState.block = {"name": "end"}
-                logger.info("Loading block: {'name': 'end'}\n")
-                self.write({"name": "end"})
-            # return  {"name": "SampleScene"} # {"buttonSize": 0.5, "trialsPerItem": 5}
-        elif action == "move-to-block":
-            if param is None:
+            if param2 is not None:
                 self.set_status(404)
-                self.write("Need paramter")
-            param = self._get_int_from_param(param)
-            if param is not None:
-                if param >= len(self.globalState.config):
+                self.write(f"unknown second parameter {param2}")
+            if param1 is not None:
+                participant_id = self._get_int_from_param(param1)
+            else:
+                participant_id = None
+
+            block_name = self.experiment.move_to_next(participant_id)
+            logger.info(f"Loading block: {self.experiment.get_participant_state(participant_id).block}\n")
+            self.write({"name": block_name})
+        elif action == "move-to-block":
+            if param1 is None and param2 is None:
+                self.set_status(404)
+                self.write("Need atleast one paramter.")
+                return
+            elif param2 is None:
+                participant_id = None
+                new_block_id = self._get_int_from_param(param1)
+            else:
+                participant_id = self._get_int_from_param(param1)
+                new_block_id = self._get_int_from_param(param2)
+            if new_block_id is not None:
+                if new_block_id >= self.experiment.get_blocks_count(participant_id) or new_block_id < 0:
                     self.set_status(404)
-                    self.write("param should be >= 0 and < " + str(len(self.globalState.config)))
+                    self.write("param should be >= 0 and < " + str(self.experiment.get_blocks_count(participant_id)))
                 else:
-                    self.globalState.set_block(int(param))
-                    self.write(str(param))
+                    self.experiment.move_to_block(new_block_id)
+                    self.write(str(new_block_id))
         elif action == "shutdown":
-            self.globalState.watchdog.end_watch()
+            self.experiment.watchdog.end_watch()
             shutdown_server()
-        elif action == "change-participant-index":
-            new_participant_index = self._get_int_from_param(param)
-            if new_participant_index is not None:
-                try:
-                    self.globalState.change_participant_index(new_participant_index)
-                    self.write(f"Config for new participant (participant_index: {new_participant_index}) loaded.")
-                except ExperimentServerConfigurationExcetion as e:
-                    self.set_status(406)
-                    self.write(e.args[0][0])
         else:
             self.set_status(404)
             self.write("n/a")
+
+    def put(self, action=None, param=None):
+        if action == "new-participant":
+            if param != None:
+                self.set_status(406)
+                self.write("`new-participant` doesn't take params")
+            else:
+                self.write(str(self.experiment.get_next_participant()))
+        elif action == "add-participant":
+            participant_id = self._get_int_from_param(param)
+            if participant_id is not None:
+                added_participant = self.experiment.add_participant_index(participant_id)
+                if not added_participant:
+                    self.set_status(406)
+                self.write(json.dumps(added_participant))
 
     def _get_int_from_param(self, param):
         try:
@@ -133,7 +151,7 @@ class ExperimentHandler(RequestHandler):
             return param
         except ValueError:
             self.set_status(404)
-            self.write(f"param should be an integer, got {param}")
+            self.write(f"param should be an integer, got {param}, processing as None")
             return None
 
 

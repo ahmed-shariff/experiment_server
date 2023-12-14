@@ -9,7 +9,7 @@ from .fixtures import config_file, participant_index
 
 @pytest.fixture(scope="class", autouse=True)
 def server(config_file, participant_index):
-    p = server_process(config_file=config_file, participant_index=participant_index)
+    p = server_process(config_file=config_file, default_participant_index=participant_index)
     p.start()
     for i in range(10) :
         time.sleep(0.1)

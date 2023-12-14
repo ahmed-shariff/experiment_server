@@ -22,21 +22,33 @@ class ParticipantState:
     @block_id.setter
     def block_id(self, block_id: int):
         if block_id < 0:
-            raise AttributeError("Block id cannot be below 0")
+            self._block_id = -1
+            self.active = False
         elif block_id >= len(self.config):
+            self._block_id = len(self.config)
             self.active = False
         else:
             self.active = True
         self._block_id = block_id
 
     @property
-    def block(self) -> Dict[str, Any]:
-        return self.config[self.block_id]
+    def block(self) -> Dict[str, Any]|None:
+        if self.block_id >= len(self.config) or self.block_id < 0:
+            return None
+        else:
+            return self.config[self.block_id]
 
-    def move_to_next_block(self):
+    @property
+    def block_name(self) -> str:
+        if self.block_id >= len(self.config):
+            return "END"
+        elif self.block_id < 0:
+            return "START"
+        return self.config[self.block_id]["name"]
+
+    def move_to_next_block(self) -> str:
         self.block_id += 1
-        if self.block_id >= 0 and self.block_id < len(self.config):
-            self.active = True
+        return self.block_name
 
     def status_string(self):
         return f'Participant index: {self.participant_index}    \nBlock: {self._block_id} / {len(self.config)}    \n Name: {self.block["name"] if self.block is not None else "N/A"}'
@@ -44,7 +56,8 @@ class ParticipantState:
 
 class Experiment:
     """Load and manage experiemnt from a local file."""
-    def __init__(self, config_file:str, default_participant_index:int=0) -> None:
+    def __init__(self, config_file:str, default_participant_index:int=1) -> None:
+        assert default_participant_index > 0, "Default participant index should be >0"
         self.global_state: Dict[int, ParticipantState] = {}
         self.default_participant_index = default_participant_index
         self.watchdog = FileModifiedWatcher(config_file, self._config_file_modified_callback)
@@ -77,6 +90,11 @@ class Experiment:
                                                                 False)
         return True
 
+    def get_participant_state(self, participant_index) -> ParticipantState:
+        if participant_index not in self.global_state:
+            raise ExperimentServerExcetion(f"participant with index {participant_index} is not set. Consider using `add_participant_index`")
+        return self.global_state[participant_index]
+
     def get_state(self, participant_index:int|None=None):
         if participant_index is None:
             participant_index = self.default_participant_index
@@ -88,8 +106,7 @@ class Experiment:
         """
         if participant_index is None:
             participant_index = self.default_participant_index
-        self.global_state[participant_index].move_to_next_block()
-        return self.global_state[participant_index].block["name"]
+        return self.global_state[participant_index].move_to_next_block()
 
     def get_config(self, participant_index:int|None=None) -> Union[Dict[str, Any], None]:
         """Return the config of the current block for `participant_index`. 
@@ -98,15 +115,17 @@ class Experiment:
         been called atleast once), this will return `None`."""
         if participant_index is None:
             participant_index = self.default_participant_index
-        if not self.global_state[participant_index].active:
+        block = self.global_state[participant_index].block
+        if block is None:
             return None
         else:
-            return self.global_state[participant_index].block["config"]
+            return block["config"]
 
-    def get_blocks_count(self) -> int:
+    def get_blocks_count(self, participant_index:int|None=None) -> int:
         """Return the total number of blocks."""
-        # NOTE:the config length is the same for all participants
-        return len(next(iter(self.global_state.values())).config)
+        if participant_index is None:
+            participant_index = self.default_participant_index
+        return len(self.global_state[participant_index].config)
 
     def get_all_configs(self, participant_index:int|None=None) -> List[dict]:
         """Return all configs in order for `participant_index`.
@@ -116,7 +135,7 @@ class Experiment:
             participant_index = self.default_participant_index
         return [c["config"] for c in self.global_state[participant_index].config]
 
-    def move_to_block(self, block_id: int, participant_index:int|None=None) -> Union[str, None]:
+    def move_to_block(self, block_id: int, participant_index:int|None=None) -> str:
         """For `participant_index` move the pointer to the current
         block to the block in index a `block_id` in the list of
         blocks. If `participant_index` is None, seld.default_participant_index is used.
@@ -125,7 +144,7 @@ class Experiment:
         if participant_index is None:
             participant_index = self.default_participant_index
         self.global_state[participant_index].block_id = block_id
-        return self.global_state[participant_index].block["name"]
+        return self.global_state[participant_index].block_name
 
 
 def write_to_file(config_file: Union[str, Path], participant_indices:Iterable[int], out_file_location: Union[str, Path, None] = None) -> None:
