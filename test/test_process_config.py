@@ -8,7 +8,7 @@ from experiment_server._process_config import verify_config, get_sections, proce
 from experiment_server.utils import ExperimentServerConfigurationExcetion
 
 
-MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "name"]
+MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "name", "block_id"]
 
 
 @pytest.mark.parametrize(
@@ -32,7 +32,7 @@ def test_verify_config(f, expected):
 
 
 def _test_func(config):
-    other_config_keys = ["conditionId", "participant_index", "name"]
+    other_config_keys = ["conditionId", "participant_index", "name", "block_id"]
     for c in config:
         if c["name"] in ["rating", "configuration"]:
             config_keys = other_config_keys
@@ -104,7 +104,7 @@ def test_process_expconfig(mocker, f, pid):
     "f, pid, length, first_name, last_name, config_keys", [
         (Path(__file__).parent / "test_files/working_file.toml", 1, 10, "configuration", "rating", MAIN_CONFIG_KEYS),
         (Path(__file__).parent / "test_files/working_file.toml", 2, 10, "configuration", "rating", MAIN_CONFIG_KEYS),
-        (Path(__file__).parent / "test_files/working_file_9.toml", 2, 2, "2", "2", ["p1", "p2", "p3", "name", "participant_index"]),
+        (Path(__file__).parent / "test_files/working_file_9.toml", 2, 2, "2", "2", ["p1", "p2", "p3", "name", "participant_index", "block_id"]),
         ])
 def test_process_toml(f, pid, length, first_name, last_name, config_keys):
     config = _process_toml(f, pid)

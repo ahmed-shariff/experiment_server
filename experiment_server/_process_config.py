@@ -92,11 +92,12 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
     blocks = [resolved_blocks[c] for c in block_names]
     blocks = resolve_function_calls(blocks)
 
-    for c in blocks:
+    for (idx, c) in enumerate(blocks):
         c["config"]["participant_index"] = participant_index
         c["config"]["name"] = c["name"]
+        c["config"]["block_id"] = idx
     
-    logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(blocks)]))
+    logger.info("Configuration loaded: \n" + json.dumps(blocks, indent=2))
     return blocks
 
 
@@ -154,13 +155,14 @@ def _process_expconfig(f: Union[str, Path], participant_index: int) -> List[Dict
     config = resolve_extends(config)
 
     try:
-        for c in config:
+        for (idx, c) in enumerate(config):
             c["config"]["participant_index"] = participant_index
             c["config"]["name"] = c["name"]
+            c["config"]["block_id"] = idx
     except KeyError:
         raise ExperimentServerConfigurationExcetion("blocks missing keys (config/name)")
     
-    logger.info("Configuration loaded: \n" + "\n".join([f"{idx}: {json.dumps(c, indent=2)}" for idx, c in enumerate(config)]))
+    logger.info("Configuration loaded: \n" + json.dumps(config, indent=2))
     return config
 
 

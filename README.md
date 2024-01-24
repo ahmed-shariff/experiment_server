@@ -113,7 +113,8 @@ The above config file, after being processed, would result in the following list
         2
       ],
       "participant_index": 1,
-      "name": "conditionB"
+      "name": "conditionB",
+      "block_id": 0
     }
   },
   {
@@ -129,7 +130,8 @@ The above config file, after being processed, would result in the following list
         3
       ],
       "participant_index": 1,
-      "name": "conditionA"
+      "name": "conditionA",
+      "block_id": 1
     }
   },
   {
@@ -145,7 +147,8 @@ The above config file, after being processed, would result in the following list
         2
       ],
       "participant_index": 1,
-      "name": "conditionA"
+      "name": "conditionA",
+      "block_id": 2
     }
   },
   {
@@ -162,7 +165,8 @@ The above config file, after being processed, would result in the following list
         1
       ],
       "participant_index": 1,
-      "name": "conditionB"
+      "name": "conditionB",
+      "block_id": 3
     }
   }
 ]

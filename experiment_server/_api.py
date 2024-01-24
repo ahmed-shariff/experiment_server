@@ -30,6 +30,8 @@ class ParticipantState:
         else:
             self.active = True
         self._block_id = block_id
+        if self.active:
+            assert self._block_id == self.config[self._block_id]["config"]["block_id"]
 
     @property
     def block(self) -> Dict[str, Any]|None:
