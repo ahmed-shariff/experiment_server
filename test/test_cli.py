@@ -31,15 +31,15 @@ def test_verify_config(runner, mocker):
 
 @pytest.mark.parametrize(
     "params, called_with",[
-        (["generate-config-json", "file", "-i", "1"], {"config_file":"file", "participant_indices":[1, ], "out_file_location":None}),
-        (["generate-config-json", "file", "-i", "1", "-r", "2"], {"config_file":"file", "participant_indices":range(1, 3), "out_file_location":None}),
+        (["generate-config-json", "file", "-i", "1"], {"config_file":"file", "participant_indices":[1, ], "out_dir":None}),
+        (["generate-config-json", "file", "-i", "1", "-r", "2"], {"config_file":"file", "participant_indices":range(1, 3), "out_dir":None}),
         (["generate-config-json", "file"], None),
-        (["generate-config-json", "file", "-i", "1", "-r", "2", "-l" "l"], {"config_file":"file", "participant_indices":range(1, 3), "out_file_location":"l"}),
+        (["generate-config-json", "file", "-i", "1", "-r", "2", "-d" "l"], {"config_file":"file", "participant_indices":range(1, 3), "out_dir":"l"}),
         ])
 def test_generate_config_json_1(runner, mocker, params, called_with):
-    mock_function(mocker, "experiment_server._api.write_to_file")
+    mock_function(mocker, "experiment_server._api._generate_config_json")
     result = runner.invoke(experiment_server.cli.cli, params)
     if called_with is None:
-        experiment_server._api.write_to_file.assert_not_called()
+        experiment_server._api._generate_config_json.assert_not_called()
     else:
-        experiment_server._api.write_to_file.assert_called_with(**called_with)
+        experiment_server._api._generate_config_json.assert_called_with(**called_with)

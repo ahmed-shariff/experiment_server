@@ -209,14 +209,14 @@ For a Python application, `experiment_server.Client` can be used to access confi
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
 
-## Generate expanded config files
-A config file (i.e. `.toml` file), can be expanded to JSON files with the following command
+## Generate expanded configs
+A config file (i.e. `.toml` file), can be expanded to JSON with the following command
 
 ```sh
 $ experiment-server generate-config-json sample_config.toml --participant-range 5
 ```
 
-The above will generate the expanded configs for participant indices 1 to 5 as JSON files. See more options with `--help`
+The above will generate the expanded configs for participant indices 1 to 5 as JSON output on stdout. This result can be written out to individual JSON files by setting the `--out-dir`/`-d` to a directory. See more options with `--help`
 
 ## Function calls in config
 A function call in the config is represented by a table, with the following keys 

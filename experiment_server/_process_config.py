@@ -45,19 +45,19 @@ def get_sections(f: Union[str, Path]) -> Dict[str, str]:
     return loaded_configurations
 
 
-def process_config_file(f: Union[str, Path], participant_index: int) -> List[Dict[str, Any]]:
+def process_config_file(f: Union[str, Path], participant_index: int, supress_message:bool=False) -> List[Dict[str, Any]]:
     if participant_index < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
 
     if Path(f).suffix == ".expconfig":
-        return _process_expconfig(f, participant_index)
+        return _process_expconfig(f, participant_index, supress_message)
     elif Path(f).suffix == ".toml":
-        return _process_toml(f, participant_index)
+        return _process_toml(f, participant_index, supress_message)
     else:
         raise ExperimentServerExcetion("Invalid file type. Expected `.expconfig` or `.toml`")
 
 
-def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, Any]]:
+def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bool=False) -> List[Dict[str, Any]]:
     loaded_configuration = toml.load(f)
 
     configurations = loaded_configuration.get("configuration", {})
@@ -97,11 +97,12 @@ def _process_toml(f: Union[str, Path], participant_index:int) -> List[Dict[str, 
         c["config"]["name"] = c["name"]
         c["config"]["block_id"] = idx
     
-    logger.info("Configuration loaded: \n" + json.dumps(blocks, indent=2))
+    if not supress_message:
+        logger.info("Configuration loaded: \n" + json.dumps(blocks, indent=2))
     return blocks
 
 
-def _process_expconfig(f: Union[str, Path], participant_index: int) -> List[Dict[str, Any]]:
+def _process_expconfig(f: Union[str, Path], participant_index: int, supress_message:bool=False) -> List[Dict[str, Any]]:
     loaded_configurations = get_sections(f)
     if "template_values" in loaded_configurations:
         template_values = json.loads(loaded_configurations["template_values"])
@@ -162,7 +163,8 @@ def _process_expconfig(f: Union[str, Path], participant_index: int) -> List[Dict
     except KeyError:
         raise ExperimentServerConfigurationExcetion("blocks missing keys (config/name)")
     
-    logger.info("Configuration loaded: \n" + json.dumps(config, indent=2))
+    if not supress_message:
+        logger.info("Configuration loaded: \n" + json.dumps(config, indent=2))
     return config
 
 

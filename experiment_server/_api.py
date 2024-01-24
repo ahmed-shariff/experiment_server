@@ -1,3 +1,4 @@
+from sys import stdout
 from typing import Any, Dict, Iterable, List, Union
 
 from loguru import logger
@@ -151,23 +152,32 @@ class Experiment:
         return self.global_state[participant_index].block_name
 
 
-def write_to_file(config_file: Union[str, Path], participant_indices:Iterable[int], out_file_location: Union[str, Path, None] = None) -> None:
+def _generate_config_json(config_file: Union[str, Path], participant_indices:Iterable[int], out_dir: Union[str, Path, None] = None) -> None:
     """
-    Write out the json files from the `config_file` for participants in `participant_indices`
-    in the `out_file_location`. The `out_file_location` should be a directory.
+    Write out the json config from the `config_file` for participants in `participant_indices`
+    in the `out_dir`. The `out_dir` should be a directory or should be None.
+    If it is None, it will write the config's, one line per participant. If the passed directory
+    does not exist, it will be created.
     """
-    if out_file_location is None:
-        out_file_location = Path(config_file).parent
-    elif not Path(out_file_location).is_dir():
-        raise ExperimentServerExcetion(f"`out_file_location` should be a directory. Got {out_file_location}")
+    if out_dir is not None:
+        out_dir = Path(out_dir)
+        if not out_dir.exists():
+            logger.info(f"Creating direcotry {out_dir}")
+            out_dir.mkdir(parents=True)
+        elif not out_dir.is_dir():
+            raise ExperimentServerExcetion(f"`out_file_location` should be a directory. Got {out_dir}")
 
     out_files = []
     for participant_index in participant_indices:
-        config = process_config_file(config_file, participant_index)
-        out_file = Path(out_file_location) / f"{Path(config_file).stem}-participant_{participant_index}.json"
-        out_files.append(out_file)
+        config = process_config_file(config_file, participant_index, supress_message=True)
+        if out_dir is not None:
+            out_file = Path(out_dir) / f"{Path(config_file).stem}-participant_{participant_index}.json"
+            out_files.append(out_file)
 
-        with open(out_file, "w") as f:
-            json.dump([c["config"] for c in config], f, indent=2)
+            with open(out_file, "w") as f:
+                json.dump([c["config"] for c in config], f, indent=2)
+        else:
+            stdout.write(json.dumps([c["config"] for c in config]))
 
-    logger.info("Generated files: \n" + "\n".join([str(f) for f in out_files]))
+    if len(out_files) != 0:
+        logger.info("Generated files: \n" + "\n".join([str(f) for f in out_files]))

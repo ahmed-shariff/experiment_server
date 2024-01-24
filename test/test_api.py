@@ -109,11 +109,11 @@ class TestExperiment:
         assert added
 
 
-def test_write_to_file(tmp_path, config_file):
+def test_generate_config_json(tmp_path, config_file):
     out_file_location = tmp_path / "out1"
-    out_file_location.mkdir()
+    # out_file_location.mkdir()
     configs = [process_config_file(config_file, i) for i in range(1, 5)]
-    experiment_server._api.write_to_file(config_file, range(1, 5), out_file_location)
+    experiment_server._api._generate_config_json(config_file, range(1, 5), out_file_location)
 
     for i in range(1, 5):
         file_name = out_file_location / f"{Path(config_file).stem}-participant_{i}.json"
@@ -124,8 +124,9 @@ def test_write_to_file(tmp_path, config_file):
                 assert c1["name"] == c2["name"]
 
 
-def test_write_to_file_with_location_as_non_dir(tmp_path, config_file):
-    out_file_location = tmp_path / "out2"
+def test_generate_config_json_with_location_as_non_dir(tmp_path, config_file):
+    out_file_location = tmp_path / "out2" / "somefile.json"
+    out_file_location.parent.mkdir()
     out_file_location.touch()
     with pytest.raises(ExperimentServerExcetion):
-        experiment_server._api.write_to_file(config_file, range(1, 5), out_file_location)
+        experiment_server._api._generate_config_json(config_file, range(1, 5), out_file_location)
