@@ -141,7 +141,7 @@ class Experiment:
         return [c["config"] for c in self.global_state[participant_index].config]
 
     def move_to_block(self, block_id: int, participant_index:int|None=None) -> str:
-        """For `participant_index` move the pointer to the current
+        """For `participant_index` move the pointer of the current
         block to the block in index a `block_id` in the list of
         blocks. If `participant_index` is None, seld.default_participant_index is used.
         """
@@ -150,6 +150,17 @@ class Experiment:
             participant_index = self.default_participant_index
         self.global_state[participant_index].block_id = block_id
         return self.global_state[participant_index].block_name
+
+    def move_all_to_block(self, block_id: int) -> str:
+        """For all participants move the pointer of the current
+        block to the block in index a `block_id` in the list of
+        blocks.
+        """
+        assert isinstance(block_id, int), "`block` should be an int"
+        for participantState in self.global_state.values():
+            if participantState.active:
+                participantState.block_id = block_id
+        return list(self.global_state.values())[0].block_name
 
 
 def _generate_config_json(config_file: Union[str, Path], participant_indices:Iterable[int], out_dir: Union[str, Path, None] = None) -> None:

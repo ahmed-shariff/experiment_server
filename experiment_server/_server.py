@@ -66,11 +66,11 @@ class ExperimentHandler(RequestHandler):
             return
 
         if action == "blocks-count":
-            self.write(json.dumps(self.experiment.get_blocks_count(participant_id)))
+            self.write(json.dumps(self.experiment.get_blocks_count()))
         elif action == "block-id":
             self.write(json.dumps(self.experiment.get_participant_state(participant_id).block_id))
         elif action == "active":
-            self.write(json.dumps(True, indent=4))
+            self.write(json.dumps(self.experiment.get_state(participant_id)))
         elif action == "config":
             config = self.experiment.get_config(participant_id)
             if config is not None:
@@ -79,10 +79,10 @@ class ExperimentHandler(RequestHandler):
             else:
                 self.set_status(406)
                 self.write(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
-        elif action == "global-data":
+        elif action == "summary-data":
             self.write({
                 "participant_index": participant_id if participant_id is not None else self.experiment.default_participant_index,
-                "config_length": self.experiment.get_blocks_count(participant_id)
+                "configs_length": self.experiment.get_blocks_count(participant_id)
             })
         elif action == "all-configs":
             self.write(json.dumps(self.experiment.get_all_configs(participant_id), indent=4))
@@ -132,6 +132,19 @@ class ExperimentHandler(RequestHandler):
                 except KeyError:
                     self.write(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
                     self.set_status(406)
+        elif action == "move-all-to-block":
+            if param2 is not None:
+                self.set_status(404)
+                self.write(f"unknown second parameter {param2}")
+                return
+            new_block_id = self._get_int_from_param(param1)
+            if new_block_id is not None:
+                if new_block_id >= self.experiment.get_blocks_count() or new_block_id < 0:
+                    self.set_status(404)
+                    self.write("param should be >= 0 and < " + str(self.experiment.get_blocks_count()))
+                else:
+                    self.experiment.move_all_to_block(new_block_id)
+                    self.write(str(new_block_id))
         elif action == "shutdown":
             self.experiment.watchdog.end_watch()
             shutdown_server()
