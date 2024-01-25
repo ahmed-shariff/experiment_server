@@ -191,20 +191,25 @@ See more options with `--help`
 A simple web interface can be accessed at `/` or `/index`
 
 The server exposes the following REST API:
-- [GET] `/api/items-count`: The total number of blocks. Returns an integer
-- [GET] `/api/active`: Test if the server is working. Returns boolean
-- [GET] `/api/config`: Return the `config` subtable in the configuration file of the current block as a JSON object. Note that `move-to-next` has to be called at least once before this can be called.
-- [GET] `/api/block-id`: Returns the current block id
-- [GET] `/api/status-string`: Returns the status as a string
-- [GET] `/api/global-data`: Returns a JSON object, with the following keys: 
-  - "participant_index": the participant index
-  - "config_length": same value `/items-count`
-- [GET] `/api/all-configs`: Return all `config`s of all the blocks as a list, ordered based on the `order` for the configured participant.
-- [POST] `/api/move-to-next`: Sets the current block to the next block in the list of blocks. Returns a JSON object, with the key "names", which is the name of the current block after moving. If there are no more blocks, the value of "names" will be "end".
-- [POST] `/api/move-to-block/:block_id`: Set the block at index `block_id` in the list of blocks as the current block.
-- [POST] `/api/shutdown`: Shutdown the server.
-- [POST] `/api/change-participant-index/:participant_index`: Set the participant_index to value `participant_index`. Note that this will set the state back to the initial state as if the server was freshly started.
-For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object. Note that the server will reload the config and reset the state to the initial state when the config file loaded is modified.
+- [GET] `/api/blocks-count` - Return the number of blocks in the configuration loaded.
+- [GET] `/api/block-id` / `/api/block-id/:participant-id` - Returns the current block-id. If `participant-id` is provided, the blcok-id of the participant will be returned, if not the default participant's block-id will be returned. Note that the block-id is 0 indexed. i.e., the first block's block-id is 0. 
+- [GET] `/api/active` / `/api/active/:participant-id` - Returns the status for `participant-id`, if `participant-id` is not provided, will return the status of the default participant. Will be `false` if the participant was just initialized or the participant has gone through all blocks. To initialize the participant's status (or move to a given block), use the `move-to-next` or `move-to-block` endpoints.
+- [GET] `/api/config` / `api/active/:participant-id` - Return the config for `participant-id`, if `participant-id` is not provided, will return the config for the default participant.
+- [GET] `/api/summary-data` / `/api/summary-data/:participant-id` - Returns the summary of the configs for `participant-id`, if `participant-id` is not provided, returns the summary of the configs for the default participant. Currently, the summary is a JSON with the following keys 
+  - "participant_index"
+  - "config_length"
+- [GET] `/api/all-configs` / `/api/all-configs/:participant-id` - Returns all the configs as a list for the `participant-id`, if `participant-id` is not provided, returns the configs for the default participant. This is akin having the results of the `config` endpoint in one list.
+- [GET] `/api/status-string` / `/api/status-string/:participant-id` - Returns status string for `participant-id`, if `participant-id` is not provided, returns statu string the default participant.
+- [POST] `/api/move-to-next` / `/api/move-to-next/:participant-id` - Move `participant-id` to the next block, if `participant-id` is not provided, move the default participant to the next block. If the participant was not initialized (`active` is false), will make be marked as active (`active` will be set to true). If the block the participant was in was the last block, they will be marked as not active (`active` will be set to false).
+- [POST] `/api/move-to-block/:block-id` / `/api/move-to-block/:participant-id/:block-id` - Move `participant-id` to the block number indicated by `block-id`, if `participant-id` is not provided, move the default participant to the block number indicated by `block-id`. If the participant was not initialized (`active` is false), will make be marked as active (`active` will be set to true). Will fail if the `block-id` is below 0 or above the length of the config.
+- [POST] `/api/move-all-to-block/:block-id` - Move all active participants (`active` returns true) to the block number indicated by `block-id`.
+- [POST] `/api/shutdown` - Shuts-down the server.
+- [PUT] `/api/new-participant` - Adds a new participant and returns the new participant-id. The new participant-id will be the largest current participant-id +1.
+- [PUT] `/api/add-participant/:participant-id` - Add a new participant with `participant-id`. If there is already a participant with the `participant-id`, this will fail. 
+
+For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
+
+**NOTE**: If the config file served is changed, the new config will be loaded, but the state of the participants will be maintained. i.e., the added participants and the block id they are at will not change. To move the block ids for all active participants, you would have to call the `move-all-to-block` endpoint.
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
