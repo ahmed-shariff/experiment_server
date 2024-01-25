@@ -9,8 +9,29 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-	<script src="https://unpkg.com/htmx.org@1.9.5"></script>
+	<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+	<script src="https://unpkg.com/htmx.org/dist/ext/path-params.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script>
+	 document.addEventListener("htmx:confirm", function (e) {
+	     e.preventDefault();
+	     if (!e.target.hasAttribute('hx-confirm')) {
+		 e.detail.issueRequest(true);
+		 return;
+	     }
+	     swalConfirm(e.detail.question, () => {e.detail.issueRequest(true)})
+	 });
+
+	 function swalConfirm(message, func) {
+	     Swal.fire({
+		 text: message,
+		 showDenyButton: true
+	     }).then(function (result) {
+		 if (result.isConfirmed)
+		     func();
+	     })
+	 }
+
 	 function displayText (data, status){
 	     output = $('#output').text(JSON.stringify(data, null, 4));
 	 }
@@ -18,15 +39,6 @@
          function errorDisplay (error) {
              $('#output').text(error['responseText']);
          }
-
-	 $(document).ready(function() {
-	     $("#btnSwitch").click(function(){
-		 $.post("/api/move-to-block/" + $('#txtSwitch').val(), displayText).fail(errorDisplay);;
-	     });
-	     $("#btnChangeParticipantIdx").click(function(){
-		 $.post("/api/change-participant-index/" + $('#txtChangeParticipantIdx').val(), displayText).fail(errorDisplay);
-	     });
-	 });
 	</script>
     </head>
     <body>
@@ -36,8 +48,11 @@
 		    <div class="alert alert-info">
 			<div class="row align-middle">
 			    <button class="btn btn-primary mx-4"><i class="fa-solid fa-arrows-rotate fa-2xs"></i></button>
-			    <div id="status" hx-get="/api/status-string" class="font-weight-bold mt-2"
-				     hx-trigger="load delay:0.1s, click from:button delay:0.1s, every 60s" hx-swap="text">
+			    <div id="status"
+				class="font-weight-bold mt-2"
+				hx-get="/api/status-string" 
+				hx-trigger="load delay:0.1s, click from:button delay:0.1s, every 10s"
+				hx-swap="text">
 			    </div>
 			</div>
 			<hr/>
@@ -47,7 +62,14 @@
 	    </div>
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
-		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary">Move to block: </button>
+		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary"
+			hx-post="/api/move-to-block/{blockID}"
+			hx-trigger="click"
+			hx-confirm="Move to block?"
+			hx-target="#output"
+			hx-include="#txtSwitch"
+			hx-swap="text">
+			Move to block: </button>
 		</div>
 
 		<div class="col-sm-6 mt-2">
@@ -57,25 +79,24 @@
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
 		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
-			hx-get="/api/config" hx-trigger="click" hx-target="#output" hx-swap="text">
-			Config
+			hx-get="/api/config"
+			hx-trigger="click"
+			hx-target="#output"
+			hx-swap="text">
+			View config
 		    </button>
 		</div>
 	    </div>
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
 		    <button id="btnMoveToNext" type="button" style="width:100%" class="btn btn-primary"
-			hx-post="/api/move-to-next" hx-trigger="click" hx-target="#output" hx-swap="text">
+			hx-post="/api/move-to-next"
+			hx-trigger="click"
+			hx-confirm="Move to next block"
+			hx-target="#output"
+			hx-swap="text">
 			Move to next
 		    </button>
-		</div>
-	    </div>
-	    <div class="row my-4">
-		<div class="col-sm-6 mt-2">
-		    <button id="btnChangeParticipantIdx" type="button" style="width:100%" class="btn btn-primary">Change participant index</button>
-		</div>
-		<div class="col-sm-6 mt-2">
-		    <input type="text" id="txtChangeParticipantIdx" name="txtChangeParticipantIdx" class="form-control">
 		</div>
 	    </div>
 	</div>
