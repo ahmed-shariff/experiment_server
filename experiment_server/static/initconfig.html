@@ -10,8 +10,9 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-	<script src="https://unpkg.com/htmx.org/dist/ext/path-params.js"></script>
+	<script src="https://unpkg.com/htmx.org/dist/ext/response-targets.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 	<script>
 	 document.addEventListener("htmx:confirm", function (e) {
 	     e.preventDefault();
@@ -20,6 +21,14 @@
 		 return;
 	     }
 	     swalConfirm(e.detail.question, () => {e.detail.issueRequest(true)})
+	 });
+
+	 $(document).ready(function() {
+	     document.body.addEventListener('htmx:beforeSend', function (e) {
+		 // Clear the output before any request
+		 $("#status").text("");
+		 $("#output").text("");
+	     });
 	 });
 
 	 function swalConfirm(message, func) {
@@ -42,16 +51,19 @@
 	</script>
     </head>
     <body>
-	<div class="container">
+	<div class="container" x-data="{ participantIndexExt: '', useDefaultPP: true }"
+	    x-init="$watch('participantIndexExt,useDefaultPP', () => htmx.process($el))">
 	    <div class="row">
 		<div class="col-sm-12 mt-4">
 		    <div class="alert alert-info">
 			<div class="row align-middle">
 			    <button class="btn btn-primary mx-4"><i class="fa-solid fa-arrows-rotate fa-2xs"></i></button>
-			    <div id="status"
-				class="font-weight-bold mt-2"
-				hx-get="/api/status-string" 
-				hx-trigger="load delay:0.1s, click from:button delay:0.1s, every 10s"
+			    <div id="status" class="font-weight-bold mt-2" hx-ext="response-targets"
+				x-bind:hx-get="`/api/status-string${useDefaultPP || participantIndexExt === '' ? '' : '/' + participantIndexExt}`"
+				hx-trigger="load delay:0.1s, click from:button, every 10s"
+				hx-target="this"
+				hx-target-5*="#output"
+				hx-target-4*="#output"
 				hx-swap="text">
 			    </div>
 			</div>
@@ -61,27 +73,52 @@
 		</div>
 	    </div>
 	    <div class="row">
-		<div class="col-sm-6 mt-2">
+		<div class="col-sm-12">
 		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary"
-			hx-post="/api/move-to-block/{blockID}"
+			x-on:click="useDefaultPP = !useDefaultPP">
+			<div x-show="!useDefaultPP">
+					Monitor default participant
+			</div>
+			<div x-show="useDefaultPP">
+					Monitor a non default participant
+			</div>
+		    </button>
+		</div>
+	    </div>
+	    <div class="row mb-2" >
+		<div class="col-sm-6 mt-2">
+		    <button id="btnPPSwitch" type="button" style="width:100%" class="btn btn-primary"
+			x-bind:disabled="useDefaultPP">
+			    Change participant monitored to:
+		    </button>
+		</div>
+		<div class="col-sm-6 mt-2">
+		    <input type="text" id="txtPPSwitch" name="txtPPSwitch" class="form-control"
+			x-bind:disabled="useDefaultPP" x-model="participantIndexExt"/>
+		</div>
+	    </div>
+	    <div class="row" x-data="{blockID: '0'}" x-init="$watch('blockID', () => htmx.process($el))">
+		<div class="col-sm-6 mt-2">
+		    <button id="btnSwitch" type="button" style="width:100%" class="btn btn-primary" hx-ext="response-targets"
+			x-bind:hx-post="`/api/move-to-block/${useDefaultPP || participantIndexExt === '' ? '' : participantIndexExt + '/'}${blockID}`"
 			hx-trigger="click"
 			hx-confirm="Move to block?"
 			hx-target="#output"
-			hx-include="#txtSwitch"
+			hx-target-4*="#output"
 			hx-swap="text">
 			Move to block: </button>
 		</div>
-
 		<div class="col-sm-6 mt-2">
-		    <input type="text" id="txtSwitch" name="txtSwitch" class="form-control">
+		    <input type="text" id="blockID" name="blockID" class="form-control" x-model="blockID">
 		</div>
 	    </div>
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
-		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
-			hx-get="/api/config"
+		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary" hx-ext="response-targets"
+			x-bind:hx-get="`/api/config${useDefaultPP || participantIndexExt === '' ? '' : '/' + participantIndexExt}`"
 			hx-trigger="click"
 			hx-target="#output"
+			hx-target-4*="#output"
 			hx-swap="text">
 			View config
 		    </button>
@@ -89,11 +126,12 @@
 	    </div>
 	    <div class="row">
 		<div class="col-sm-6 mt-2">
-		    <button id="btnMoveToNext" type="button" style="width:100%" class="btn btn-primary"
-			hx-post="/api/move-to-next"
+		    <button id="btnMoveToNext" type="button" style="width:100%" class="btn btn-primary" hx-ext="response-targets"
+			x-bind:hx-post="`/api/move-to-next${useDefaultPP || participantIndexExt === '' ? '' : '/' + participantIndexExt}`"
 			hx-trigger="click"
 			hx-confirm="Move to next block"
 			hx-target="#output"
+			hx-target-4*="#output"
 			hx-swap="text">
 			Move to next
 		    </button>
