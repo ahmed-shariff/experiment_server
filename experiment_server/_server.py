@@ -108,7 +108,11 @@ class WebHandler(RequestHandler):
         elif action == "config":
             config = self.experiment.get_config(participant_id)
             if config is not None:
-                self.write_info(json.dumps(config, indent=4))
+                table_output = "<table class=\"table\"><tr><th>key</th><th>value</th></tr>"
+                for k,v in config.items():
+                    table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
+                table_output += "</table>"
+                self.write_info(table_output)
             else:
                 self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
 
