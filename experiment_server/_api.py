@@ -30,7 +30,7 @@ class ParticipantState:
             self.active = False
         else:
             self.active = True
-        self._block_id = block_id
+            self._block_id = block_id
         if self.active:
             assert self._block_id == self.config[self._block_id]["config"]["block_id"]
 

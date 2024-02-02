@@ -20,8 +20,10 @@ def _create_app(default_participant_index, config_file):
     static_location = (Path(__file__).parent  / "static" ).absolute()
     
     application = Application([
-        (r"/()",StaticFileHandler, {'path': str(static_location / "initconfig.html")}),
-        (r"/index()",StaticFileHandler, {'path': str(static_location / "initconfig.html")}),
+        (r"/()",StaticFileHandler, {'path': str(static_location / "index.html")}),
+        (r"/index()",StaticFileHandler, {'path': str(static_location / "index.html")}),
+        (r"/web/([^/]+)", WebHandler, resource_parameters),
+        (r"/web/([^/]+)/([0-9]+)", WebHandler, resource_parameters),
         (r"/api/([^/]+)", ExperimentHandler, resource_parameters),
         (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, resource_parameters),
         (r"/api/([^/]+)/([0-9]+)/([0-9]+)", ExperimentHandler, resource_parameters),
@@ -47,6 +49,87 @@ def server_process(config_file, default_participant_index=None, host="127.0.0.1"
                     "host":host, "port":port, "config_file":config_file
                 })
     return p
+
+
+class WebHandler(RequestHandler):
+    def initialize(self, experiment:Experiment):
+        self.experiment = experiment
+        self.output_written: bool = False
+
+    def write_to_output(self, message):
+        self.write(f"<div hx-swap-oob=\"innerHTML:#output\">{message}</div>")
+
+    def write_alert(self, alert_type, message):
+        self.write_to_output(f"<div class=\"alert alert-{alert_type}\">{message}</div>")
+
+    def write_info(self, message):
+        self.write_alert("info", message)
+
+    def write_warn(self, message):
+        self.write_alert("warning", message)
+
+    def write_danger(self, message):
+        self.write_alert("danger", message)
+
+    def write_empty_status(self):
+        self.write_status_string(None, True)
+
+    def write_status_string(self, participant_id=None, no_message=False):
+        if not no_message:
+            message = self.experiment.get_participant_state(participant_id).status_string().replace("\n", "&nbsp;&nbsp;&nbsp;")
+        else:
+            message = ""
+        self.write(f"<div hx-swap-oob=\"innerHTML:#status\">{message}</div>")
+
+    def get(self, action=None):
+        participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
+        use_default = self.get_argument("checkUseDefult", "off", True)
+
+        if use_default == "on":
+            participant_id = None
+        else:
+            try:
+                participant_id = int(participant_id)
+            except ValueError:
+                participant_id = self.experiment.default_participant_index
+
+        if participant_id is not None and participant_id not in self.experiment.global_state:
+            self.write_danger(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
+            self.write_empty_status()
+            return
+
+        if action == "status-string":
+            self.write_status_string(participant_id)
+
+        elif action == "config":
+            config = self.experiment.get_config(participant_id)
+            if config is not None:
+                self.write_info(json.dumps(config, indent=4))
+            else:
+                self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
+
+        elif action == "move-to-block":
+            new_block_id = self.get_argument("txtBlockID", "-", True)
+            try:
+                new_block_id = int(new_block_id)
+            except ValueError:
+                self.write_danger("Invaid input")
+
+            try:
+                new_block_name = self.experiment.move_to_block(new_block_id, participant_id)
+                self.write_info(f"Moved to block: {new_block_name}")
+            except Exception as e:
+                self.write_danger(e)
+
+        elif action == "move-to-next":
+            try:
+                new_block_name = self.experiment.move_to_next(participant_id)
+                self.write_info(f"Moved to block: {new_block_name}")
+            except Exception as e:
+                self.write_danger(e)
+
+    def post(self, action=None):
+        pass
 
 
 class ExperimentHandler(RequestHandler):
