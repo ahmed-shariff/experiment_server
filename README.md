@@ -32,7 +32,14 @@ $ poetry add experiment-server
 
 # Usage
 ## Configuration of an experiment
-The configuration is defined in a [toml](https://toml.io/en/) file. See example `.toml` below for how the configuration can be defined.
+The configuration is defined in a [toml](https://toml.io/en/) file. 
+
+A config file can be generated as follows
+```sh
+$ experiment-server new-config-file new_config.toml
+```
+
+See example `.toml` below for how the configuration can be defined.
 
 ```toml
 # The `configuration` table contains the settings of the study/experiment itself

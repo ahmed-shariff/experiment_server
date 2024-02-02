@@ -1,12 +1,12 @@
 """CLI."""
 
 import click
+from loguru import logger
+from pathlib import Path
 
 from experiment_server._server import _server
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
-from loguru import logger
-
 from experiment_server.utils import ExperimentServerExcetion
 
 @click.group()
@@ -49,3 +49,22 @@ def generate_config_json(config_file, participant_index, participant_range, out_
 
     with logger.catch(ExperimentServerExcetion, reraise=False):
         _generate_config_json(config_file=config_file, participant_indices=range(1, participant_range + 1) if participant_range is not None else [participant_index, ], out_dir=out_dir)
+
+
+@cli.command()
+@click.argument("new-file-location")
+def new_config_file(new_file_location):
+    """Create a new config file."""
+    out_location = Path(new_file_location)
+    if out_location.is_dir():
+        out_location = out_location / "new_config.toml"
+
+    if out_location.exists():
+        logger.error(f"{out_location} already exists!")
+        return
+
+    with open(Path(__file__).parent.parent / "sample_config.toml", "r") as in_f:
+        with open(out_location, "w") as out_f:
+            out_f.writelines(in_f.readlines())
+
+    logger.info(f"New config at: {out_location}")

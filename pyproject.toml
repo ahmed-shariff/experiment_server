@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
 ]
-include = [ "experiment_server/static/*" ]
+include = [ "experiment_server/static/*", "sample_config.toml" ]
 
 [tool.poetry.dependencies]
 
