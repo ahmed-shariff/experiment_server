@@ -1,2 +1,4 @@
 * text=auto
 CHANGELOG.md merge=union
+experiment_server/static/js/* linguist-vendored
+experiment_server/static/css/* linguist-vendored

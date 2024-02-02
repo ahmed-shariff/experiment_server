@@ -27,7 +27,7 @@ def _create_app(default_participant_index, config_file):
         (r"/api/([^/]+)", ExperimentHandler, resource_parameters),
         (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, resource_parameters),
         (r"/api/([^/]+)/([0-9]+)/([0-9]+)", ExperimentHandler, resource_parameters),
-        (r"/(.*)",StaticFileHandler, {'path': static_location, 'default_filename': "initconfig.html"})
+        (r"/(.*)",StaticFileHandler, {'path': static_location, 'default_filename': "index.html"})
     ])
     return application
 
