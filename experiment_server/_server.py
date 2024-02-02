@@ -83,62 +83,63 @@ class WebHandler(RequestHandler):
 
     # NOTE: I am abusing the GET here!
     def get(self, action=None):
-        participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
-        use_default = self.get_argument("checkUseDefult", "off", True)
+        if action in ["status-string", "acive-participant-change", "config", "move-to-block", "move-to-next"]:
+            participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
+            use_default = self.get_argument("checkUseDefult", "off", True)
 
-        if use_default == "on":
-            participant_id = None
-        else:
-            try:
-                participant_id = int(participant_id)
-            except ValueError:
-                participant_id = self.experiment.default_participant_index
-
-        if participant_id is not None and participant_id not in self.experiment.global_state:
-            self.write_danger(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
-            self.write_empty_status()
-            return
-
-        if action == "status-string":
-            self.write_status_string(participant_id)
-
-        elif action == "acive-participant-change":
-            self.write_status_string(participant_id)
-            self.write_to_output("")
-
-        elif action == "config":
-            config = self.experiment.get_config(participant_id)
-            if config is not None:
-                table_output = "<table class=\"table\"><tr><th>key</th><th>value</th></tr>"
-                for k,v in config.items():
-                    table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
-                table_output += "</table>"
-                self.write_info(table_output)
+            if use_default == "on":
+                participant_id = None
             else:
-                self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
+                try:
+                    participant_id = int(participant_id)
+                except ValueError:
+                    participant_id = self.experiment.default_participant_index
 
-        elif action == "move-to-block":
-            new_block_id = self.get_argument("txtBlockID", "-", True)
-            try:
-                new_block_id = int(new_block_id)
-            except ValueError:
-                self.write_danger("Invaid input")
+            if participant_id is not None and participant_id not in self.experiment.global_state:
+                self.write_danger(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
+                self.write_empty_status()
                 return
 
-            try:
-                new_block_name = self.experiment.move_to_block(new_block_id, participant_id)
-                self.write_info(f"Moved to block: {new_block_name}")
-            except Exception as e:
-                self.write_danger(e)
-            self.write_status_string(participant_id)
+            if action == "status-string":
+                self.write_status_string(participant_id)
 
-        elif action == "move-to-next":
-            try:
-                new_block_name = self.experiment.move_to_next(participant_id)
-                self.write_info(f"Moved to block: {new_block_name}")
-            except Exception as e:
-                self.write_danger(e)
-            self.write_status_string(participant_id)
+            elif action == "acive-participant-change":
+                self.write_status_string(participant_id)
+                self.write_to_output("")
+
+            elif action == "config":
+                config = self.experiment.get_config(participant_id)
+                if config is not None:
+                    table_output = "<table class=\"table\"><tr><th>key</th><th>value</th></tr>"
+                    for k,v in config.items():
+                        table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
+                    table_output += "</table>"
+                    self.write_info(table_output)
+                else:
+                    self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
+
+            elif action == "move-to-block":
+                new_block_id = self.get_argument("txtBlockID", "-", True)
+                try:
+                    new_block_id = int(new_block_id)
+                except ValueError:
+                    self.write_danger("Invaid input")
+                    return
+
+                try:
+                    new_block_name = self.experiment.move_to_block(new_block_id, participant_id)
+                    self.write_info(f"Moved to block: {new_block_name}")
+                except Exception as e:
+                    self.write_danger(e)
+                self.write_status_string(participant_id)
+
+            elif action == "move-to-next":
+                try:
+                    new_block_name = self.experiment.move_to_next(participant_id)
+                    self.write_info(f"Moved to block: {new_block_name}")
+                except Exception as e:
+                    self.write_danger(e)
+                self.write_status_string(participant_id)
 
         elif action == "move-all-to-block":
             new_block_id = self.get_argument("txtAllBlockID", "-", True)
@@ -153,7 +154,6 @@ class WebHandler(RequestHandler):
                 self.write_info(f"Moved all to block: {new_block_name}")
             except Exception as e:
                 self.write_danger(e)
-            self.write_status_string(participant_id)
 
         elif action == "new-participant":
             self.write_info("New participant id added: " + str(self.experiment.get_next_participant()))

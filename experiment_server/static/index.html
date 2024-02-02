@@ -36,18 +36,6 @@
              margin-bottom: 5pt;
          }
 
-	 .indicator {
-	     visibility: visible;
-	 }
-
-	 .htmx-request .indicator {
-	     visibility: hidden;
-	 }
-
-	 .htmx-request.indicator {
-	     visibility: hidden;
-	 }
-
          button[data-toggle="collapse"] span.fas:after {
              content: "\f107";    /* angle-down */
          }
@@ -65,11 +53,10 @@
                 <div class="font-weight-bold mt-2" hx-get="/web/status-string"
                     hx-trigger="load delay:0.1s, click from:button, change from:.status-monitor, every 10s"
                     hx-swap="none"
-                    hx-include="#checkUseDefault,#txtPPID"
-                    hx-indicator="indicator">
+                    hx-include="#checkUseDefault,#txtPPID">
                 </div>
                 <div id="status" class="alert alert-light"> </div>
-                <div id="output" class="indicator"> </div>
+                <div id="output"> </div>
             </div>
 	    <div class="row">
 		<div class="col-sm-12">
@@ -173,48 +160,50 @@
 	            </div>
                 </div>
 	    </div>
-	    <div class="row">
-		<div class="col-sm-6">
-		    <label style="width:100%"
-                        for="txtBlockID">
+            <div class="mx-2 mt-4">
+	        <div class="row">
+		    <div class="col-sm-6">
+		        <label style="width:100%"
+                            for="txtBlockID">
                         Move to block:
-		    </label>
-		</div>
-		<div class="col-sm-4">
-		    <input type="text" id="txtBlockID" name="txtBlockID" class="form-control"/>
-		</div>
-		<div class="col-sm-2">
-                    <button type="button" class="btn btn-primary"
-                        hx-get="/web/move-to-block"
-                        hx-trigger="click"
-                        hx-include="#checkUseDefault,#txtPPID,#txtBlockID"
-                        hx-swap="none">
+		        </label>
+		    </div>
+		    <div class="col-sm-4">
+		        <input type="text" id="txtBlockID" name="txtBlockID" class="form-control"/>
+		    </div>
+		    <div class="col-sm-2">
+                        <button type="button" class="btn btn-primary"
+                            hx-get="/web/move-to-block"
+                            hx-trigger="click"
+                            hx-include="#checkUseDefault,#txtPPID,#txtBlockID"
+                            hx-swap="none">
                         Set
-                    </button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12">
-		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
-                        hx-get="/web/move-to-next"
-			hx-trigger="click"
-                        hx-include="#checkUseDefault,#txtPPID"
-			hx-swap="none">
+                        </button>
+		    </div>
+	        </div>
+	        <div class="row">
+		    <div class="col-sm-12">
+		        <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
+                            hx-get="/web/move-to-next"
+			    hx-trigger="click"
+                            hx-include="#checkUseDefault,#txtPPID"
+			    hx-swap="none">
                         Move to next block
-		    </button>
-		</div>
-	    </div>
-	    <div class="row">
-		<div class="col-sm-12">
-		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
-                        hx-get="/web/config"
-			hx-trigger="click"
-                        hx-include="#checkUseDefault,#txtPPID"
-			hx-swap="none">
+		        </button>
+		    </div>
+	        </div>
+	        <div class="row">
+		    <div class="col-sm-12">
+		        <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
+                            hx-get="/web/config"
+			    hx-trigger="click"
+                            hx-include="#checkUseDefault,#txtPPID"
+			    hx-swap="none">
 			View config
-		    </button>
-		</div>
-	    </div>
+		        </button>
+		    </div>
+	        </div>
+            </div>
         </div>
     </body>
 </html>
