@@ -101,6 +101,10 @@ class WebHandler(RequestHandler):
         if action == "status-string":
             self.write_status_string(participant_id)
 
+        elif action == "acive-participant-change":
+            self.write_status_string(participant_id)
+            self.write_to_output("")
+
         elif action == "config":
             config = self.experiment.get_config(participant_id)
             if config is not None:

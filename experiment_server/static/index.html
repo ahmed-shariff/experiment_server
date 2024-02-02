@@ -31,6 +31,11 @@
 	 });
 	</script>
 	<style>
+         .row {
+             margin-top: 5pt;
+             margin-bottom: 5pt;
+         }
+
 	 .indicator {
 	     visibility: visible;
 	 }
@@ -42,6 +47,14 @@
 	 .htmx-request.indicator {
 	     visibility: hidden;
 	 }
+
+         button[data-toggle="collapse"] span.fas:after {
+             content: "\f107";    /* angle-down */
+         }
+
+         button[data-toggle="collapse"].collapsed span.fas:after {
+             content: "\f106";    /* angle-up */
+         }
 	</style>
     </head>
     <body>
@@ -60,44 +73,61 @@
             </div>
 	    <div class="row">
 		<div class="col-sm-12">
-                    <div class="form-check form-switch align-middle" style="width:100%;">
-                        <input class="form-check-input status-monitor" type="checkbox" role="switch" id="checkUseDefault" name="checkUseDefult"
-                            x-model="useDefaultPP"/>
-                        <input type="hidden" name="checkUseDefault" value="off" />
-                        <label class="form-check-label" for="checkUseDefault">Monitor default participant</label>
+                <button class="btn btn-secondary collapsed" type="button" data-toggle="collapse" data-target="#ppControls">
+                    Manage participant
+                    <span class="fas"></span>
+                </button>
+	    </div>
+            <div class="collapse" id="ppControls">
+                <div class="card card-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="form-check form-switch align-middle" style="width:100%;">
+                                <input class="form-check-input status-monitor" type="checkbox" role="switch" id="checkUseDefault"
+                                    name="checkUseDefult" x-model="useDefaultPP"
+                                    hx-get="/web/acive-participant-change"
+                                    hx-trigger="change"
+                                    hx-include="#checkUseDefault,#txtPPID"
+                                    hx-swap="none"/>
+                                <input type="hidden" name="checkUseDefault" value="off" />
+                                <label class="form-check-label" for="checkUseDefault">Monitor default participant</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-	    <div class="row">
-		<div class="col-sm-6 mt-2">
-		    <label style="width:100%"
-                        for="txtPPID"
-			x-bind:disabled="useDefaultPP">
+	            <div class="row">
+		        <div class="col-sm-8">
+		            <label style="width:100%"
+                                for="txtPPID"
+			        x-bind:disabled="useDefaultPP">
 			    Change participant monitored to:
-		    </label>
-		</div>
-		<div class="col-sm-4 mt-2">
-		    <input type="text" id="txtPPID" name="txtPPID" class="form-control"
-			x-bind:disabled="useDefaultPP"/>
-		</div>
-		<div class="col-sm-2 mt-2">
-		    <button type="button" class="btn btn-primary"
-			x-bind:disabled="useDefaultPP">
-                        Set
-                    </button>
-		</div>
+		            </label>
+		        </div>
+		        <div class="col-sm-2">
+		            <input type="text" id="txtPPID" name="txtPPID" class="form-control"
+			        x-bind:disabled="useDefaultPP"/>
+		        </div>
+		        <div class="col-sm-2">
+		            <button type="button" class="btn btn-primary"
+			        x-bind:disabled="useDefaultPP"
+                                hx-get="/web/acive-participant-change"
+                                hx-trigger="click"
+                                hx-include="#checkUseDefault,#txtPPID"
+                                hx-swap="none"/> Set </button>
+		        </div>
+	            </div>
+                </div>
 	    </div>
 	    <div class="row">
-		<div class="col-sm-6 mt-2">
+		<div class="col-sm-6">
 		    <label style="width:100%"
                         for="txtBlockID">
                         Move to block:
 		    </label>
 		</div>
-		<div class="col-sm-4 mt-2">
+		<div class="col-sm-4">
 		    <input type="text" id="txtBlockID" name="txtBlockID" class="form-control"/>
 		</div>
-		<div class="col-sm-2 mt-2">
+		<div class="col-sm-2">
                     <button type="button" class="btn btn-primary"
                         hx-get="/web/move-to-block"
                         hx-trigger="click"
@@ -108,7 +138,7 @@
 		</div>
 	    </div>
 	    <div class="row">
-		<div class="col-sm-12 mt-2">
+		<div class="col-sm-12">
 		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
                         hx-get="/web/move-to-next"
 			hx-trigger="click"
@@ -119,7 +149,7 @@
 		</div>
 	    </div>
 	    <div class="row">
-		<div class="col-sm-12 mt-2">
+		<div class="col-sm-12">
 		    <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
                         hx-get="/web/config"
 			hx-trigger="click"
