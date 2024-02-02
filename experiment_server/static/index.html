@@ -115,6 +115,62 @@
                                 hx-swap="none"/> Set </button>
 		        </div>
 	            </div>
+                    <hr/>
+	            <div class="row">
+		        <div class="col-sm-6">
+                            <label style="width:100%" for="txtAllBlockID">
+                                Move all to block:
+                            </label>
+		        </div>
+		        <div class="col-sm-4">
+		            <input type="text" id="txtAllBlockID" name="txtAllBlockID" class="form-control"/>
+		        </div>
+		        <div class="col-sm-2">
+                            <button type="button" class="btn btn-primary"
+                                hx-get="/web/move-all-to-block"
+                                hx-trigger="click"
+                                hx-include="#txtAllBlockID"
+                                hx-swap="none">
+                                Set
+                            </button>
+		        </div>
+	            </div>
+                    <hr/>
+	            <div class="row">
+		        <div class="col-sm-12">
+		            <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
+                                hx-get="/web/list-participants"
+			        hx-trigger="click"
+			        hx-swap="none"> List participant states </button>
+		        </div>
+	            </div>
+	            <div class="row">
+		        <div class="col-sm-12">
+		            <button id="btnConfig" type="button" style="width:100%" class="btn btn-primary"
+                                hx-get="/web/new-participant"
+			        hx-trigger="click"
+			        hx-swap="none"> Add new participant </button>
+		        </div>
+	            </div>
+	            <div class="row">
+		        <div class="col-sm-6">
+                            <label style="width:100%" for="newPPID">
+                                Add new participant id
+                            </label>
+		        </div>
+		        <div class="col-sm-4">
+		            <input type="text" id="newPPID" name="newPPID" class="form-control"/>
+		        </div>
+		        <div class="col-sm-2">
+                            <button type="button" class="btn btn-primary"
+                                hx-get="/web/add-participant"
+                                hx-trigger="click"
+                                hx-include="#newPPID"
+                                hx-swap="none">
+                                Set
+                            </button>
+		        </div>
+	            </div>
                 </div>
 	    </div>
 	    <div class="row">

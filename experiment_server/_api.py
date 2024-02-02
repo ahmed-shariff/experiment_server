@@ -152,14 +152,13 @@ class Experiment:
         return self.global_state[participant_index].block_name
 
     def move_all_to_block(self, block_id: int) -> str:
-        """For all participants move the pointer of the current
+        """For active participants move the pointer of the current
         block to the block in index a `block_id` in the list of
         blocks.
         """
         assert isinstance(block_id, int), "`block` should be an int"
         for participantState in self.global_state.values():
-            if participantState.active:
-                participantState.block_id = block_id
+            participantState.block_id = block_id
         return list(self.global_state.values())[0].block_name
 
 

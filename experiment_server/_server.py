@@ -81,6 +81,7 @@ class WebHandler(RequestHandler):
             message = ""
         self.write(f"<div hx-swap-oob=\"innerHTML:#status\">{message}</div>")
 
+    # NOTE: I am abusing the GET here!
     def get(self, action=None):
         participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
         use_default = self.get_argument("checkUseDefult", "off", True)
@@ -122,12 +123,14 @@ class WebHandler(RequestHandler):
                 new_block_id = int(new_block_id)
             except ValueError:
                 self.write_danger("Invaid input")
+                return
 
             try:
                 new_block_name = self.experiment.move_to_block(new_block_id, participant_id)
                 self.write_info(f"Moved to block: {new_block_name}")
             except Exception as e:
                 self.write_danger(e)
+            self.write_status_string(participant_id)
 
         elif action == "move-to-next":
             try:
@@ -135,6 +138,46 @@ class WebHandler(RequestHandler):
                 self.write_info(f"Moved to block: {new_block_name}")
             except Exception as e:
                 self.write_danger(e)
+            self.write_status_string(participant_id)
+
+        elif action == "move-all-to-block":
+            new_block_id = self.get_argument("txtAllBlockID", "-", True)
+            try:
+                new_block_id = int(new_block_id)
+            except ValueError:
+                self.write_danger("Invaid input")
+                return
+
+            try:
+                new_block_name = self.experiment.move_all_to_block(new_block_id)
+                self.write_info(f"Moved all to block: {new_block_name}")
+            except Exception as e:
+                self.write_danger(e)
+            self.write_status_string(participant_id)
+
+        elif action == "new-participant":
+            self.write_info("New participant id added: " + str(self.experiment.get_next_participant()))
+
+        elif action == "add-participant":
+            new_participant_id = self.get_argument("newPPID", "-", True)
+            try:
+                new_participant_id = int(new_participant_id)
+            except ValueError:
+                self.write_danger("Invaid input")
+                return
+
+            added_participant = self.experiment.add_participant_index(new_participant_id)
+            if not added_participant:
+                self.write_warn(f"Participant id {new_participant_id} already exists.")
+            else:
+                self.write_info(f"Added new participant with id: {new_participant_id}")
+
+        elif action == "list-participants":
+            table_output = "<table class=\"table\"><tr><th>participant ID</th><th>Block ID</th><th>Block Name</th></tr>"
+            for idx, state in self.experiment.global_state.items():
+                table_output += f"<tr><td>{idx}</td><td>{state.block_id}</td><td>{state.block_name}</td></tr>"
+            table_output += "</table>"
+            self.write_info(table_output)
 
     def post(self, action=None):
         pass
