@@ -195,8 +195,6 @@ $ experiment-server run sample_config.toml
 
 See more options with `--help`
 
-A simple web interface can be accessed at `/` or `/index`
-
 The server exposes the following REST API:
 - [GET] `/api/blocks-count` - Return the number of blocks in the configuration loaded.
 - [GET] `/api/block-id` / `/api/block-id/:participant-id` - Returns the current block-id. If `participant-id` is provided, the blcok-id of the participant will be returned, if not the default participant's block-id will be returned. Note that the block-id is 0 indexed. i.e., the first block's block-id is 0. 
@@ -217,6 +215,11 @@ The server exposes the following REST API:
 For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
 
 **NOTE**: If the config file served is changed, the new config will be loaded, but the state of the participants will be maintained. i.e., the added participants and the block id they are at will not change. To move the block ids for all active participants, you would have to call the `move-all-to-block` endpoint.
+
+The server also provides a simple web interface, which can be accessed at `/` or `/index`. This interface allows to manage and monitor the flow of the experiment:
+
+![web UI screenshot](media/screenshot.png)
+
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing `experiment_server.Experiment`.
@@ -253,7 +256,5 @@ param = { foo = "test", bar = { function_name = "choices", args = { population =
 For more on the `experiemnt-server` and how it can be used see the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki)
 
 # Wishlist (todo list?)
-- Serve multiple participants at the same time.
 - Improved docs
   - Add the option of using dict values in order
-  - Improve cli help docs
