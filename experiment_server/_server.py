@@ -81,24 +81,63 @@ class WebHandler(RequestHandler):
             message = ""
         self.write(f"<div hx-swap-oob=\"innerHTML:#status\">{message}</div>")
 
+    def _process_participant_id(self):
+        participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
+        use_default = self.get_argument("checkUseDefult", "off", True)
+
+        if use_default == "on":
+            participant_id = None
+        else:
+            try:
+                participant_id = int(participant_id)
+            except ValueError:
+                participant_id = self.experiment.default_participant_index
+
+        if participant_id is not None and participant_id not in self.experiment.global_state:
+            self.write_danger(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
+            self.write_empty_status()
+            return
+
+        return participant_id
+
+    def _get_config_table(self, config) -> str:
+        table_output = "<table class=\"table\"><tr><th>key</th><th>value</th></tr>"
+        for k,v in config.items():
+            table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
+        btn  = """<button type="button" class="btn btn-primary"
+                          hx-get="/web/config-editable"
+                          hx-trigger="click"
+                          hx-include="#checkUseDefault,#txtPPID"
+                          hx-swap="none"/>Edit</button>"""
+
+        table_output += f"<tr><td></td><td>{btn}</td></tr>"
+        table_output += "</table>"
+        return table_output
+
+    def _get_editable_config_table(self, config) -> str:
+        table_output = """<form hx-post="/web/update-config" hx-include="#checkUseDefault,#txtPPID"><table class="table"><tr><th>key</th><th>value</th></tr>"""
+        for k,v in config.items():
+            if k in ["participant_index", "block_id", "name"]:
+                table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
+            else:
+                _name = f"_c_{k}"
+                table_output += f"<tr><td><label for={_name}>{k}</label></td><td><input type=\"text\" id={_name} name={_name} placeholder=\"{v}\"></td></tr>"
+
+        btn  = """<button type="submit" class="btn btn-primary" />Submit</button>
+                  <button type="button" class="btn btn-secondary"
+                          hx-get="/web/config"
+                          hx-trigger="click"
+                          hx-include="#checkUseDefault,#txtPPID"
+                          hx-swap="none"/>Cancel</button>"""
+
+        table_output += f"<tr><td></td><td>{btn}</td></tr>"
+        table_output += "</table></form>"
+        return table_output
+
     # NOTE: I am abusing the GET here!
     def get(self, action=None):
-        if action in ["status-string", "acive-participant-change", "config", "reset-config", "move-to-block", "move-to-next"]:
-            participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
-            use_default = self.get_argument("checkUseDefult", "off", True)
-
-            if use_default == "on":
-                participant_id = None
-            else:
-                try:
-                    participant_id = int(participant_id)
-                except ValueError:
-                    participant_id = self.experiment.default_participant_index
-
-            if participant_id is not None and participant_id not in self.experiment.global_state:
-                self.write_danger(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
-                self.write_empty_status()
-                return
+        if action in ["status-string", "acive-participant-change", "config", "config-editable", "reset-participant", "move-to-block", "move-to-next"]:
+            participant_id = self._process_participant_id()
 
             if action == "status-string":
                 self.write_status_string(participant_id)
@@ -110,18 +149,21 @@ class WebHandler(RequestHandler):
             elif action == "config":
                 config = self.experiment.get_config(participant_id)
                 if config is not None:
-                    table_output = "<table class=\"table\"><tr><th>key</th><th>value</th></tr>"
-                    for k,v in config.items():
-                        table_output += f"<tr><td>{k}</td><td>{v}</td></tr>"
-                    table_output += "</table>"
-                    self.write_info(table_output)
+                    self.write_info(self._get_config_table(config))
                 else:
                     self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
 
-            elif action == "reset-config":
-                self.experiment.reset_config(participant_id)
+            elif action == "config-editable":
+                config = self.experiment.get_config(participant_id)
+                if config is not None:
+                    self.write_info(self._get_editable_config_table(config))
+                else:
+                    self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
+
+            elif action == "reset-participant":
+                self.experiment.reset_participant(participant_id)
                 _str = f"index {participant_id}" if participant_id is not None else "default index"
-                self.write_info(f"Reset config for participant with {_str}")
+                self.write_info(f"Reset config for all blocks for participant with {_str}")
 
             elif action == "move-to-block":
                 new_block_id = self.get_argument("txtBlockID", "-", True)
@@ -185,7 +227,35 @@ class WebHandler(RequestHandler):
             self.write_info(table_output)
 
     def post(self, action=None):
-        pass
+        participant_id = self._process_participant_id()
+
+        if action == "update-config":
+            valid_submission = True
+            config = self.experiment.get_config(participant_id)
+            if config is not None:
+                for key in config.keys():
+                    if key in ["participant_index", "block_id", "name"]:
+                        continue
+                    try:
+                        param_key = f"_c_{key}"
+                        new_value = self.get_argument(param_key)
+                        if len(new_value) == 0:
+                            continue  # value was not set!
+                        new_value = json.loads(new_value)
+                        config[key] = new_value  # its a dict! it's a reference value!
+                    except Exception as e:
+                        logger.exception(f"Failed to process key {key} with {e}")
+                        logger.error(f"Failed to process key {key} with {e}")
+                        valid_submission = False
+
+            if valid_submission:
+                output = "<b>Update Successful</b></br>"
+                output += self._get_config_table(config)
+                self.write_info(output)
+            else:
+                output = "<b>Update Failed</b></br>"
+                output += self._get_editable_config_table(config)
+                self.write_warn(output)
 
 
 class ExperimentHandler(RequestHandler):
