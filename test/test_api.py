@@ -3,6 +3,7 @@ from experiment_server.utils import ExperimentServerExcetion
 import pytest
 import importlib
 import pytest_mock
+from deepdiff import DeepDiff
 import experiment_server._api
 from experiment_server._process_config import process_config_file
 from .fixtures import config_file, participant_index
@@ -67,6 +68,15 @@ class TestExperiment:
             assert ret == c["name"], c["name"]
             ret = experiment.get_config()
             assert ret["name"] == c["name"], c["name"]
+
+    def test_reset_config(self, experiment):
+        _ = experiment.move_to_block(0)
+        experiment.global_state[experiment.default_participant_index].config[0]["config"]["foo"] = "bar"
+        output = experiment.get_config()
+        assert "foo" in output
+        experiment.reset_config()
+        output = experiment.get_config()
+        assert "foo" not in output
 
     def test_get_total_block_count(self, experiment, exp_config):
         ret = experiment.get_blocks_count()

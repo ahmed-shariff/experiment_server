@@ -83,7 +83,7 @@ class WebHandler(RequestHandler):
 
     # NOTE: I am abusing the GET here!
     def get(self, action=None):
-        if action in ["status-string", "acive-participant-change", "config", "move-to-block", "move-to-next"]:
+        if action in ["status-string", "acive-participant-change", "config", "reset-config", "move-to-block", "move-to-next"]:
             participant_id = self.get_argument("txtPPID", self.experiment.default_participant_index, True)
             use_default = self.get_argument("checkUseDefult", "off", True)
 
@@ -117,6 +117,11 @@ class WebHandler(RequestHandler):
                     self.write_info(table_output)
                 else:
                     self.write_warn(f"participant {participant_id} not active. A call to `/move-to-next` must be made before calling `/config`")
+
+            elif action == "reset-config":
+                self.experiment.reset_config(participant_id)
+                _str = f"index {participant_id}" if participant_id is not None else "default index"
+                self.write_info(f"Reset config for participant with {_str}")
 
             elif action == "move-to-block":
                 new_block_id = self.get_argument("txtBlockID", "-", True)

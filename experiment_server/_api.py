@@ -126,6 +126,13 @@ class Experiment:
         else:
             return block["config"]
 
+    def reset_participant(self, participant_index:int|None=None) -> bool:
+        """Reset the participant's config to that was loaded from the file."""
+        if participant_index is None:
+            participant_index = self.default_participant_index
+        self.global_state[participant_index].config = process_config_file(self.config_file, participant_index)
+        return True
+
     def get_blocks_count(self, participant_index:int|None=None) -> int:
         """Return the total number of blocks."""
         if participant_index is None:
