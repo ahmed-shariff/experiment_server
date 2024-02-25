@@ -37,6 +37,7 @@ Jinja2 = ">=3.1.2"
 toml = ">=0.10.2"
 watchdog = ">=2.1.9"
 importlib-metadata = ">=6.8.0"
+click-aliases = ">=1.0.4"
 
 
 [tool.poetry.scripts]

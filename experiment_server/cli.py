@@ -3,18 +3,20 @@
 import click
 from loguru import logger
 from pathlib import Path
+from click_aliases import ClickAliasedGroup
 
 from experiment_server._server import _server
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
 from experiment_server.utils import ExperimentServerExcetion
 
-@click.group()
+
+@click.group(cls=ClickAliasedGroup)
 def cli():
     pass
 
 
-@cli.command()
+@cli.command(aliases=["r"])
 @click.argument("config-file")
 @click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True))
 @click.option("-h", "--host", default='127.0.0.1')
@@ -24,14 +26,14 @@ def run(default_participant_index, config_file, host, port):
     _server(default_participant_index=default_participant_index if default_participant_index > 0 else None, host=host, port=port, config_file=config_file)
 
 
-@cli.command()
+@cli.command(aliases=["v", "verify"])
 @click.argument("config-file", type=click.Path())
 def verify_config_file(config_file):
     """Verify if the config-file provided is valid"""
     verify_config(f=config_file)
 
 
-@cli.command()
+@cli.command(aliases=["g", "generate"])
 @click.argument("config-file", type=click.Path())
 @click.option("-i", "--participant-index", default=None, type=int)
 @click.option("-r", "--participant-range", default=None, type=int)
@@ -51,7 +53,7 @@ def generate_config_json(config_file, participant_index, participant_range, out_
         _generate_config_json(config_file=config_file, participant_indices=range(1, participant_range + 1) if participant_range is not None else [participant_index, ], out_dir=out_dir)
 
 
-@cli.command()
+@cli.command(aliases=["n", "new"])
 @click.argument("new-file-location")
 def new_config_file(new_file_location):
     """Create a new config file."""
