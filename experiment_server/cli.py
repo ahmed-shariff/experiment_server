@@ -56,8 +56,21 @@ def generate_config_json(config_file, participant_index, participant_range, out_
 @cli.command(aliases=["n", "new"])
 @click.argument("new-file-location")
 def new_config_file(new_file_location):
-    """Create a new config file."""
+    """Create a new config file.
+
+    If parameter does not end with `.toml` assums it is a directory and create a directory.
+    If parameter is directory, creates a file named `new_config.toml` in the directory.
+    If parents do not exists, create them all!.
+    """
     out_location = Path(new_file_location)
+
+    if out_location.suffix is not ".toml":
+        if out_location.exists():
+            logger.error(f"{out_location} exists and does not end with `.toml`")
+            return
+        else:
+            out_location.mkdir(parents=True, exist_ok=True)
+
     if out_location.is_dir():
         out_location = out_location / "new_config.toml"
 
