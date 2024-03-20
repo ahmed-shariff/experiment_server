@@ -4,16 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.3.0] - 2024-03-19
 ### Adding
 - Allow editing configs for a given block
   - Methods to allow resetting participant state to allow the above work
+- CLI option to generate new config
 
 ### Changing
 - Allow managing multiple participants
 - Generated output can be written to stdout
 - Renamed endpoints
 - Refactor web ui and related backend
+  - js/css sources served locally
+  - Config displayed as table
+  - Update UI to manage multiple participants
+  - Uses htmx & alpine
 - Adding aliases to commands
 
 ## [0.2.6] - 2023-08-28
