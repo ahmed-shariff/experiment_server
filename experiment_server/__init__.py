@@ -28,4 +28,4 @@ from experiment_server._server import server_process
 from experiment_server._client import Client
 from experiment_server._api import Experiment
 
-__all__ = [server_process, Client, Experiment]
+__all__ = ['server_process', 'Client', 'Experiment']

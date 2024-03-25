@@ -43,6 +43,13 @@ def _server(config_file, default_participant_index, host="127.0.0.1", port=5000)
 
 
 def server_process(config_file, default_participant_index=None, host="127.0.0.1", port="5000"):
+    """Returns a Process object which can be used to launch experiment_server.
+    For example:
+    ```py
+    p = server_process(config_file=config_file)
+    p.start()
+    ```
+    """
     p = Process(target=_server,
                 kwargs={
                     "default_participant_index":default_participant_index,
@@ -275,7 +282,7 @@ class ExperimentHandler(RequestHandler):
             return
 
         if action == "blocks-count":
-            self.write(json.dumps(self.experiment.get_blocks_count()))
+            self.write(json.dumps(self.experiment.get_blocks_count(participant_id)))
         elif action == "block-id":
             self.write(json.dumps(self.experiment.get_participant_state(participant_id).block_id))
         elif action == "active":

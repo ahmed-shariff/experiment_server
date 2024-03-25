@@ -196,20 +196,35 @@ $ experiment-server run sample_config.toml
 See more options with `--help`
 
 The server exposes the following REST API:
-- [GET] `/api/blocks-count` - Return the number of blocks in the configuration loaded.
+
+- [GET] `/api/blocks-count` / `/api/blocks-count/:participant-id` - Return the number of blocks in the configuration loaded. For a given config, the `blocks-count` will be the same for all participants. 
+
 - [GET] `/api/block-id` / `/api/block-id/:participant-id` - Returns the current block-id. If `participant-id` is provided, the blcok-id of the participant will be returned, if not the default participant's block-id will be returned. Note that the block-id is 0 indexed. i.e., the first block's block-id is 0. 
+
 - [GET] `/api/active` / `/api/active/:participant-id` - Returns the status for `participant-id`, if `participant-id` is not provided, will return the status of the default participant. Will be `false` if the participant was just initialized or the participant has gone through all blocks. To initialize the participant's status (or move to a given block), use the `move-to-next` or `move-to-block` endpoints.
-- [GET] `/api/config` / `api/active/:participant-id` - Return the config for `participant-id`, if `participant-id` is not provided, will return the config for the default participant.
+
+- [GET] `/api/config` / `api/config/:participant-id` - Return the config for `participant-id`, if `participant-id` is not provided, will return the config for the default participant.
+
 - [GET] `/api/summary-data` / `/api/summary-data/:participant-id` - Returns the summary of the configs for `participant-id`, if `participant-id` is not provided, returns the summary of the configs for the default participant. Currently, the summary is a JSON with the following keys 
+
   - "participant_index"
+
   - "config_length"
-- [GET] `/api/all-configs` / `/api/all-configs/:participant-id` - Returns all the configs as a list for the `participant-id`, if `participant-id` is not provided, returns the configs for the default participant. This is akin having the results of the `config` endpoint in one list.
+
+- [GET] `/api/all-configs` / `/api/all-configs/:participant-id` - Returns all the configs as a list for the `participant-id`, if `participant-id` is not provided, returns the configs for the default participant.This is akin having all the results from calling the `config` endpoint for each block in one list.
+
 - [GET] `/api/status-string` / `/api/status-string/:participant-id` - Returns status string for `participant-id`, if `participant-id` is not provided, returns statu string the default participant.
+
 - [POST] `/api/move-to-next` / `/api/move-to-next/:participant-id` - Move `participant-id` to the next block, if `participant-id` is not provided, move the default participant to the next block. If the participant was not initialized (`active` is false), will make be marked as active (`active` will be set to true). If the block the participant was in was the last block, they will be marked as not active (`active` will be set to false).
+
 - [POST] `/api/move-to-block/:block-id` / `/api/move-to-block/:participant-id/:block-id` - Move `participant-id` to the block number indicated by `block-id`, if `participant-id` is not provided, move the default participant to the block number indicated by `block-id`. If the participant was not initialized (`active` is false), will make be marked as active (`active` will be set to true). Will fail if the `block-id` is below 0 or above the length of the config.
+
 - [POST] `/api/move-all-to-block/:block-id` - Move all active participants (`active` returns true) to the block number indicated by `block-id`.
+
 - [POST] `/api/shutdown` - Shuts-down the server.
+
 - [PUT] `/api/new-participant` - Adds a new participant and returns the new participant-id. The new participant-id will be the largest current participant-id +1.
+
 - [PUT] `/api/add-participant/:participant-id` - Add a new participant with `participant-id`. If there is already a participant with the `participant-id`, this will fail. 
 
 For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
@@ -218,7 +233,7 @@ For a Python application, `experiment_server.Client` can be used to access confi
 
 The server also provides a simple web interface, which can be accessed at `/` or `/index`. This interface allows to manage and monitor the flow of the experiment:
 
-![web UI screenshot](media/screenshot.png)
+![web UI screenshot](https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot.png)
 
 
 ## Loading experiment through API
