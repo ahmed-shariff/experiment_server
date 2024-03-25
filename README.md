@@ -2,6 +2,8 @@
 
 This is a Python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios. I've used it with Python, js and [Unity projects](https://github.com/ahmed-shariff/experiment_server/wiki/Using-with-Unity). See the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki) for examples.
 
+Documentation is available at [https://shariff-faleel.com/experiment_server/](https://shariff-faleel.com/experiment_server/)
+
 # Content
 
 - [Overview](#overview)

@@ -4,17 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.3.1]
+### Added
+- documentation with mkdocs
+
 ### Fixed
 - CLI new-config-file handle error when directory does not exist.
 
 ## [0.3.0] - 2024-03-19
-### Adding
+### Added
 - Allow editing configs for a given block
   - Methods to allow resetting participant state to allow the above work
 - CLI option to generate new config
 
-### Changing
+### Changed
 - Allow managing multiple participants
 - Generated output can be written to stdout
 - Renamed endpoints
@@ -23,46 +26,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Config displayed as table
   - Update UI to manage multiple participants
   - Uses htmx & alpine
-- Adding aliases to commands
+- Added aliases to commands
 
 ## [0.2.6] - 2023-08-28
-### Adding
+### Added
 - Web ui: Adding refresh button and poll every min
 
 ## [0.2.5] - 2023-08-28
-### Changing
+### Changed
 - Web UI:
   - Using htmx
   - Show status
 - Returned json from server is formatted
 
-### Adding
+### Added
 - `block-id` and `status-string` to api
 
 ## [0.2.4] - 2022-11-15
-### Changing
+### Changed
 - Fix - GET method crashing when getting second parameter meant for POST methods
 - Fix - `extends` not working with names not in `order`
 - Fix - (#1) modification watcher failing when reloading config fails
 - Fix - `group` ordering not used when flat array is used in `order`
 
-### Adding
+### Added
 - Dev tools (debugger and static analyzer)
 
 ## [0.2.3] - 2022-10-09
-### Changing
+### Changed
 - Fix call order in cli
 
 ## [0.2.2] - 2022-10-09
-### Adding
+### Added
 - Allow setting random seed in toml config
 - Function calls within configs
 
-### Removing
+### Removed
 - Removed `base_config.expconfig` in static folder and references to it.
 
 ## [0.2.1] - 2022-08-31
-### Adding
+### Added
 - Generate json files based on config file from cli
 - Get complete config (in server, client and experiment)
 - Watchdog to reload config when it's modified
@@ -74,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor - moved `GlobalState` to `_api`
 
 ## [0.2] - 2022-08-26
-### Adding
+### Added
 - `Experiment` class to allow loading and managing script locally.
 - toml based configurations.
 - `-i/--participant-index` as cli option for `run`
@@ -85,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed same condition being reused causing issues with `resolve_extends` as the reused dicts are references.
 
 ## [0.1] - 2022-08-25
-### Adding
+### Added
 - Change log
 - Adding functions to process `extends`.
   - `Utils.merge_dicts`

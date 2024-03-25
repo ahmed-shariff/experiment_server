@@ -69,12 +69,12 @@ class TestExperiment:
             ret = experiment.get_config()
             assert ret["name"] == c["name"], c["name"]
 
-    def test_reset_config(self, experiment):
+    def test_reset_participant(self, experiment):
         _ = experiment.move_to_block(0)
         experiment.global_state[experiment.default_participant_index].config[0]["config"]["foo"] = "bar"
         output = experiment.get_config()
         assert "foo" in output
-        experiment.reset_config()
+        experiment.reset_participant()
         output = experiment.get_config()
         assert "foo" not in output
 
