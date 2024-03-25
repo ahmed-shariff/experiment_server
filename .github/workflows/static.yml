@@ -69,14 +69,14 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction --with dev
-      - name: build docs
-        run: poetry run mkdocs build -c -v
-
       #----------------------------------------------
       # Build mkdocs
       #----------------------------------------------
-      - name: build pages
-        uses: mattnotmitt/doxygen-action@1.9.5
+      - name: build docs
+        run: poetry run mkdocs build -c -v
+      #----------------------------------------------
+      # Publish
+      #----------------------------------------------
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
