@@ -1,7 +1,7 @@
 [tool.poetry]
 
 name = "experiment_server"
-version = "0.3.3-pre.1"
+version = "0.3.3"
 description = "Server for experiments to get configuarations from"
 
 license = "MIT"
