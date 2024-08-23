@@ -320,7 +320,7 @@ class ExperimentHandler(RequestHandler):
 
             try:
                 block_name = self.experiment.move_to_next(participant_id)
-                logger.info(f"Loading block: {self.experiment.get_participant_state(participant_id).block}\n")
+                logger.info(f"Loading block: {self.experiment.get_participant_state(participant_id).block_name}\n")
                 self.write({"name": block_name})
             except KeyError:
                 self.write(f"Participant with ID {participant_id} not known. Consider initializing new participant.")
