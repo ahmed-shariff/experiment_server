@@ -17,25 +17,30 @@ def cli():
     pass
 
 
-def _ask_default_participant_index_callback(ctx:click.Context, param:click.Parameter, flag_value:bool):
+def _ask_default_participant_index_callback(ctx:click.Context, _, flag_value:bool):
     """Callback used to process the ask-default-participant-index in the run."""
-    if flag_value:
+    if not flag_value:
         return
 
-    if ctx.get_parameter_source("default_participant_index") == ParameterSource.DEFAULT:
+    if ctx.get_parameter_source("default_participant_index") != ParameterSource.DEFAULT:
         logger.warning("The value passed for `default_participant_index` (-i) is being overwritten with `ask_default_participant_index` (-a).")
+    if "default_participant_index" in ctx.params:
+        default_value = ctx.params["default_participant_index"]
+    else:
+        default_value = 1
     ctx.params["default_participant_index"] = click.prompt("Default participant index",
-                                                           ctx.params["default_participant_index"],
+                                                           default_value,
                                                            type=click.IntRange(min=1, max_open=True))
 
 
 @cli.command(aliases=["r"])
 @click.argument("config-file")
-@click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True))
+# NOTE: making this eager to make sure the data is set for the ask callback
+@click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True), is_eager=True)
 @click.option("-h", "--host", default='127.0.0.1')
 @click.option("-p", "--port", default='5000')
-@click.option("-a", "--ask-default-participant-index", is_flag=True, default=False, callback=_ask_default_participant_index_callback)
-def run(default_participant_index, config_file, host, port, ask_default_participant_index):
+@click.option("-a", "--ask-default-participant-index", is_flag=True, default=False, expose_value=False, callback=_ask_default_participant_index_callback)
+def run(default_participant_index, config_file, host, port):
     """Launch server with the `config-file` used to setup the configurations"""
     _server(default_participant_index=default_participant_index if default_participant_index > 0 else None, host=host, port=port, config_file=config_file)
 
@@ -78,7 +83,7 @@ def new_config_file(new_file_location):
     """
     out_location = Path(new_file_location)
 
-    if out_location.suffix is not ".toml":
+    if out_location.suffix != ".toml":
         if out_location.exists():
             logger.error(f"{out_location} exists and does not end with `.toml`")
             return
