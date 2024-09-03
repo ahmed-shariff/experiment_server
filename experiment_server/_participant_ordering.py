@@ -42,19 +42,18 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
         
     elif isinstance(order, dict):
         order = {int(k):v for k, v in order.items()}
-        if not all([isinstance(_order, list) for _order in order.values()]) or not all([isinstance(group, list) for _order in order.values() for group in _order]):
+        if not all([isinstance(_order, list) for _order in order.values()]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be list, got {order}")
         if not all([isinstance(g, int) for _order in order.values() for group in _order for g in group]) and not all([isinstance(g, str) for _order in order.values() for group in _order for g in group]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int` or list of `str`, got {order}")
 
         if not all([idx+1 in order.keys() for idx in range(len(order))]):
-            raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {list(range(len(order)))}")
+            raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {[idx + 1 for idx in list(range(len(order)))]}")
 
         if groups != ORDERING_BEHAVIOUR.as_is:
             raise ExperimentServerConfigurationExcetion(f"Ordering behaviour for groups should be {ORDERING_BEHAVIOUR.as_is} when order is a dictionary. Got {groups}")
         _key = ((participant_index - 1) % len(order)) + 1
-        _filtered_order = order[_key]
-
+        _filtered_order = [order[_key],]
 
     if groups == ORDERING_BEHAVIOUR.randomize:
         random.shuffle(_filtered_order)
