@@ -44,7 +44,7 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
         order = {int(k):v for k, v in order.items()}
         if not all([isinstance(_order, list) for _order in order.values()]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be list, got {order}")
-        if not all([isinstance(g, int) for _order in order.values() for group in _order for g in group]) and not all([isinstance(g, str) for _order in order.values() for group in _order for g in group]):
+        if not all([isinstance(val, int) for _order in order.values() for val in _order]) and not all([isinstance(val, str) for _order in order.values() for val in _order]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int` or list of `str`, got {order}")
 
         if not all([idx+1 in order.keys() for idx in range(len(order))]):

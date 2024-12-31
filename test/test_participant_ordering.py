@@ -21,7 +21,6 @@ def generate_test_config(size=4):
         [["2"], ["3"], "1", ["0"]],
         [["2"], ["3"], 1, ["0"]],
         [["2"], ["3"], [1], ["0"]],
-        {"1": [0], "2":[1], "3":[4]},
         {"1": [[0]], "2":[[1]], "3":[4]},
         {"1": [0], "2":[1], "3":4},
         {"2":[[1]], "3":[[4]]},
@@ -39,8 +38,8 @@ def test_order_fail_checks(order):
         [0, 1, 2, 3],
         [[0], [1], [2], [3]],
         [["0"], ["1"], ["2"], ["3"]],
-        {"1": [[0]], "2":[[1]], "3":[[3]]},
-        {"1": [["0"]], "2":[["1"]], "3":[["3"]]}])
+        {"1": [0], "2":[1], "3":[3]},
+        {"1": ["0"], "2":["1"], "3":["3"]}])
 def test_order_pass_checks(order):
     try:
         config = construct_participant_condition(generate_test_config(), 1, order=order)
@@ -112,10 +111,10 @@ def test_group_latin_square(size, order):
 
 @pytest.mark.parametrize(
     "size, participant_index, order, expected_order", [
-        [4, 1, {1: [[0, 1]], 2: [[2, 3]]}, ["0", "1"]],
-        [4, 2, {1: [[0, 1]], 2: [[2, 3]]}, ["2", "3"]],
-        [4, 3, {1: [[0, 1]], 2: [[2, 3]]}, ["0", "1"]],
-        [4, 4, {1: [[0, 1]], 2: [[2, 3]]}, ["2", "3"]],
+        [4, 1, {1: [0, 1], 2: [2, 3]}, ["0", "1"]],
+        [4, 2, {1: [0, 1], 2: [2, 3]}, ["2", "3"]],
+        [4, 3, {1: [0, 1], 2: [2, 3]}, ["0", "1"]],
+        [4, 4, {1: [0, 1], 2: [2, 3]}, ["2", "3"]],
         ])
 def test_dict_order(size, participant_index, order, expected_order):
     config = construct_participant_condition(generate_test_config(size), participant_index, order)
