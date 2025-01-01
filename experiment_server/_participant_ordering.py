@@ -72,8 +72,8 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
             raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups` when the number of elements in all groups are not the same")
         else:
             _elements_count = elements_in_group.pop()
-            _latin_square = balanced_latin_square(_elements_count)
-            _group_order = _latin_square[(participant_index - 1) % _elements_count]
+            _latin_square = [el for l in balanced_latin_square(_elements_count) for el in [l,] * len(_filtered_order)]
+            _group_order = _latin_square[(participant_index - 1) % (_elements_count * len(_filtered_order))]
 
             _filtered_order = [[_g[idx] for idx in _group_order] for _g in _filtered_order]
 
