@@ -1,7 +1,7 @@
 import itertools
 import pytest
 
-from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
+from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY
 from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
 
 
@@ -57,9 +57,9 @@ def test_duplicate_name_fail():
 
 @pytest.mark.parametrize(
     "order, randomize_within_groups, randomize_groups",[
-        ([[0], [1], [2], [3]], ORDERING_BEHAVIOUR.as_is, ORDERING_BEHAVIOUR.randomize),
-        ([[0, 1, 2, 3]], ORDERING_BEHAVIOUR.randomize, ORDERING_BEHAVIOUR.as_is),
-        ([[0, 1], [2, 3]], ORDERING_BEHAVIOUR.randomize, ORDERING_BEHAVIOUR.randomize)])
+        ([[0], [1], [2], [3]], ORDERING_STRATEGY.as_is, ORDERING_STRATEGY.randomize),
+        ([[0, 1, 2, 3]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.as_is),
+        ([[0, 1], [2, 3]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.randomize)])
 def test_group_randomization(order, randomize_within_groups, randomize_groups):
     config = generate_test_config()
     out_config_1 = [c["name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
@@ -101,8 +101,8 @@ def test_group_latin_square(size, order):
 
     # Making sure the participants are rotated the same conditions
     for participant_index in range(size):
-        config_a = construct_participant_condition(generate_test_config(size), participant_index, order, None, ORDERING_BEHAVIOUR.latin_square)
-        config_b = construct_participant_condition(generate_test_config(size), participant_index + size, order, None, ORDERING_BEHAVIOUR.latin_square)
+        config_a = construct_participant_condition(generate_test_config(size), participant_index, order, None, ORDERING_STRATEGY.latin_square)
+        config_b = construct_participant_condition(generate_test_config(size), participant_index + size, order, None, ORDERING_STRATEGY.latin_square)
         assert config_a == config_b
         collected_configs.append("".join([str(c["name"]) for c in config_a]))
 

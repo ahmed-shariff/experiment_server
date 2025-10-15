@@ -4,7 +4,7 @@ from shutil import ExecError
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from tornado.locale import load_translations
-from experiment_server._participant_ordering import construct_participant_condition, ORDERING_BEHAVIOUR
+from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY
 from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion, merge_dicts
 from loguru import logger
 from easydict import EasyDict as edict
@@ -63,8 +63,8 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
     configurations = loaded_configuration.get("configuration", {})
     variables = configurations.get("variables", {})
 
-    configurations_groups = configurations.get("groups", ORDERING_BEHAVIOUR.as_is)
-    configurations_within_groups = configurations.get("within_groups", ORDERING_BEHAVIOUR.as_is)
+    configurations_groups = configurations.get("groups", ORDERING_STRATEGY.as_is)
+    configurations_within_groups = configurations.get("within_groups", ORDERING_STRATEGY.as_is)
 
     random_seed = configurations.get("random_seed", 0)
     random.seed(random_seed + participant_index)
@@ -76,8 +76,8 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
         c["name"] = str(c["name"])
 
     blocks = construct_participant_condition(all_blocks, participant_index, order=order,
-                                             groups=configurations_groups,
-                                             within_groups=configurations_within_groups)
+                                             groups_strategy=configurations_groups,
+                                             within_groups_strategy=configurations_within_groups)
 
     init_blocks = _replace_variables(loaded_configuration.get("init_blocks", []), variables)
     final_blocks = _replace_variables(loaded_configuration.get("final_blocks", []), variables)
@@ -120,8 +120,8 @@ def _process_expconfig(f: Union[str, Path], participant_index: int, supress_mess
     else:
         settings = edict()
 
-    settings.groups = settings.get("groups", ORDERING_BEHAVIOUR.as_is)
-    settings.within_groups = settings.get("within_groups", ORDERING_BEHAVIOUR.as_is)
+    settings.groups = settings.get("groups", ORDERING_STRATEGY.as_is)
+    settings.within_groups = settings.get("within_groups", ORDERING_STRATEGY.as_is)
 
     logger.info(f"Settings used: \n {json.dumps(settings, indent=4)}")
 
@@ -139,8 +139,8 @@ def _process_expconfig(f: Union[str, Path], participant_index: int, supress_mess
         else:
             raise
     main_configuration = construct_participant_condition(main_configuration, participant_index, order=order,
-                                                         groups=settings.groups,
-                                                         within_groups=settings.within_groups)
+                                                         groups_strategy=settings.groups,
+                                                         within_groups_strategy=settings.within_groups)
 
     if "init_configuration" in loaded_configurations:
         init_configuration = json.loads(_replace_template_values(loaded_configurations["init_configuration"], template_values))

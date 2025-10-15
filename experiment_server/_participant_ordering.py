@@ -6,14 +6,15 @@ from easydict import EasyDict as edict
 from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
 
 
-ORDERING_BEHAVIOUR = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
+ORDERING_STRATEGY = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
 
 
-def construct_participant_condition(config: List[Dict], participant_index: int, order: Union[dict, list], within_groups:str =None, groups:str =None) -> List:
-    if within_groups is None:
-        within_groups = ORDERING_BEHAVIOUR.as_is
-    if groups is None:
-        groups = ORDERING_BEHAVIOUR.as_is
+# TODO: Deprecate the integer based ordering and stick to string based ordering
+def construct_participant_condition(config: List[Dict], participant_index: int, order: Union[dict,list], within_groups_strategy:Union[str,None]=None, groups_strategy:Union[str,None]=None) -> List:
+    if within_groups_strategy is None:
+        within_groups_strategy = ORDERING_STRATEGY.as_is
+    if groups_strategy is None:
+        groups_strategy = ORDERING_STRATEGY.as_is
 
     names = {}
 
@@ -25,16 +26,16 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
     if len(set(names.values()).symmetric_difference(list(range(len(config))))) != 0:
         raise ExperimentServerConfigurationExcetion("Duplicate block names: {}".format(set([c["name"] for idx, c in enumerate(config) if idx not in names.values()])))
 
-    if within_groups not in list(ORDERING_BEHAVIOUR.values()):
-        raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_BEHAVIOUR.values()}, for {within_groups}")
-    if groups not in list(ORDERING_BEHAVIOUR.values()):
-        raise ExperimentServerConfigurationExcetion(f"Allowed values for `groups` are {ORDERING_BEHAVIOUR.values()}, for {groups}")
+    if within_groups_strategy not in list(ORDERING_STRATEGY.values()):
+        raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_STRATEGY.values()}, for {within_groups_strategy}")
+    if groups_strategy not in list(ORDERING_STRATEGY.values()):
+        raise ExperimentServerConfigurationExcetion(f"Allowed values for `groups` are {ORDERING_STRATEGY.values()}, for {groups_strategy}")
 
     if isinstance(order, list):
         if not all([isinstance(group, list) for group in order]):
             order = [order,]
             # Making sure the stratergy set for groups is used for within groups
-            within_groups = groups
+            within_groups_strategy = groups_strategy
         if not all([isinstance(g, int) for group in order for g in group]) and not all([isinstance(g, str) for group in order for g in group]):
             raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int` or list of `str`, got {order}")
         
@@ -50,26 +51,26 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
         if not all([idx+1 in order.keys() for idx in range(len(order))]):
             raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {[idx + 1 for idx in list(range(len(order)))]}")
 
-        if groups != ORDERING_BEHAVIOUR.as_is:
-            raise ExperimentServerConfigurationExcetion(f"Ordering behaviour for groups should be {ORDERING_BEHAVIOUR.as_is} when order is a dictionary. Got {groups}")
+        if groups_strategy != ORDERING_STRATEGY.as_is:
+            raise ExperimentServerConfigurationExcetion(f"Ordering behaviour for groups should be {ORDERING_STRATEGY.as_is} when order is a dictionary. Got {groups_strategy}")
         _key = ((participant_index - 1) % len(order)) + 1
         _filtered_order = [order[_key],]
 
-    if groups == ORDERING_BEHAVIOUR.randomize:
+    if groups_strategy == ORDERING_STRATEGY.randomize:
         random.shuffle(_filtered_order)
-    elif groups == ORDERING_BEHAVIOUR.latin_square:
+    elif groups_strategy == ORDERING_STRATEGY.latin_square:
         _latin_square = balanced_latin_square(len(_filtered_order))
         _participant_order = _latin_square[(participant_index - 1) % len(_filtered_order)]
 
         _filtered_order = [_filtered_order[idx] for idx in _participant_order]
 
-    if within_groups == ORDERING_BEHAVIOUR.randomize:
+    if within_groups_strategy == ORDERING_STRATEGY.randomize:
         for group in _filtered_order:
             random.shuffle(group)
-    elif within_groups == ORDERING_BEHAVIOUR.latin_square:
+    elif within_groups_strategy == ORDERING_STRATEGY.latin_square:
         elements_in_group = set([len(_g) for _g  in _filtered_order])
         if len(elements_in_group) != 1:
-            raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_BEHAVIOUR.latin_square} not supported for `within_groups` when the number of elements in all groups are not the same")
+            raise ExperimentServerConfigurationExcetion(f"Currently {ORDERING_STRATEGY.latin_square} not supported for `within_groups` when the number of elements in all groups are not the same")
         else:
             _elements_count = elements_in_group.pop()
             _latin_square = [el for l in balanced_latin_square(_elements_count) for el in [l,] * len(_filtered_order)]
@@ -82,45 +83,3 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
         return [config[i] for i in chained_order]
     else:
         return [config[names[i]] for i in chained_order]
-    
-
-# def _construct_participant_condition_old(config, participant_index, use_latin_square=False, latin_square=None, config_categorization=None, default_configuration=None, randomize=True):
-#     if participant_index < 1:
-#         participant_index = 1
-#     if use_latin_square:
-#         _config = [config[i - 1] for i in latin_square[(participant_index - 1) % len(config)]]
-#     else:
-#         assert len(config_categorization) == 2
-#         if not randomize or participant_index % len(config_categorization) == 0:
-#             init_condition = config_categorization[0][:]
-#             other_condition = config_categorization[1][:]
-#         else:
-#             init_condition = config_categorization[1][:]
-#             other_condition = config_categorization[0][:]
-#         init_condition = [config[i] for i in init_condition]
-#         other_condition = [config[i] for i in other_condition]
-#         random.shuffle(init_condition)
-#         random.shuffle(other_condition)
-
-#         if default_configuration is not None:
-#             default_configuration_config = default_configuration[0]["config"]
-#             non_default_keys = [k for k in default_configuration_config.keys() if k not in ["conditionId"]]
-
-#             init_condition_train = init_condition[0].copy()
-#             init_condition_train["config"] = init_condition_train["config"].copy()
-#             init_condition_train["config"]["conditionId"] = "training1"
-#             for k in non_default_keys:
-#                 init_condition_train["config"][k] = default_configuration_config[k]
-
-#             other_condition_train = other_condition[0].copy()
-#             other_condition_train["config"] = other_condition_train["config"].copy()
-#             other_condition_train["config"]["conditionId"] = "training2"
-#             for k in non_default_keys:
-#                 other_condition_train["config"][k] = default_configuration_config[k]
-
-#             _config = [init_condition_train] + init_condition + [other_condition_train] + other_condition
-
-#         else:
-#             _config = init_condition + other_condition
-#         # _config = [config[i] for i in _config_list]
-#     return _config
