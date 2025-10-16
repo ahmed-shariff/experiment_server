@@ -1,5 +1,6 @@
 from pathlib import Path
 import random
+import warnings
 from shutil import ExecError
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -63,8 +64,28 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
     configurations = loaded_configuration.get("configuration", {})
     variables = configurations.get("variables", {})
 
-    configurations_groups = configurations.get("groups", ORDERING_STRATEGY.as_is)
-    configurations_within_groups = configurations.get("within_groups", ORDERING_STRATEGY.as_is)
+    order_groups_strategy = ORDERING_STRATEGY.as_is
+    # TODO: Remove in 0.4
+    order_groups_strategy_new = configurations.get("groups_strategy", None)
+    order_groups_strategy_old = configurations.get("groups", None)
+    if order_groups_strategy_old is not None:
+        warnings.warn("`groups` is being deprecated, use `groups_strategy`", FutureWarning)
+        if order_groups_strategy_new is None:
+            order_groups_strategy = order_groups_strategy_old
+    if order_groups_strategy_new is not None:
+        order_groups_strategy = order_groups_strategy_new
+
+    order_within_groups_strategy = ORDERING_STRATEGY.as_is
+    # TODO: Remove in 0.4
+    order_within_groups_strategy_new = configurations.get("within_groups_strategy", None)
+    order_within_groups_strategy_old = configurations.get("within_groups", None)
+    if order_within_groups_strategy_old is not None:
+        warnings.warn("`within_groups` is being deprecated, use `within_groups_strategy`", FutureWarning)
+        if order_within_groups_strategy_new is None:
+            order_within_groups_strategy = order_within_groups_strategy_old
+    if order_within_groups_strategy_new is not None:
+        order_within_groups_strategy = order_within_groups_strategy_new
+
     init_blocks_names = configurations.get("init_blocks", [])
     final_blocks_names = configurations.get("final_blocks", [])
     init_blocks_strategy = configurations.get("init_blocks_strategy", None)
@@ -84,8 +105,8 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
     blocks = construct_participant_condition(all_blocks, participant_index, order=order,
                                              init_block_names=init_blocks_names,
                                              final_block_names=final_blocks_names,
-                                             groups_strategy=configurations_groups,
-                                             within_groups_strategy=configurations_within_groups,
+                                             groups_strategy=order_groups_strategy,
+                                             within_groups_strategy=order_within_groups_strategy,
                                              init_blocks_strategy=init_blocks_strategy,
                                              final_blocks_strategy=final_blocks_strategy)
 
