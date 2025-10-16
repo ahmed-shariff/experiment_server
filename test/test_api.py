@@ -34,7 +34,7 @@ class TestParticipantState:
     def test_blockBlock(self, state):
         state.block_id = 7
         assert state._block_id == 7
-        assert state.block["name"] == "7"
+        assert state.block["config"]["block_id"] == 7
 
     def test_moveToNextBlock(self, state):
         state.block_id = 1
@@ -42,10 +42,10 @@ class TestParticipantState:
         assert state._block_id == 2
 
     def test_activeOnEnd(self, state):
-        state.block_id = 7
+        state.block_id = 9
         assert state.active == True
         state.move_to_next_block()
-        assert state._block_id == 8
+        assert state._block_id == 10
         assert state.active == False
 
 

@@ -70,6 +70,13 @@ trialsPerItem = "$TRIALS_PER_ITEM"
 conditionId = "indir_75_off"
 relativePosition = "off"
 
+[[blocks]]
+name = "init_block_0"
+extends = "0"
+
+[[blocks]]
+name = "final_block_0"
+extends = "0"
 
 # [[init_blocks]]
 # name = "configuration"
@@ -85,6 +92,8 @@ relativePosition = "off"
 
 [configuration]
 order = [["0", "2", "4", "6"], ["1", "3", "5", "7"]]
+init_blocks = ["init_block_0"]
+final_blocks = ["final_block_0"]
 
 [configuration.variables]
 TRIALS_PER_ITEM = 3
