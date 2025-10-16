@@ -35,10 +35,7 @@ def test_order_fail_checks(order):
 @pytest.mark.parametrize(
     "order",[
         ["0", "1", "2", "3"],
-        [0, 1, 2, 3],
-        [[0], [1], [2], [3]],
         [["0"], ["1"], ["2"], ["3"]],
-        {"1": [0], "2":[1], "3":[3]},
         {"1": ["0"], "2":["1"], "3":["3"]}])
 def test_order_pass_checks(order):
     try:
@@ -57,9 +54,9 @@ def test_duplicate_name_fail():
 
 @pytest.mark.parametrize(
     "order, randomize_within_groups, randomize_groups",[
-        ([[0], [1], [2], [3]], ORDERING_STRATEGY.as_is, ORDERING_STRATEGY.randomize),
-        ([[0, 1, 2, 3]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.as_is),
-        ([[0, 1], [2, 3]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.randomize)])
+        ([["0"], ["1"], ["2"], ["3"]], ORDERING_STRATEGY.as_is, ORDERING_STRATEGY.randomize),
+        ([["0", "1", "2", "3"]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.as_is),
+        ([["0", "1"], ["2", "3"]], ORDERING_STRATEGY.randomize, ORDERING_STRATEGY.randomize)])
 def test_group_randomization(order, randomize_within_groups, randomize_groups):
     config = generate_test_config()
     out_config_1 = [c["name"] for c in construct_participant_condition(config, 1, order, randomize_within_groups, randomize_groups)]
@@ -71,7 +68,7 @@ def test_group_randomization(order, randomize_within_groups, randomize_groups):
 
 def test_return_all_configs():
     config = generate_test_config()
-    out_config_idx = [c["name"] for c in construct_participant_condition(config, 1, [[0, 1, 2, 3]])]
+    out_config_idx = [c["name"] for c in construct_participant_condition(config, 1, [["0", "1", "2", "3"]])]
     assert all([str(idx) in out_config_idx for idx in range(4)])
 
 
@@ -97,6 +94,7 @@ def test_balanced_latin_square(number_of_conditions, latin_square):
         [8, [[0, 1], [2, 3], [4, 5], [6, 7]]],
         ])
 def test_group_latin_square(size, order):
+    order = [[str(g) for g in group] for group in order]
     collected_configs = []
 
     # Making sure the participants are rotated the same conditions
@@ -111,10 +109,10 @@ def test_group_latin_square(size, order):
 
 @pytest.mark.parametrize(
     "size, participant_index, order, expected_order", [
-        [4, 1, {1: [0, 1], 2: [2, 3]}, ["0", "1"]],
-        [4, 2, {1: [0, 1], 2: [2, 3]}, ["2", "3"]],
-        [4, 3, {1: [0, 1], 2: [2, 3]}, ["0", "1"]],
-        [4, 4, {1: [0, 1], 2: [2, 3]}, ["2", "3"]],
+        [4, 1, {1: ["0", "1"], 2: ["2", "3"]}, ["0", "1"]],
+        [4, 2, {1: ["0", "1"], 2: ["2", "3"]}, ["2", "3"]],
+        [4, 3, {1: ["0", "1"], 2: ["2", "3"]}, ["0", "1"]],
+        [4, 4, {1: ["0", "1"], 2: ["2", "3"]}, ["2", "3"]],
         ])
 def test_dict_order(size, participant_index, order, expected_order):
     config = construct_participant_condition(generate_test_config(size), participant_index, order)
