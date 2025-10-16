@@ -65,28 +65,34 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
 
     configurations_groups = configurations.get("groups", ORDERING_STRATEGY.as_is)
     configurations_within_groups = configurations.get("within_groups", ORDERING_STRATEGY.as_is)
+    init_blocks_names = configurations.get("init_blocks", [])
+    final_blocks_names = configurations.get("final_blocks", [])
+    init_blocks_strategy = configurations.get("init_blocks_strategy", None)
+    final_blocks_strategy = configurations.get("final_blocks_strategy", None)
 
     random_seed = configurations.get("random_seed", 0)
     random.seed(random_seed + participant_index)
 
     all_blocks = _replace_variables(loaded_configuration["blocks"], variables)
-    order = configurations.get("order", [list(range(len(all_blocks)))])
+    assert isinstance(all_blocks, list)
+
+    order = configurations.get("order", [str(i) for i in list(range(len(all_blocks)))])
 
     for c in all_blocks:
         c["name"] = str(c["name"])
 
     blocks = construct_participant_condition(all_blocks, participant_index, order=order,
+                                             init_block_names=init_blocks_names,
+                                             final_block_names=final_blocks_names,
                                              groups_strategy=configurations_groups,
-                                             within_groups_strategy=configurations_within_groups)
+                                             within_groups_strategy=configurations_within_groups,
+                                             init_blocks_strategy=init_blocks_strategy,
+                                             final_blocks_strategy=final_blocks_strategy)
 
-    init_blocks = _replace_variables(loaded_configuration.get("init_blocks", []), variables)
-    final_blocks = _replace_variables(loaded_configuration.get("final_blocks", []), variables)
+    block_names = [c["name"] for c in blocks]
 
-    block_names = [c["name"] for c in (init_blocks + blocks + final_blocks)]
     # Using merge_dicts to ensure the values are references
-    resolved_blocks = {c["name"]: c for c in
-                       resolve_extends([merge_dicts(b, {}) for b in
-                                        (init_blocks + all_blocks + final_blocks)])}
+    resolved_blocks = {c["name"]: c for c in resolve_extends([merge_dicts(b, {}) for b in all_blocks])}
 
     # Use block names to get resolved blocks in the expected order
     blocks = [resolved_blocks[c] for c in block_names]
@@ -139,6 +145,8 @@ def _process_expconfig(f: Union[str, Path], participant_index: int, supress_mess
         else:
             raise
     main_configuration = construct_participant_condition(main_configuration, participant_index, order=order,
+                                                         init_block_names=[],
+                                                         final_block_names=[],
                                                          groups_strategy=settings.groups,
                                                          within_groups_strategy=settings.within_groups)
 
