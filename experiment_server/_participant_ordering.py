@@ -9,22 +9,19 @@ from experiment_server.utils import ExperimentServerConfigurationExcetion, balan
 ORDERING_STRATEGY = edict({v:v for v in ["randomize", "latin_square", "as_is"]})
 
 
-# TODO: Deprecate the integer based ordering and stick to string based ordering
 def construct_participant_condition(config: List[Dict], participant_index: int, order: Union[dict,list], within_groups_strategy:Union[str,None]=None, groups_strategy:Union[str,None]=None) -> List:
     if within_groups_strategy is None:
         within_groups_strategy = ORDERING_STRATEGY.as_is
     if groups_strategy is None:
         groups_strategy = ORDERING_STRATEGY.as_is
 
-    names = {}
+    name_to_config_mapping = {}
 
-    # To make sure the string based indexing works
-    for idx, c in enumerate(config):
-        c["name"] = str(c["name"])
-        names[c["name"]] = idx
-
-    if len(set(names.values()).symmetric_difference(list(range(len(config))))) != 0:
-        raise ExperimentServerConfigurationExcetion("Duplicate block names: {}".format(set([c["name"] for idx, c in enumerate(config) if idx not in names.values()])))
+    for c in config:
+        name = c["name"] = str(c["name"])
+        if name in name_to_config_mapping:
+            raise ExperimentServerConfigurationExcetion(f"Duplicate block name: {name}")
+        name_to_config_mapping[c["name"]] = c
 
     if within_groups_strategy not in list(ORDERING_STRATEGY.values()):
         raise ExperimentServerConfigurationExcetion(f"Allowed values for `within_groups` are {ORDERING_STRATEGY.values()}, for {within_groups_strategy}")
@@ -36,8 +33,8 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
             order = [order,]
             # Making sure the stratergy set for groups is used for within groups
             within_groups_strategy = groups_strategy
-        if not all([isinstance(g, int) for group in order for g in group]) and not all([isinstance(g, str) for group in order for g in group]):
-            raise ExperimentServerConfigurationExcetion(f"Each group in the order needs to be a list of `int` or list of `str`, got {order}")
+        if not all([isinstance(g, str) for group in order for g in group]):
+            raise ExperimentServerConfigurationExcetion(f"All conditions in order were expected to be strings, got {order}")
         
         _filtered_order = order
         
@@ -45,8 +42,8 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
         order = {int(k):v for k, v in order.items()}
         if not all([isinstance(_order, list) for _order in order.values()]):
             raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be list, got {order}")
-        if not all([isinstance(val, int) for _order in order.values() for val in _order]) and not all([isinstance(val, str) for _order in order.values() for val in _order]):
-            raise ExperimentServerConfigurationExcetion(f"Each group in orders for all participants needs to be a list of `int` or list of `str`, got {order}")
+        if not all([isinstance(val, str) for _order in order.values() for val in _order]):
+            raise ExperimentServerConfigurationExcetion(f"All conditions in order for all participants needs to be a strings, got {order}")
 
         if not all([idx+1 in order.keys() for idx in range(len(order))]):
             raise ExperimentServerConfigurationExcetion(f"Keys order oredr should match the consecutive indices starting from 1. Got keys {list(order.keys())}, expected keys {[idx + 1 for idx in list(range(len(order)))]}")
@@ -79,7 +76,4 @@ def construct_participant_condition(config: List[Dict], participant_index: int, 
             _filtered_order = [[_g[idx] for idx in _group_order] for _g in _filtered_order]
 
     chained_order = list(itertools.chain(*_filtered_order))
-    if isinstance(chained_order[0], int):
-        return [config[i] for i in chained_order]
-    else:
-        return [config[names[i]] for i in chained_order]
+    return [name_to_config_mapping[i] for i in chained_order]
