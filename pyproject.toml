@@ -47,13 +47,11 @@ click-aliases = ">=1.0.4"
 
 experiment-server = "experiment_server.cli:cli"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = ">=6"
 pytest-mock = ">=3"
 pytest-cov = ">=2"
 deepdiff = ">=5.8.1"
-
-[tool.poetry.group.dev.dependencies]
 mypy = ">=0.990"
 debugpy = ">=1.6.3"
 mkdocs = "^1.5.3"
