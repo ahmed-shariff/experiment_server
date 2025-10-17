@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.5]
+## [0.3.6] - 2025-10-17
+### Changed
+- Update readme and example config to improve readability.
+- Update dev dependancies
+
+### Fixed
+- github workflow
+
+### Removed
+- Removed sample_config.expconfig
+
+## [0.3.5] - 2025-10-17
 ### Changed
 - Ordering strategies are consistantly called strategies througout
   - `groups` and `within_groups` options in a configuration are now called `groups_strategy` and `within_groups_strategy` respectively. The old names are supported till 0.4 release.
