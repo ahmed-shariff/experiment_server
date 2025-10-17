@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5]
+### Changed
+- Ordering strategies are consistantly called strategies througout
+  - `groups` and `within_groups` options in a configuration are now called `groups_strategy` and `within_groups_strategy` respectively. The old names are supported till 0.4 release.
+
+### Added
+- Adding `init_blocks` and `final_blocks`
+  Previously these were undocumented features and represented blocks themselves. Now they are simialr to the `order` configuration.
+- Adding `init_blocks_strategy` and `final_blocks_strategy` which support `randomized` as `as_is`
+- Adding proper documentation for dict based ordering. init and final blocks also support the dict based orders.
+
+### Removed
+- Removed support for expconfig.
+- Removed support for index based orders.
+
 ## [0.3.4]
 ### Fixed
 - Participant order with dictionary failing
