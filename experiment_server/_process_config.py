@@ -16,6 +16,53 @@ ALLOWED_SETTINGS = ["randomize_within_groups", "randomize_groups"]
 
 
 def process_config_file(f: Union[str, Path], participant_index: int, supress_message:bool=False) -> List[Dict[str, Any]]:
+    """
+    Load and resolve an experiment configuration file for a single participant.
+
+    This function reads a configuration file (currently only TOML files are supported),
+    applies configuration-level variables and ordering rules, resolves inheritance
+    (extends), evaluates configured function calls, and returns the list of block
+    configurations for the specified participant index in the order they will be executed.
+
+    Parameters
+    - f (Union[str, Path]):
+        Path or string filename pointing to the configuration file. Files must have a
+        ".toml" suffix; other formats will raise an ExperimentServerExcetion.
+    - participant_index (int):
+        1-based index of the participant for which to construct the configuration. Must
+        be greater than 0; otherwise an ExperimentServerConfigurationExcetion is raised.
+        This index is used where deterministic rotations (e.g. latin-square or per-participant
+        assignment) are requested and is added to any configured random seed to provide
+        reproducible per-participant randomness.
+    - supress_message (bool, optional):
+        If False (default), a JSON summary of the resolved configuration for the participant
+        is logged. If True, the info log is suppressed.
+
+    Returns
+    - List[Dict[str, Any]]:
+        A list of resolved block configuration dictionaries for the participant in execution
+        order. Each block's "config" dict will include the keys "participant_index", "name",
+        and "block_id" (the zero-based index within the returned list).
+
+    Raises
+    - ExperimentServerConfigurationExcetion:
+        If the participant_index is invalid, required variables are missing, inheritance
+        references are invalid, or other configuration validation errors occur.
+    - ExperimentServerExcetion:
+        If the file type is unsupported (non-.toml).
+    - toml.TomlDecodeError or IOError:
+        If the TOML file cannot be read or parsed.
+
+    Notes
+    - The function delegates group and per-participant ordering logic to the participant
+      ordering utilities; randomization behavior depends on the provided configuration's
+      "random_seed" combined with participant_index and on the global random state.
+    - The function performs variable replacement, resolves "extends" inheritance (merging
+      dictionaries), and evaluates configured function-calls such as choices(...) before
+      returning the final block list.
+
+    See also `construct_participant_condition`.
+    """
     if participant_index < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
 
@@ -116,6 +163,20 @@ def _resolve_extends(c, configs, seen_configs):
 
 
 def resolve_extends(configs):
+    """Resolve 'extends' inheritance for a list of block configuration dicts.
+
+    Args:
+        configs (list): List of dicts each containing a unique "name". Dicts may include
+            an "extends" key referencing another config's name.
+
+    Returns:
+        list: The provided list with inheritance applied so each config includes merged
+        values from its ancestor(s). The input list is mutated in-place.
+
+    Raises:
+        ExperimentServerConfigurationExcetion: If an "extends" reference names a
+            non-existent config.
+    """
     # Adding idx to track the configs
     for idx, c in enumerate(configs):
         c["block_idx"] = idx
@@ -130,13 +191,24 @@ def resolve_extends(configs):
     return configs
 
 
-def _replace_template_values(string, template_values):
-    for k, v in template_values.items():
-        string = string.replace("{" + k + "}", json.dumps(v))
-    return string
-
-
 def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict[str, Any]) -> Union[Dict[str, Any], List[Any]]:
+    """
+    Recursively substitute variable placeholders in a config.
+
+    Any string beginning with '$' is replaced by the value from `variabels`
+    using the name after the '$'. Nested dicts and lists are traversed and
+    preserved in structure.
+
+    Args:
+        config: A dict or list tree containing values to resolve.
+        variabels: Mapping of variable names (without '$') to replacement values.
+
+    Returns:
+        A new dict or list with all '$'-prefixed variables substituted.
+
+    Raises:
+        ExperimentServerConfigurationExcetion: if a referenced variable is not found.
+    """
     resolved_config: Union[Dict, List]
     if isinstance(config, dict):
         resolved_config = {}
@@ -258,6 +330,22 @@ class ChoicesFunction:
 
 
 def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:
+    """
+    Verify an experiment TOML config by constructing participant orders for participants 1–5.
+
+    For each participant index 1..5 this loads the resolved configuration via
+    `process_config_file`. If provided, `test_func` is called with the resolved blocks and
+    must return (True, reason) on success; otherwise an assertion or exception is raised. On
+    success a summary table is logged and the function returns True.
+
+    Args:
+        f: Path or filename of the TOML configuration file.
+        test_func: Optional callable receiving the resolved blocks and returning
+            a (bool, str) tuple indicating success and an optional reason.
+
+    Returns:
+        True if verification completed successfully for all checked participants.
+    """
     import pandas as pd
     from tabulate import tabulate
     with logger.catch(reraise=False, message="Config verification failed"):

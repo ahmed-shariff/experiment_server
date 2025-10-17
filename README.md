@@ -47,18 +47,41 @@ See example `.toml` below for how the configuration can be defined.
 # The `configuration` table contains the settings of the study/experiment itself
 [configuration]
 # The `order` is an array of block names or an array of array of block names.
+# The `order` also can be a dictionary/table. If it is a dictionary/table, the keys should
+# be participant indices starting from 1. The values should be a list of block names.
+# The keys are the participant indices - when experiment manager is queries with a given
+# participant index, the dictionary/table will be used as a lookup table and the
+# corresponding list of blocks will be used. When a participant index larger than the
+# highest participant index is queries through experiment manager, the modulus of the
+# index will be used to determine which list of conditions should be used.
+# In the following example order with a table/dictionary, participant index 4 would get
+# the blocks assigned to participant index 1:
+# order = {1= ["conditionA", "conditionB", "conditionA", "conditionB"], 2= ["conditionB", "conditionA", "conditionB", "conditionA"], 3= ["conditionB", "conditionB", "conditionA", "conditionA"]}
 order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
-# The `groups` and `within_groups` are optional keys that allows you to define how the
-# conditions specified in `order` will be managed. `groups` would dictate how the top 
-# level array of `order` will be handled. `within_groups` would dictate how the conditions
-# in the nested arrays (if specified) would be managed. These keys can have one 
-# of the following values.
+
+
+# The `groups_strategy` and `within_groups_strategy` are optional keys that allows you to
+# define how the conditions specified in `order` will be managed. `groups_strategy` would
+# dictate how the top level array of `order` will be handled. `within_groups_strategy`
+# would dictate how the conditions in the nested arrays (if specified) would be
+# managed. These keys can have one of the following values.
 # - "latin_square": Apply latin square to balance the values.
 # - "randomize": For each participant randomize the order of the values in the array.
 # - "as_is": Use the order of the values as specified.
 # When not specified, the default value is "as_is" for both keys.
-groups = "latin_square"
-within_groups= "randomize"
+groups_strategy = "latin_square"
+within_groups_strategy = "randomize"
+
+# The following are optional keys. `init_blocks` is a list of blocks which will be
+# appended to the start and `final_blocks` are a list of blocks that would be appended to
+# the end. The respective strategies dictate the ordering withing the list of init or
+# final blocks. For init and final blocks only the "randomize" and "as_is" are
+# supported. By default, their values are "as_is".
+init_blocks = ["initialBlock"]
+final_blocks = ["finalBlockA", "finalBlockB"]
+init_blocks_strategy = "as_is"
+final_blocks_strategy = "randomize"
+
 # The random seed to use for any randomization. Default seed is 0. The seed will be
 # the value of random_seed + participant_index
 random_seed = 0
@@ -109,6 +132,15 @@ The above config file, after being processed, would result in the following list
 ```json
 [
   {
+    "name": "initialBlock",
+    "config": {
+      "param1": 1,
+      "participant_index": 1,
+      "name": "initialBlock",
+      "block_id": 0
+    }
+  },
+  {
     "name": "conditionB",
     "extends": "conditionA",
     "config": {
@@ -119,11 +151,11 @@ The above config file, after being processed, would result in the following list
       "param1": 1,
       "param2": [
         1,
-        2
+        3
       ],
       "participant_index": 1,
       "name": "conditionB",
-      "block_id": 0
+      "block_id": 1
     }
   },
   {
@@ -136,11 +168,11 @@ The above config file, after being processed, would result in the following list
         2
       ],
       "param3": [
-        3
+        1
       ],
       "participant_index": 1,
       "name": "conditionA",
-      "block_id": 1
+      "block_id": 2
     }
   },
   {
@@ -149,15 +181,15 @@ The above config file, after being processed, would result in the following list
       "trialsPerItem": 3,
       "param1": 1,
       "param2": [
-        1,
-        1
+        2,
+        3
       ],
       "param3": [
         2
       ],
       "participant_index": 1,
       "name": "conditionA",
-      "block_id": 2
+      "block_id": 3
     }
   },
   {
@@ -170,12 +202,30 @@ The above config file, after being processed, would result in the following list
       "trialsPerItem": 3,
       "param1": 1,
       "param2": [
-        3,
-        1
+        2,
+        3
       ],
       "participant_index": 1,
       "name": "conditionB",
-      "block_id": 3
+      "block_id": 4
+    }
+  },
+  {
+    "name": "finalBlockA",
+    "config": {
+      "param1": 1,
+      "participant_index": 1,
+      "name": "finalBlockA",
+      "block_id": 5
+    }
+  },
+  {
+    "name": "finalBlockB",
+    "config": {
+      "param1": 1,
+      "participant_index": 1,
+      "name": "finalBlockB",
+      "block_id": 6
     }
   }
 ]
