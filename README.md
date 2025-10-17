@@ -44,70 +44,90 @@ $ experiment-server new-config-file new_config.toml
 See example `.toml` below for how the configuration can be defined.
 
 ```toml
-# The `configuration` table contains the settings of the study/experiment itself
+# The `configuration` table contains settings of the study/experiment itself
 [configuration]
-# The `order` is an array of block names or an array of array of block names.
-# The `order` also can be a dictionary/table. If it is a dictionary/table, the keys should
-# be participant indices starting from 1. The values should be a list of block names.
-# The keys are the participant indices - when experiment manager is queries with a given
-# participant index, the dictionary/table will be used as a lookup table and the
-# corresponding list of blocks will be used. When a participant index larger than the
-# highest participant index is queries through experiment manager, the modulus of the
-# index will be used to determine which list of conditions should be used.
-# In the following example order with a table/dictionary, participant index 4 would get
-# the blocks assigned to participant index 1:
+# The `order` is an array of block names or an array of array of block
+# names.  The `order` also can be a dictionary/table. If it is a
+# dictionary/table, the keys should be participant indices starting
+# from 1. The values should be a list of block names.  The keys are
+# the participant indices - when experiment manager is queries with a
+# given participant index, the dictionary/table will be used as a
+# lookup table and the corresponding list of blocks will be used. When
+# a participant index larger than the highest participant index is
+# queries through experiment manager, the modulus of the index will be
+# used to determine which list of conditions should be used.  In the
+# following example order with a table/dictionary, participant index 4
+# would get the blocks assigned to participant index 1:
+# 
 # order = {1= ["conditionA", "conditionB", "conditionA", "conditionB"], 2= ["conditionB", "conditionA", "conditionB", "conditionA"], 3= ["conditionB", "conditionB", "conditionA", "conditionA"]}
+#
+# The same example as a toml table:
+# 
+# [configuration.order]
+# 1= ["conditionA", "conditionB", "conditionA", "conditionB"]
+# 2= ["conditionB", "conditionA", "conditionB", "conditionA"]
+# 3= ["conditionB", "conditionB", "conditionA", "conditionA"]
+
 order = [["conditionA", "conditionB", "conditionA", "conditionB"]]
 
+# The `groups_strategy` and `within_groups_strategy` are optional keys
+# that allows you to define how the conditions specified in `order`
+# will be managed.
+# NOTE: This applies only when the `order` is a list.
 
-# The `groups_strategy` and `within_groups_strategy` are optional keys that allows you to
-# define how the conditions specified in `order` will be managed. `groups_strategy` would
-# dictate how the top level array of `order` will be handled. `within_groups_strategy`
-# would dictate how the conditions in the nested arrays (if specified) would be
+# `groups_strategy` would dictate how the top level array of `order`
+# will be handled. `within_groups_strategy` would dictate how the
+# conditions in the nested arrays (if specified) would be
 # managed. These keys can have one of the following values.
 # - "latin_square": Apply latin square to balance the values.
-# - "randomize": For each participant randomize the order of the values in the array.
+# - "randomize": For each participant randomize the order of the
+#                values in the array.
 # - "as_is": Use the order of the values as specified.
 # When not specified, the default value is "as_is" for both keys.
 groups_strategy = "latin_square"
 within_groups_strategy = "randomize"
 
-# The following are optional keys. `init_blocks` is a list of blocks which will be
-# appended to the start and `final_blocks` are a list of blocks that would be appended to
-# the end. The respective strategies dictate the ordering withing the list of init or
-# final blocks. For init and final blocks only the "randomize" and "as_is" are
+# The following are optional keys. `init_blocks` is a list of blocks
+# which will be appended to the start and `final_blocks` are a list of
+# blocks that would be appended to the end. The respective strategies
+# dictate the ordering withing the list of init or final blocks. For
+# init and final blocks only the "randomize" and "as_is" are
 # supported. By default, their values are "as_is".
 init_blocks = ["initialBlock"]
 final_blocks = ["finalBlockA", "finalBlockB"]
 init_blocks_strategy = "as_is"
 final_blocks_strategy = "randomize"
 
-# The random seed to use for any randomization. Default seed is 0. The seed will be
-# the value of random_seed + participant_index
+# The random seed to use for any randomization. Default seed is 0. The
+# seed will be the value of random_seed + participant_index
 random_seed = 0
 
-# The subtable `variabels` are values that can be used anywhere when defining the blocks.
-# Any variable can be used by appending "$" before the variable name in the blocks. See 
-# below for an exmaple of how variables can be used
+# The subtable `variabels` are values that can be used anywhere when
+# defining the blocks.  Any variable can be used by appending "$"
+# before the variable name in the blocks. See below for an exmaple of
+# how variables can be used
 [configuration.variables]
 TRIALS_PER_ITEM = 3
 
-# Blocks are defined as an array of tables. Each block must contain `name` and the 
-# subtable `config`. Optionally, a block can also specify `extends`, whish is a `name` of
-# another block. See below for more explanation on how `extends` works
+# Blocks are defined as an array of tables. Each block must contain
+# `name` and the subtable `config`. Optionally, a block can also
+# specify `extends`, whish is a `name` of another block. See below for
+# more explanation on how `extends` works
 
 # Block: Condition A
 [[blocks]]
 name = "conditionA"
 
-# The `config` subtable can have any key-values. Note that `name` and `participant_index`
-# will be added to the `config` when this file is being processed. Hence, those keys 
-# will be overwritten if used in this subtable.
+# The `config` subtable can have any key-values. Note that `name` and
+# `participant_index` will be added to the `config` when this file is
+# being processed. Hence, those keys will be overwritten if used in
+# this subtable.
 [blocks.config]
 trialsPerItem = "$TRIALS_PER_ITEM"
 param1 = 1
-# The value can also be a function call. A function call is represented as a table
-# The following function call will be replaced with a call to 
+# The value can also be a function call. A function call is
+# represented as a table The following function call will be replaced
+# with a call to
 # [random.choices](https://docs.python.org/3/library/random.html#random.choices)
 # See `# Function calls` in README for more information.
 param2 = { function_name = "choices", args = { population = [1 , 2 , 3 ], k = 2}}
@@ -118,17 +138,37 @@ param3 = { function_name = "choices", args = [[1 , 2 , 3 ]], params = { unique =
 name = "conditionB"
 extends = "conditionA"
 
-# Since "conditionB" is extending "conditionA", the keys in the `config` subtable of 
-# the block "conditionA" not defined in the `config` subtable of "conditionB" will be copied
-# to the `config` subtable of "conditionB". In this example, `param1`, `param2` and 
+# Since "conditionB" is extending "conditionA", the keys in the
+# `config` subtable of the block "conditionA" not defined in the
+# `config` subtable of "conditionB" will be copied to the `config`
+# subtable of "conditionB". In this example, `param1`, `param2` and
 # `trialsPerItem` will be copied over here.
 [blocks.config]
 param3 = [2]
+
+# Block: Initial block
+[[blocks]]
+name = "initialBlock"
+[blocks.config]
+param1 = 1
+
+# Block: Final block A
+[[blocks]]
+name = "finalBlockA"
+[blocks.config]
+param1 = 1
+
+# Block: Final block B
+[[blocks]]
+name = "finalBlockB"
+[blocks.config]
+param1 = 1
 ```
 
 See [toml spec](https://toml.io/en/v1.0.0) for more information on the format of a toml file.
 
-The above config file, after being processed, would result in the following list of blocks for participant number 1:
+<details>
+<summary>The above config file, after being processed, would result in the following list of blocks for participant number 1:</summary>
 ```json
 [
   {
@@ -230,6 +270,7 @@ The above config file, after being processed, would result in the following list
   }
 ]
 ```
+</details>
 
 ## Verify config
 A config file can be validated by running:
