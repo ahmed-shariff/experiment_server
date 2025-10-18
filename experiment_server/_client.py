@@ -14,16 +14,14 @@ class Client:
     - Methods operate on a per-participant basis when applicable (provide
       participant_index or omit to use the server's default participant).
 
-    Parameters
-    - server_host (str): Hostname or IP of the server (default "127.0.0.1").
-    - server_port (str|int): Port of the server (default "5000").
-
     Return value for API methods
+
     - All public API methods return a tuple (success: bool, data: dict|str).
       On success data is the parsed JSON response (or "" if empty). On failure
       success is False and data contains an error message.
 
     Main methods
+
     - move_to_next(participant_index=None)
     - get_config(participant_index=None)
     - server_is_active(participant_index=None)
@@ -33,6 +31,11 @@ class Client:
     - new_participant()
     - add_participant(participant_index)
     - shutdown()
+
+    Parameters:
+        server_host (str): Hostname or IP of the server (default "127.0.0.1").
+        server_port (str|int): Port of the server (default "5000").
+
     """
     def __init__(self, server_host:str ="127.0.0.1", server_port:Union[str, int]="5000") -> None:
         self._server_url = f"http://{server_host}:{server_port}"

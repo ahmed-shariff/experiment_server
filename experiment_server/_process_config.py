@@ -24,44 +24,44 @@ def process_config_file(f: Union[str, Path], participant_index: int, supress_mes
     (extends), evaluates configured function calls, and returns the list of block
     configurations for the specified participant index in the order they will be executed.
 
-    Parameters
-    - f (Union[str, Path]):
-        Path or string filename pointing to the configuration file. Files must have a
-        ".toml" suffix; other formats will raise an ExperimentServerExcetion.
-    - participant_index (int):
-        1-based index of the participant for which to construct the configuration. Must
-        be greater than 0; otherwise an ExperimentServerConfigurationExcetion is raised.
-        This index is used where deterministic rotations (e.g. latin-square or per-participant
-        assignment) are requested and is added to any configured random seed to provide
-        reproducible per-participant randomness.
-    - supress_message (bool, optional):
-        If False (default), a JSON summary of the resolved configuration for the participant
-        is logged. If True, the info log is suppressed.
+    Parameters:
+        f (Union[str, Path]):
+            Path or string filename pointing to the configuration file. Files must have a
+            ".toml" suffix; other formats will raise an ExperimentServerExcetion.
+        participant_index (int):
+            1-based index of the participant for which to construct the configuration. Must
+            be greater than 0; otherwise an ExperimentServerConfigurationExcetion is raised.
+            This index is used where deterministic rotations (e.g. latin-square or per-participant
+            assignment) are requested and is added to any configured random seed to provide
+            reproducible per-participant randomness.
+        supress_message (bool, optional):
+            If False (default), a JSON summary of the resolved configuration for the participant
+            is logged. If True, the info log is suppressed.
 
-    Returns
-    - List[Dict[str, Any]]:
-        A list of resolved block configuration dictionaries for the participant in execution
-        order. Each block's "config" dict will include the keys "participant_index", "name",
-        and "block_id" (the zero-based index within the returned list).
+    Returns:
+        List[Dict[str, Any]]:
+            A list of resolved block configuration dictionaries for the participant in execution
+            order. Each block's "config" dict will include the keys "participant_index", "name",
+            and "block_id" (the zero-based index within the returned list).
 
-    Raises
-    - ExperimentServerConfigurationExcetion:
-        If the participant_index is invalid, required variables are missing, inheritance
-        references are invalid, or other configuration validation errors occur.
-    - ExperimentServerExcetion:
-        If the file type is unsupported (non-.toml).
-    - toml.TomlDecodeError or IOError:
-        If the TOML file cannot be read or parsed.
+    Raises:
+        ExperimentServerConfigurationExcetion:
+            If the participant_index is invalid, required variables are missing, inheritance
+            references are invalid, or other configuration validation errors occur.
+        ExperimentServerExcetion:
+            If the file type is unsupported (non-.toml).
+        toml.TomlDecodeError or IOError:
+            If the TOML file cannot be read or parsed.
 
-    Notes
-    - The function delegates group and per-participant ordering logic to the participant
-      ordering utilities; randomization behavior depends on the provided configuration's
-      "random_seed" combined with participant_index and on the global random state.
-    - The function performs variable replacement, resolves "extends" inheritance (merging
-      dictionaries), and evaluates configured function-calls such as choices(...) before
-      returning the final block list.
+    Notes:
+        The function delegates group and per-participant ordering logic to the participant
+          ordering utilities; randomization behavior depends on the provided configuration's
+          "random_seed" combined with participant_index and on the global random state.
+        The function performs variable replacement, resolves "extends" inheritance (merging
+          dictionaries), and evaluates configured function-calls such as choices(...) before
+          returning the final block list.
 
-    See also `construct_participant_condition`.
+    See also `experiment_server._participant_ordering.construct_participant_condition`.
     """
     if participant_index < 1:
         raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")

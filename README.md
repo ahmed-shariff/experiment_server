@@ -272,12 +272,16 @@ See [toml spec](https://toml.io/en/v1.0.0) for more information on the format of
 ```
 </details>
 
+See [construct_participant_condition][experiment_server._participant_ordering.construct_participant_condition] and [process_config_file][experiment_server._process_config.process_config_file] for more information.
+
 ## Verify config
 A config file can be validated by running:
 ```sh
 $ experiment-server verify-config-file sample_config.toml
 ```
 This will show how the expanded config looks like for the first 5 participants.
+
+See also [verify_config][experiment_server._process_config.verify_config]
 
 ## Loading experiment through server
 After installation, the server can used as:
@@ -320,7 +324,7 @@ The server exposes the following REST API:
 
 - [PUT] `/api/add-participant/:participant-id` - Add a new participant with `participant-id`. If there is already a participant with the `participant-id`, this will fail. 
 
-For a Python application, `experiment_server.Client` can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
+For a Python application, [`experiment_server.Client`][experiment_server.Client] can be used to access configs from the server. Also, the server can be launched programmatically using `experiment_server.server_process` which returns a [`Process`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process) object.
 
 **NOTE**: If the config file served is changed, the new config will be loaded, but the state of the participants will be maintained. i.e., the added participants and the block id they are at will not change. To move the block ids for all active participants, you would have to call the `move-all-to-block` endpoint.
 
@@ -330,7 +334,7 @@ The server also provides a simple web interface, which can be accessed at `/` or
 
 
 ## Loading experiment through API
-A configuration can be loaded and managed by importing `experiment_server.Experiment`.
+A configuration can be loaded and managed by importing [`experiment_server.Experiment`][experiment_server.Experiment].
 
 ## Generate expanded configs
 A config file (i.e. `.toml` file), can be expanded to JSON with the following command
@@ -340,6 +344,8 @@ $ experiment-server generate-config-json sample_config.toml --participant-range 
 ```
 
 The above will generate the expanded configs for participant indices 1 to 5 as JSON output on stdout. This result can be written out to individual JSON files by setting the `--out-dir`/`-d` to a directory. See more options with `--help`
+
+See also [_generate_config_json][experiment_server._api._generate_config_json]
 
 ## Function calls in config
 A function call in the config is represented by a table, with the following keys 
@@ -362,7 +368,3 @@ param = { foo = "test", bar = { function_name = "choices", args = { population =
 ```
 
 For more on the `experiemnt-server` and how it can be used see the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki)
-
-# Wishlist (todo list?)
-- Improved docs
-  - Add the option of using dict values in order

@@ -29,91 +29,95 @@ def construct_participant_condition(config: List[Dict],
       - within_groups (ordering of elements inside each group)
       - init_blocks and final_blocks (ordering of initial and final blocks appended before/after main groups)
 
-    Parameters
-    - config (List[Dict]):
-        A list of block configuration dictionaries. Each dict must contain a unique "name" key whose
-        value will be coerced to a string. The returned value is a list of these configuration dicts
-        arranged according to the computed participant order.
+    Behavior details and constraints:
+        - Names in `order`, `init_block_names`, and `final_block_names` are validated to be strings and must
+          match unique names in `config`. Duplicate names in `config` cause an error.
+        - When `groups_strategy` or `within_groups_strategy` is "randomize", Python's random.shuffle is used
+          (non-deterministic unless the caller seeds the RNG).
+        - When "latin_square" is requested for groups or within-group ordering, a balanced Latin square
+          generator is used and `participant_index` selects the row; latin-square requires equal-sized
+          values where appropriate (e.g., all groups must have the same size when using within-group
+          latin-square).
+        - When dictionary mappings are provided for order/init/final blocks, keys are expected to be
+          1-based consecutive integer indices (or strings coercible to those integers). For dicts, the
+          corresponding strategy argument must be "as_is".
 
-    - participant_index (int):
-        1-based index of the participant used to select deterministic rotations when latin-square or
-        per-participant dictionary-based indexing is used. Must be positive.
+    Notes:
+          The function does not modify the input `config` objects beyond coercing the "name" field to str.
+              Deterministic rotation behavior for latin-square and dict-based selection is 1-based and uses
+              (participant_index - 1) modulo the appropriate period.
 
-    - order (Union[dict, list]):
-        Specification of the main experimental order. Two forms are supported:
-          * list of groups: e.g. [["A","B"], ["C","D","E"]] where each inner list is a group of block names.
-            If a flat list of strings is provided (["A","B","C"]) it will be treated as a single group.
-          * dict keyed by participant index (string or int keys) mapping to a group-list for that participant.
-            When a dict is provided, the `groups_strategy` must be "as_is" (per-participant assignment by key).
-        All block names in the resolved order must be strings and must exist in `config`.
+    Args:
+        config (List[Dict]): A list of block configuration dictionaries. Each dict must contain a
+        unique "name" key whose value will be coerced to a string. The returned value is a list of
+        these configuration dicts arranged according to the computed participant order.
 
-    - init_block_names (Union[dict, list]):
-        Names of blocks to prepend for the participant. Accepts a list of block names (strings) or a
-        dictionary keyed by participant indices (1-based) to select a list for the participant. When a
-        dict is supplied, the strategy for init blocks must be "as_is" (per-participant selection).
+        participant_index (int): 1-based index of the participant used to select deterministic
+        rotations when latin-square or per-participant dictionary-based indexing is used. Must be
+        positive.
 
-    - final_block_names (Union[dict, list]):
-        Names of blocks to append for the participant. Accepts same forms and constraints as init_block_names.
+        order (Union[dict, list]):
+            Specification of the main experimental order. Two forms are supported:
 
-    - within_groups_strategy (Union[str, None]):
-        Strategy applied to the ordering of elements inside each group. Allowed values:
-          * "as_is"      - leave element order as provided
-          * "randomize"  - shuffle elements inside each group (non-deterministic)
-          * "latin_square" - apply a balanced Latin square to permute positions across participants
-        If None, defaults to "as_is". If `order` was provided as a list-of-lists and `groups_strategy`
-        was set to "randomize" or "latin_square" and not explicitly set for `within_groups_strategy`,
-        the `groups_strategy` may be reused for within-groups behavior in some calling patterns.
+            * list of groups: e.g. [["A","B"], ["C","D","E"]] where each inner list is a group of block names.
+              If a flat list of strings is provided (["A","B","C"]) it will be treated as a single group.
+            * dict keyed by participant index (string or int keys) mapping to a group-list for that participant.
+              When a dict is provided, the `groups_strategy` must be "as_is" (per-participant assignment by key).
 
-    - groups_strategy (Union[str, None]):
-        Strategy applied to the sequence of groups. Allowed values:
-          * "as_is"
-          * "randomize"
-          * "latin_square"
-        If None, defaults to "as_is". When `order` is a dict keyed by participant index, `groups_strategy`
-        must be "as_is" because the dict already selects per-participant grouping.
+            All block names in the resolved order must be strings and must exist in `config`.
 
-    - init_blocks_strategy (Union[str, None]):
-        Strategy for ordering initial blocks. Allowed values:
-          * "as_is"
-          * "randomize"
-        If None, defaults to "as_is". When init_block_names is a dict keyed by participant index,
-        the strategy must be "as_is" (per-participant selection).
+        init_block_names (Union[dict, list]): Names of blocks to prepend for the
+            participant. Accepts a list of block names (strings) or a dictionary keyed by participant
+            indices (1-based) to select a list for the participant. When a dict is supplied, the
+            strategy for init blocks must be "as_is" (per-participant selection).
 
-    - final_blocks_strategy (Union[str, None]):
-        Strategy for ordering final blocks. Same semantics and allowed values as init_blocks_strategy.
+        final_block_names (Union[dict, list]): Names of blocks to append for the
+            participant. Accepts same forms and constraints as init_block_names.
 
-    Returns
-    - List:
-        A list of block configuration dictionaries (the original dicts from `config`) in the final
-        order constructed for the participant: [init_blocks..., main_blocks..., final_blocks...].
-        The main_blocks portion is produced by flattening the possibly nested group structure after
-        applying the requested group- and within-group strategies.
+        within_groups_strategy (Union[str, None]):
+            Strategy applied to the ordering of elements inside each group. Allowed values:
 
-    Behavior details and constraints
-    - Names in `order`, `init_block_names`, and `final_block_names` are validated to be strings and must
-      match unique names in `config`. Duplicate names in `config` cause an error.
-    - When `groups_strategy` or `within_groups_strategy` is "randomize", Python's random.shuffle is used
-      (non-deterministic unless the caller seeds the RNG).
-    - When "latin_square" is requested for groups or within-group ordering, a balanced Latin square
-      generator is used and `participant_index` selects the row; latin-square requires equal-sized
-      values where appropriate (e.g., all groups must have the same size when using within-group
-      latin-square).
-    - When dictionary mappings are provided for order/init/final blocks, keys are expected to be
-      1-based consecutive integer indices (or strings coercible to those integers). For dicts, the
-      corresponding strategy argument must be "as_is".
+              * "as_is"      - leave element order as provided
+              * "randomize"  - shuffle elements inside each group (non-deterministic)
+              * "latin_square" - apply a balanced Latin square to permute positions across participants
 
-    Exceptions
-    - Raises ExperimentServerConfigurationExcetion on invalid configuration, such as:
-        * duplicate block names in config
-        * non-string block names in orders
-        * unsupported strategy names
-        * inconsistent group sizes for latin-square within-group ordering
-        * improper dict key sets or types when dict-based per-participant selection is used
+            If None, defaults to "as_is". If `order` was provided as a list-of-lists and `groups_strategy`
+            was set to "randomize" or "latin_square" and not explicitly set for `within_groups_strategy`,
+            the `groups_strategy` may be reused for within-groups behavior in some calling patterns.
 
-    Notes
-    - The function does not modify the input `config` objects beyond coercing the "name" field to str.
-    - Deterministic rotation behavior for latin-square and dict-based selection is 1-based and uses
-      (participant_index - 1) modulo the appropriate period.
+        groups_strategy (Union[str, None]): Strategy applied to the sequence of groups. Allowed values:
+
+              * "as_is"
+              * "randomize"
+              * "latin_square"
+
+            If None, defaults to "as_is". When `order` is a dict keyed by participant index, `groups_strategy`
+            must be "as_is" because the dict already selects per-participant grouping.
+
+        init_blocks_strategy (Union[str, None]): Strategy for ordering initial blocks. Allowed values:
+
+              * "as_is"
+              * "randomize"
+
+            If None, defaults to "as_is". When init_block_names is a dict keyed by participant index,
+            the strategy must be "as_is" (per-participant selection).
+
+        final_blocks_strategy (Union[str, None]): Strategy for ordering final blocks. Same semantics and allowed values as init_blocks_strategy.
+
+    Returns:
+        List: A list of block configuration dictionaries (the original dicts from `config`) in the final
+            order constructed for the participant: [init_blocks..., main_blocks..., final_blocks...].
+            The main_blocks portion is produced by flattening the possibly nested group structure after
+            applying the requested group- and within-group strategies.
+
+    Exceptions:
+        ExperimentServerConfigurationExcetion: on invalid configuration, such as:
+
+            * duplicate block names in config
+            * non-string block names in orders
+            * unsupported strategy names
+            * inconsistent group sizes for latin-square within-group ordering
+            * improper dict key sets or types when dict-based per-participant selection is used
     """
     if within_groups_strategy is None:
         within_groups_strategy = ORDERING_STRATEGY.as_is
