@@ -1,8 +1,6 @@
 # Overview
 
-This is a Python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios. I've used it with Python, js and [Unity projects](https://github.com/ahmed-shariff/experiment_server/wiki/Using-with-Unity). See the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki) for examples.
-
-Documentation is available at [https://shariff-faleel.com/experiment_server/](https://shariff-faleel.com/experiment_server/)
+This is a Python application that allows you to create/maintain/manage study configurations away from your implementations. `experiment-server` has several different interfaces (see below) to allow using it in a range of different scenarios.
 
 # Content
 
@@ -23,13 +21,13 @@ Documentation is available at [https://shariff-faleel.com/experiment_server/](ht
 Install it directly into an activated virtual environment:
 
 ```text
-$ pip install experiment-server
+$ pip install -e .
 ```
 
 or add it to your [Poetry](https://poetry.eustace.io/) project:
 
 ```text
-$ poetry add experiment-server
+$ poetry add .
 ```
 
 # Usage
@@ -330,8 +328,6 @@ For a Python application, [`experiment_server.Client`][experiment_server.Client]
 
 The server also provides a simple web interface, which can be accessed at `/` or `/index`. This interface allows to manage and monitor the flow of the experiment:
 
-![web UI screenshot](https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot.png)
-
 
 ## Loading experiment through API
 A configuration can be loaded and managed by importing [`experiment_server.Experiment`][experiment_server.Experiment].
@@ -366,5 +362,3 @@ param = { function_name = "choices", args = [[1 , 2 , 3 , 4]], params = { unique
 ```toml
 param = { foo = "test", bar = { function_name = "choices", args = { population = ["w", "x", "y", "z"], k = 1 } } }
 ```
-
-For more on the `experiemnt-server` and how it can be used see the [wiki](https://github.com/ahmed-shariff/experiment_server/wiki)

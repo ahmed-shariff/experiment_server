@@ -6,14 +6,11 @@ description = "Server for experiments to get configuarations from"
 
 license = "MIT"
 
-authors = ["Ahmed Shariff <shariff.mfa@outlook.com>"]
+authors = ["Annonymized for review"]
 
 readme = "README.md"
 
 keywords = [ "experiment", "study-design" ]
-homepage = "https://shariff-faleel.com/experiment_server/"
-documentation = "https://shariff-faleel.com/experiment_server/documentation/"
-repository = "https://github.com/ahmed-shariff/experiment_server"
 
 classifiers = [
     "Development Status :: 1 - Planning",
