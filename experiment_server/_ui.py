@@ -68,6 +68,9 @@ class ParticipantTab(Vertical):
       align-vertical: bottom;
     }
 
+    .title {text-style: bold underline;}
+    .pad_1 { padding:1;}
+
     .block_input {
       width: 20;
     }
@@ -76,7 +79,11 @@ class ParticipantTab(Vertical):
       margin:1;
     }
 
-    .auto_width { width:auto }
+    .auto_width { width:auto; }
+
+    .edit_label { width: 40; }
+
+    .round_border { border: round white; }
     """
 
     def __init__(self, experiment:Experiment):
@@ -113,7 +120,6 @@ class ParticipantTab(Vertical):
                 with HorizontalGroup():
                     yield self.block_input
                     yield Button("Move to block", id="btn_move_to_block")
-                yield Button("Reset participant", id="btn_reset_participant")
 
             with Collapsible(title="Current block config:", id="collapse_block_config"):
                 yield self.config_pretty
@@ -121,6 +127,7 @@ class ParticipantTab(Vertical):
                     yield Button("Edit config", id="btn_edit_config")
                     yield Button("Submit edits", id="btn_submit_edits")
                     yield Button("Cancel edits", id="btn_cancel_edits")
+                yield Button("Reset participant", id="btn_reset_participant")
                 yield self.edit_container
 
             with Collapsible(title="All participants states:", id="collapse_states"):
@@ -291,20 +298,27 @@ class ParticipantTab(Vertical):
 
         # clear prior edit inputs
         self._edit_inputs.clear()
-        self.edit_container.clear()
 
-        self.edit_container.mount(Label("Edit keys (enter JSON literals):"))
+        for child in list(self.edit_container.children):
+            child.remove()
+
+        self.edit_container.mount(Static("Edit keys (enter JSON literals):", classes="title pad_1"))
         for k, v in cfg.items():
             if k in ("participant_index", "block_id", "name"):
-                self.edit_container.mount(Label(f"{k} (immutable): {v}"))
+                self.edit_container.mount(HorizontalGroup(Static(f"{k} (immutable):", classes="edit_label"),
+                                                          Static(str(v)),
+                                                          classes="pad_1"))
                 continue
             inp = Input(placeholder=json.dumps(v, ensure_ascii=False), id=f"edit_{k}")
             self._edit_inputs[k] = inp
-            self.edit_container.mount(Label(k))
-            self.edit_container.mount(inp)
+            self.edit_container.mount(HorizontalGroup(Static(k, classes="edit_label"),
+                                                      inp,
+                                                      classes="pad_1"))
+        self.edit_container.add_class("round_border")
         self.log_view.write("Mounted edit inputs. Fill values and press Submit edits.")
 
     def submit_edits(self) -> None:
+        self.edit_container.remove_class("round_border")
         if not self._edit_inputs:
             self.log_view.write("No edits in progress.")
             return
@@ -332,15 +346,18 @@ class ParticipantTab(Vertical):
 
         if not errors:
             self.log_view.write("Config updated in-memory.")
-            self.edit_container.clear()
+            for child in list(self.edit_container.children):
+                child.remove()
             self._edit_inputs.clear()
         else:
             self.log_view.write("One or more fields failed to parse; fix and submit again.")
         self.refresh_ui()
 
     def cancel_edits(self) -> None:
+        self.edit_container.remove_class("round_border")
         self._edit_inputs.clear()
-        self.edit_container.clear()
+        for child in list(self.edit_container.children):
+            child.remove()
         self.log_view.write("Cancelled edits.")
         self.refresh_ui()
 
