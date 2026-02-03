@@ -7,6 +7,7 @@ from pathlib import Path
 from click_aliases import ClickAliasedGroup
 
 from experiment_server._server import _server
+from experiment_server._ui import ExperimentTextualApp
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
 from experiment_server.utils import ExperimentServerExcetion
@@ -102,3 +103,9 @@ def new_config_file(new_file_location):
             out_f.writelines(in_f.readlines())
 
     logger.info(f"New config at: {out_location}")
+
+@cli.command(aliases=["ui"])
+@click.argument("config-file")
+def ui(config_file):
+    app = ExperimentTextualApp(config_file)
+    app.run()

@@ -27,7 +27,7 @@ include = [ "experiment_server/static/*", "sample_config.toml" ]
 
 [tool.poetry.dependencies]
 
-python = ">=3.8"
+python = ">=3.9,<4.0"
 loguru = "^0.5"
 click = ">=6.0"
 pandas = ">=1"
@@ -41,6 +41,7 @@ toml = ">=0.10.2"
 watchdog = ">=2.1.9"
 importlib-metadata = ">=6.8.0"
 click-aliases = ">=1.0.4"
+textual = "^7.5.0"
 
 
 [tool.poetry.scripts]
