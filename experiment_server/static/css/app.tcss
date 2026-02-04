@@ -51,7 +51,11 @@ Grid {
 #participant_summary_grid {
     width: 100%;
     grid-size: 3;
-    grid-columns: 1fr 2fr 1fr;
+    grid-columns: 1fr 3fr 1fr;
+}
+
+#participant_summary_grid Static {
+    padding: 1 0;
 }
 
 #status_grid {

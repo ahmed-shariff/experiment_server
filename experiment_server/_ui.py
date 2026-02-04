@@ -81,8 +81,8 @@ class ParticipantTab(Vertical):
         self.load_config_screen = load_config_screen
 
         # Widgets
+        self.update_ppid_input = Input(placeholder=str(self.experiment.default_participant_index), id="update_ppid_input")
         self.config_file_box = Static("boooo", id="loaded_config_file_box")
-        self.default_ppid_box = Static(str(self.experiment.default_participant_index), id="default_ppid")
         self.status_box = Static(id="status_box")
         self.block_input = Input(placeholder="block id", id="block_input")
         self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
@@ -109,7 +109,8 @@ class ParticipantTab(Vertical):
             yield self.config_file_box
             yield Button("Load different Config", id="btn_load_config")
             yield Static("Default participant id:")
-            yield self.default_ppid_box
+            yield self.update_ppid_input
+            yield Button("Update default ppid", id="btn_update_ppid")
         with VerticalScroll():
             with Collapsible(title="Current block config:", id="collapse_status", collapsed=False):
                 yield Label("Current status:")
@@ -173,8 +174,9 @@ class ParticipantTab(Vertical):
             status = state.status_string()
         except Exception as e:
             status = f"Error: {e}"
+
+        self.update_ppid_input.placeholder = str(self.experiment.default_participant_index)
         self.config_file_box.update(str(self.experiment._config_file))
-        self.default_ppid_box.update(str(self.experiment.default_participant_index))
         self.status_box.update(status.replace("\n", " | "))
 
         # participants
@@ -291,6 +293,20 @@ class ParticipantTab(Vertical):
     def load_config(self):
         self.load_config_screen(lambda: self.refresh_ui())
 
+    def update_ppid(self):
+        v = self.update_ppid_input.value.strip()
+        self.update_ppid_input.clear()
+        try:
+            ppid = int(v)
+        except Exception:
+            self.log_view.write("Invalid ppid")
+            return
+        try:
+            self.experiment.default_participant_index = ppid
+        except Exception as e:
+            self.log_view.write(f"Error moving to block: {e}")
+        self.refresh_ui()
+
     # Config editing
     def start_edit_config(self) -> None:
         pid = self._monitored_pid()
@@ -405,6 +421,8 @@ class ParticipantTab(Vertical):
             self.cancel_edits()
         elif bid == "btn_load_config":
             self.load_config()
+        elif bid == "btn_update_ppid":
+            self.update_ppid()
 
 
 class ConfigTab(Vertical):
