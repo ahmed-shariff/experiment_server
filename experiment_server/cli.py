@@ -107,5 +107,5 @@ def new_config_file(new_file_location):
 @cli.command(aliases=["ui"])
 @click.argument("config-file")
 def ui(config_file):
-    app = ExperimentTextualApp(config_file)
+    app = ExperimentTextualApp(config_file, css_path=Path(__file__).parent / "static" / "css" / "app.tcss", watch_css=True)
     app.run()

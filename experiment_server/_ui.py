@@ -6,7 +6,6 @@ Usage:
 """
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 import sys
@@ -14,7 +13,7 @@ from typing import Any, Dict, List, Optional
 import click
 
 from textual.app import App
-from textual.containers import Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
+from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import (
@@ -39,68 +38,24 @@ import toml  # type: ignore
 def pretty_json(obj: Any) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False)
 
-class ParticipantStatus(Widget):
-    """Display status for a given participant."""
-    status_text = reactive("temp", layout=True)
-
-    def render(self) -> str:
-        return self.status_text
-
-    def on_mount(self) -> None:
-        self.styles.height = "auto"
-        self.styles.border = ("round", "white")
 
 class ParticipantTab(Vertical):
     """Participant management tab."""
-
-    DEFAULT_CSS = """
-    ParticipantTab {
-      overflow-y:auto;
-    }
-
-    Collapsible {
-      height:auto;
-      margin: 1;
-    }
-
-    RichLog {
-      height: auto;
-      align-vertical: bottom;
-    }
-
-    .title {text-style: bold underline;}
-    .pad_1 { padding:1;}
-
-    .block_input {
-      width: 20;
-    }
-
-    #log_group {
-      margin:1;
-    }
-
-    .auto_width { width:auto; }
-
-    .edit_label { width: 40; }
-
-    .round_border { border: round white; }
-    """
-
     def __init__(self, experiment:Experiment):
         super().__init__()
         self.experiment = experiment
 
         # Widgets
-        self.status_box = ParticipantStatus(id="status_box")
-        self.block_input = Input(placeholder="block id", id="block_input", classes="block_input")
-        self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input", classes="block_input")
+        self.status_box = Static(id="status_box")
+        self.block_input = Input(placeholder="block id", id="block_input")
+        self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
         self.participants_table = DataTable(id="participants_table")
         self.config_pretty = Pretty("", id="config_pretty")
 
         self.monitor_default_switch = Switch(value=True)
-        self.monitor_input = Input(placeholder="participant id (empty = default)", id="monitor_input", classes="block_input", disabled=True)
-        self.participant_id_to_add_input = Input(placeholder="participant id", id="participant_id_to_add_input", classes="block_input")
-        self.edit_container = VerticalGroup(id="edit_container")
+        self.monitor_input = Input(placeholder="participant id (empty = default)", id="monitor_input", disabled=True)
+        self.participant_id_to_add_input = Input(placeholder="participant id", id="participant_id_to_add_input")
+        self.edit_container = Grid(id="edit_container")
         self.log_view = RichLog(id="log_view")
 
         self.participants_table.add_column("participant_id")
@@ -116,41 +71,45 @@ class ParticipantTab(Vertical):
             with Collapsible(title="Current block config:", id="collapse_status", collapsed=False):
                 yield Label("Current status:")
                 yield self.status_box
-                yield Button("Move to next", id="btn_move_next")
-                with HorizontalGroup():
+                with Grid(id="status_grid"):
+                    yield Button("Move to next", id="btn_move_next")
+                    yield Static()  # empty grid
                     yield self.block_input
                     yield Button("Move to block", id="btn_move_to_block")
 
             with Collapsible(title="Current block config:", id="collapse_block_config"):
                 yield self.config_pretty
-                with HorizontalGroup():
+                with Grid(id="config_grid"):
                     yield Button("Edit config", id="btn_edit_config")
-                    yield Button("Submit edits", id="btn_submit_edits")
-                    yield Button("Cancel edits", id="btn_cancel_edits")
-                yield Button("Reset participant", id="btn_reset_participant")
+                    yield Button("Reset participant", id="btn_reset_participant")
                 yield self.edit_container
 
             with Collapsible(title="All participants states:", id="collapse_states"):
                 yield self.participants_table
-                with HorizontalGroup():
+                with Grid(id="states_grid"):
+                    yield Static()  # empty grid
                     yield self.block_all_input
                     yield Button("Move all to block", id="btn_move_all_to_block")
-                with HorizontalGroup():
-                    yield Static("Add new participant id: ", classes="auto_width")
-                    yield self.participant_id_to_add_input
-                    yield Button("Add", id="btn_add_participant_with_id")
-                with HorizontalGroup():
-                    yield Static("Monitor default ppid: ", classes="auto_width")
+
+                    yield Static("Monitor default ppid: ", id="static_monitor_ppid")
                     yield self.monitor_default_switch
-                with HorizontalGroup():
+                    yield Static()  # empty grid
+
+                    yield Static()  # empty grid
                     yield self.monitor_input
                     yield Button("Set participant to monitor", id="btn_set_monitor", disabled=True)
-                yield Button("New participant", id="btn_new_participant")
-                yield Button("List participants", id="btn_list_participants")
 
-        with VerticalGroup(id="log_group"):
-            yield Label("Log:")
-            yield self.log_view
+                    yield Static("Add new participant id: ", id="static_add_new_ppid")
+                    yield self.participant_id_to_add_input
+                    yield Button("Add", id="btn_add_participant_with_id")
+
+                    yield Static()  # empty grid
+                    yield Button("New participant", id="btn_new_participant")
+                    # yield Button("List participants", id="btn_list_participants")
+
+        with Collapsible(title="Log:", id="log_group"):
+            with VerticalGroup():
+                yield self.log_view
         self.refresh_ui()
 
     # Utilities
@@ -171,7 +130,7 @@ class ParticipantTab(Vertical):
             status = state.status_string()
         except Exception as e:
             status = f"Error: {e}"
-        self.status_box.status_text = status.replace("\n", " | ")
+        self.status_box.update(status.replace("\n", " | "))
 
         # participants
         try:
@@ -302,18 +261,19 @@ class ParticipantTab(Vertical):
         for child in list(self.edit_container.children):
             child.remove()
 
-        self.edit_container.mount(Static("Edit keys (enter JSON literals):", classes="title pad_1"))
+        self.edit_container.mount(Static("Edit keys (enter JSON literals):", classes="edit_title"))
         for k, v in cfg.items():
             if k in ("participant_index", "block_id", "name"):
-                self.edit_container.mount(HorizontalGroup(Static(f"{k} (immutable):", classes="edit_label"),
-                                                          Static(str(v)),
-                                                          classes="pad_1"))
+                self.edit_container.mount(Static(f"{k} (immutable):", classes="edit_label"))
+                self.edit_container.mount(Static(str(v), classes="edit_value_immutable"))
                 continue
-            inp = Input(placeholder=json.dumps(v, ensure_ascii=False), id=f"edit_{k}")
+            inp = Input(placeholder=json.dumps(v, ensure_ascii=False), id=f"edit_{k}", classes="edit_value")
             self._edit_inputs[k] = inp
-            self.edit_container.mount(HorizontalGroup(Static(k, classes="edit_label"),
-                                                      inp,
-                                                      classes="pad_1"))
+            self.edit_container.mount(Static(f"{k}:", classes="edit_label"))
+            self.edit_container.mount(inp)
+
+        self.edit_container.mount(Button("Submit edits", id="btn_submit_edits"))
+        self.edit_container.mount(Button("Cancel edits", id="btn_cancel_edits"))
         self.edit_container.add_class("round_border")
         self.log_view.write("Mounted edit inputs. Fill values and press Submit edits.")
 
@@ -525,16 +485,8 @@ class ConfigTab(Vertical):
 
 
 class ExperimentTextualApp(App):
-    CSS = """
-    Screen { padding: 1; }
-    #left_panel, #middle_panel, #right_panel { border: round $accent; padding: 1 2; min-width: 40; }
-    #participants_table { height: 12; }
-    #config_pretty { height: 14; border: round $accent; padding: 1; overflow: auto; }
-    #log_view { height: 10; border: heavy $surface; padding: 1; overflow: auto; }
-    """
-
-    def __init__(self, config_path: Optional[str] = None):
-        super().__init__()
+    def __init__(self, config_path: Optional[str] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.config_path = config_path
         self.experiment = None
         self.participant_tab: Optional[ParticipantTab] = None
@@ -574,13 +526,3 @@ class ExperimentTextualApp(App):
 
     def action_quit(self) -> None:
         self.exit()
-
-
-@click.command()
-@click.argument("config")
-def main(config):
-    app = ExperimentTextualApp(config_path=config)
-    app.run()
-
-if __name__ == "__main__":
-    main()
