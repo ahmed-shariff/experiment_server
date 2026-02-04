@@ -22,6 +22,11 @@ App {
 
 Static {
     align-vertical: middle;
+    color: $muted;
+}
+
+Label {
+    color: $muted;
 }
 
 Collapsible {
@@ -41,6 +46,12 @@ ParticipantTab {
 
 Grid {
     height: auto;
+}
+
+#participant_summary_grid {
+    width: 100%;
+    grid-size: 3;
+    grid-columns: 1fr 2fr 1fr;
 }
 
 #status_grid {
@@ -119,10 +130,6 @@ Button:disabled {
   border: solid #0b1218;
 }
 
-Label, Static {
-  color: $muted;
-}
-
 #config_grid {
     grid-size: 2;
     width: 100;
@@ -194,4 +201,8 @@ DataTable > .row:focus {
 
 TabPane {
   padding: 1;
+}
+
+LoadConfig Button {
+    width: 20
 }

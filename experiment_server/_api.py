@@ -92,8 +92,8 @@ class Experiment:
         assert default_participant_index > 0, "Default participant index should be >0"
         self.global_state: Dict[int, ParticipantState] = {}
         self.default_participant_index = default_participant_index
-        self.watchdog = FileModifiedWatcher(config_file, self._config_file_modified_callback)
-        self.config_file = config_file
+        self._watchdog = FileModifiedWatcher(config_file, self._config_file_modified_callback)
+        self._config_file = Path(config_file)
 
         if default_participant_index not in self.global_state:
             self.global_state[default_participant_index] = ParticipantState(
@@ -102,11 +102,27 @@ class Experiment:
                 False,
             )
 
+    @property
+    def config_file(self) -> Path:
+        return self._config_file
+
+    @config_file.setter
+    def config_file(self, value):
+        """Load a new config file. All participants states will be reset."""
+        self._config_file = value
+        if self._watchdog is not None:
+            self._watchdog.end_watch()
+        self._watchdog = FileModifiedWatcher(self._config_file, self._config_file_modified_callback)
+
+        for ppid in self.global_state.keys():
+            self.global_state[ppid] = ParticipantState(
+                process_config_file(self._config_file, ppid), ppid, False)
+
     def _config_file_modified_callback(self):
         """Reload configurations for all known participants when the file changes."""
         logger.info("Reloading config")
         for participantState in self.global_state.values():
-            config = process_config_file(self.config_file, participantState.participant_index)
+            config = process_config_file(self._config_file, participantState.participant_index)
             participantState.config = config
 
     def get_next_participant(self) -> int:
@@ -124,7 +140,7 @@ class Experiment:
         if participant_index in self.global_state:
             return False
         self.global_state[participant_index] = ParticipantState(
-            process_config_file(self.config_file, participant_index),
+            process_config_file(self._config_file, participant_index),
             participant_index,
             False,
         )
@@ -169,7 +185,7 @@ class Experiment:
         """Reload the participant's configuration from file and replace their stored config."""
         if participant_index is None:
             participant_index = self.default_participant_index
-        self.global_state[participant_index].config = process_config_file(self.config_file, participant_index)
+        self.global_state[participant_index].config = process_config_file(self._config_file, participant_index)
         return True
 
     def get_blocks_count(self, participant_index:int|None=None) -> int:

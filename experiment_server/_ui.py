@@ -7,16 +7,19 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Iterable
 import click
 
-from textual.app import App
+from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
 from textual.reactive import reactive
+from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import (
+    DirectoryTree,
     Header,
     Footer,
     Button,
@@ -39,13 +42,47 @@ def pretty_json(obj: Any) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False)
 
 
+class TomlFilteredDirectoryTree(DirectoryTree):
+    def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
+        return [path for path in paths if path.is_dir() or path.suffix == ".toml"]
+
+
+class LoadConfig(ModalScreen[Path]):  
+    """Screen with a dialog to load confi."""
+
+    def __init__(self, current_path):
+        super().__init__()
+        self.current_path = current_path
+        self.selected_path = None
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("Select config file to load")
+            yield TomlFilteredDirectoryTree("")
+            with Horizontal():
+                yield Button("Load", id="load_config_load")
+                yield Button("Cancel", id="load_config_cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "load_config_load":
+            self.dismiss(self.selected_path)
+        else:
+            self.dismiss(None)
+
+    def on_directory_tree_file_selected(self, file_selected: DirectoryTree.FileSelected):
+        self.selected_path = file_selected.path
+
+
 class ParticipantTab(Vertical):
     """Participant management tab."""
-    def __init__(self, experiment:Experiment):
+    def __init__(self, experiment:Experiment, load_config_screen:Callable):
         super().__init__()
         self.experiment = experiment
+        self.load_config_screen = load_config_screen
 
         # Widgets
+        self.config_file_box = Static("boooo", id="loaded_config_file_box")
+        self.default_ppid_box = Static(str(self.experiment.default_participant_index), id="default_ppid")
         self.status_box = Static(id="status_box")
         self.block_input = Input(placeholder="block id", id="block_input")
         self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
@@ -67,6 +104,12 @@ class ParticipantTab(Vertical):
         self._edit_inputs: Dict[str, Input] = {}
 
     def compose(self):
+        with Grid(id="participant_summary_grid"):
+            yield Static("Loaded config:")
+            yield self.config_file_box
+            yield Button("Load different Config", id="btn_load_config")
+            yield Static("Default participant id:")
+            yield self.default_ppid_box
         with VerticalScroll():
             with Collapsible(title="Current block config:", id="collapse_status", collapsed=False):
                 yield Label("Current status:")
@@ -130,6 +173,8 @@ class ParticipantTab(Vertical):
             status = state.status_string()
         except Exception as e:
             status = f"Error: {e}"
+        self.config_file_box.update(str(self.experiment._config_file))
+        self.default_ppid_box.update(str(self.experiment.default_participant_index))
         self.status_box.update(status.replace("\n", " | "))
 
         # participants
@@ -243,6 +288,9 @@ class ParticipantTab(Vertical):
             self.log_view.write(f"Error creating participant: {e}")
         self.refresh_ui()
 
+    def load_config(self):
+        self.load_config_screen(lambda: self.refresh_ui())
+
     # Config editing
     def start_edit_config(self) -> None:
         pid = self._monitored_pid()
@@ -355,6 +403,8 @@ class ParticipantTab(Vertical):
             self.submit_edits()
         elif bid == "btn_cancel_edits":
             self.cancel_edits()
+        elif bid == "btn_load_config":
+            self.load_config()
 
 
 class ConfigTab(Vertical):
@@ -509,20 +559,30 @@ class ExperimentTextualApp(App):
 
         with TabbedContent():
             with TabPane("Participant Management"):
-                yield ParticipantTab(self.experiment)
+                def _load_experiment_screen(callback):
+                    self.load_config(callback)
+                yield ParticipantTab(self.experiment, _load_experiment_screen)
             with TabPane("Manage Config"):
                 yield ConfigTab(start_config_path=Path(self.config_path) if self.config_path else None)
 
-    def load_config(self, path: str) -> None:
-        p = Path(path)
-        if not p.exists():
-            raise FileNotFoundError(path)
-        self.experiment = Experiment(str(p), 1)
-        if self.participant_tab:
-            self.participant_tab.experiment = self.experiment
-            self.participant_tab.refresh_ui()
-        if self.config_tab:
-            self.config_tab.cfg_path_input.value = str(p)
+    # def load_config(self, path: str) -> None:
+    #     p = Path(path)
+    #     if not p.exists():
+    #         raise FileNotFoundError(path)
+    #     self.experiment = Experiment(str(p), 1)
+    #     if self.participant_tab:
+    #         self.participant_tab.experiment = self.experiment
+    #         self.participant_tab.refresh_ui()
+    #     if self.config_tab:
+    #         self.config_tab.cfg_path_input.value = str(p)
+
+    def load_config(self, config_loaded_callback) -> None:
+        def load_config_callback(path: Path | None) -> None:
+            if path is not None and self.experiment is not None:
+                self.experiment.config_file = path
+                config_loaded_callback()
+
+        self.push_screen(LoadConfig(os.curdir), load_config_callback)
 
     def action_quit(self) -> None:
         self.exit()

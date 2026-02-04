@@ -362,7 +362,7 @@ class ExperimentHandler(RequestHandler):
                     self.experiment.move_all_to_block(new_block_id)
                     self.write(str(new_block_id))
         elif action == "shutdown":
-            self.experiment.watchdog.end_watch()
+            self.experiment._watchdog.end_watch()
             shutdown_server()
         else:
             self.set_status(404)
