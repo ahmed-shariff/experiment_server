@@ -74,8 +74,11 @@ def process_config_file(f: Union[str, Path], participant_index: int, supress_mes
 
 def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bool=False) -> List[Dict[str, Any]]:
     loaded_configuration = toml.load(f)
+    return _process_config(loaded_configuration, participant_index, supress_message)
 
-    configurations = loaded_configuration.get("configuration", {})
+
+def _process_config(configuration: dict[Any, Any], participant_index:int, supress_message:bool=False) -> List[Dict[str, Any]]:
+    configurations = configuration.get("configuration", {})
     variables = configurations.get("variables", {})
 
     order_groups_strategy = ORDERING_STRATEGY.as_is
@@ -108,7 +111,7 @@ def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bo
     random_seed = configurations.get("random_seed", 0)
     random.seed(random_seed + participant_index)
 
-    all_blocks = _replace_variables(loaded_configuration["blocks"], variables)
+    all_blocks = _replace_variables(configuration["blocks"], variables)
     assert isinstance(all_blocks, list)
 
     order = configurations.get("order", [str(i) for i in list(range(len(all_blocks)))])
