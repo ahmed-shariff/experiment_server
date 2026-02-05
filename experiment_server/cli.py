@@ -10,7 +10,7 @@ from experiment_server._server import _server
 from experiment_server._ui import ExperimentTextualApp
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
-from experiment_server.utils import ExperimentServerExcetion
+from experiment_server.utils import ExperimentServerExcetion, new_config_file as _new_config_file
 
 
 @click.group(cls=ClickAliasedGroup)
@@ -82,27 +82,8 @@ def new_config_file(new_file_location):
     If parameter is directory, creates a file named `new_config.toml` in the directory.
     If parents do not exists, create them all!.
     """
-    out_location = Path(new_file_location)
+    _new_config_file(new_file_location)
 
-    if out_location.suffix != ".toml":
-        if out_location.exists():
-            logger.error(f"{out_location} exists and does not end with `.toml`")
-            return
-        else:
-            out_location.mkdir(parents=True, exist_ok=True)
-
-    if out_location.is_dir():
-        out_location = out_location / "new_config.toml"
-
-    if out_location.exists():
-        logger.error(f"{out_location} already exists!")
-        return
-
-    with open(Path(__file__).parent.parent / "sample_config.toml", "r") as in_f:
-        with open(out_location, "w") as out_f:
-            out_f.writelines(in_f.readlines())
-
-    logger.info(f"New config at: {out_location}")
 
 @cli.command(aliases=["ui"])
 @click.argument("config-file")
