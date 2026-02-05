@@ -77,14 +77,12 @@ class LoadConfig(ModalScreen[Path]):
 
 class ParticipantTab(Vertical):
     """Participant management tab."""
-    def __init__(self, experiment:Experiment, load_config_screen:Callable):
+    def __init__(self, experiment:Experiment):
         super().__init__()
         self.experiment = experiment
-        self.load_config_screen = load_config_screen
 
         # Widgets
         self.update_ppid_input = Input(placeholder=str(self.experiment.default_participant_index), id="update_ppid_input")
-        self.config_file_box = Static("boooo", id="loaded_config_file_box")
         self.status_box = Static(id="status_box")
         self.block_input = Input(placeholder="block id", id="block_input")
         self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
@@ -106,9 +104,6 @@ class ParticipantTab(Vertical):
 
     def compose(self):
         with Grid(id="participant_summary_grid"):
-            yield Static("Loaded config:")
-            yield self.config_file_box
-            yield Button("Load different Config", id="btn_load_config")
             yield Static("Default participant id:")
             yield self.update_ppid_input
             yield Button("Update default ppid", id="btn_update_ppid")
@@ -174,7 +169,6 @@ class ParticipantTab(Vertical):
             status = f"Error: {e}"
 
         self.update_ppid_input.placeholder = str(self.experiment.default_participant_index)
-        self.config_file_box.update(str(self.experiment._config_file))
         self.status_box.update(status.replace("\n", " | "))
 
         # participants
@@ -287,9 +281,6 @@ class ParticipantTab(Vertical):
         except Exception as e:
             logger.error(f"Error creating participant: {e}")
         self.refresh_ui()
-
-    def load_config(self):
-        self.load_config_screen(lambda: self.refresh_ui())
 
     def update_ppid(self):
         v = self.update_ppid_input.value.strip()
@@ -417,8 +408,6 @@ class ParticipantTab(Vertical):
             self.submit_edits()
         elif bid == "btn_cancel_edits":
             self.cancel_edits()
-        elif bid == "btn_load_config":
-            self.load_config()
         elif bid == "btn_update_ppid":
             self.update_ppid()
 
@@ -552,6 +541,7 @@ class ExperimentTextualApp(App):
     def __init__(self, config_path: Optional[str] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config_path = config_path
+        self.config_file_box = Static("boooo", id="loaded_config_file_box")
         self.experiment = None
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
@@ -561,6 +551,7 @@ class ExperimentTextualApp(App):
         """Called to add widgets to the app."""
         yield Header()
         yield Footer()
+
         # Load experiment if provided
         if self.config_path:
             try:
@@ -572,17 +563,20 @@ class ExperimentTextualApp(App):
         else:
             sys.exit(1)
 
+        with Grid(id="participant_summary_grid"):
+            yield Static("Loaded config:")
+            yield self.config_file_box
+            yield Button("Load different Config", id="btn_load_config")
         with TabbedContent():
             with TabPane("Participant Management"):
-                def _load_experiment_screen(callback):
-                    self.load_config(callback)
-                yield ParticipantTab(self.experiment, _load_experiment_screen)
+                yield ParticipantTab(self.experiment)
             with TabPane("Manage Config"):
                 yield ConfigTab(start_config_path=Path(self.config_path) if self.config_path else None)
 
         with Collapsible(title="Log:", id="log_group"):
             with VerticalGroup():
                 yield self.log_view
+        self.refresh_ui()
 
     def on_mount(self):
         # Remove default stderr sink so nothing is printed to the CLI
@@ -606,11 +600,24 @@ class ExperimentTextualApp(App):
     #     if self.config_tab:
     #         self.config_tab.cfg_path_input.value = str(p)
 
-    def load_config(self, config_loaded_callback) -> None:
+    def refresh_ui(self):
+        if self.experiment is not None:
+            self.config_file_box.update(str(self.experiment._config_file))
+        if self.participant_tab is not None:
+            self.participant_tab.refresh_ui()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id
+        if bid == "btn_load_config":
+            self.load_config()
+
+    def load_config(self, config_loaded_callback:Callable|None=None) -> None:
         def load_config_callback(path: Path | None) -> None:
             if path is not None and self.experiment is not None:
                 self.experiment.config_file = path
-                config_loaded_callback()
+                if config_loaded_callback is not None:
+                    config_loaded_callback()
+            self.refresh_ui()
 
         self.push_screen(LoadConfig(os.curdir), load_config_callback)
 

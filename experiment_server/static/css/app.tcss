@@ -53,6 +53,11 @@ Grid {
     width: 100%;
     grid-size: 3;
     grid-columns: 1fr 3fr 1fr;
+    margin: 0 3;
+}
+
+ParticipantTab #participant_summary_grid {
+    margin: 0;
 }
 
 #participant_summary_grid Static {
