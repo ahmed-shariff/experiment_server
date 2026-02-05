@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY
 from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion, merge_dicts
 from loguru import logger
+from tabulate import tabulate
 import json
 import toml
 
@@ -349,19 +350,47 @@ def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]]
     Returns:
         True if verification completed successfully for all checked participants.
     """
-    import pandas as pd
-    from tabulate import tabulate
     with logger.catch(reraise=False, message="Config verification failed"):
-        config_blocks = {}
-        for participant_index in range(1,6):
-            config = process_config_file(f, participant_index=participant_index)
-            config_blocks[participant_index] = {f"trial_{idx + 1}": c["name"] for idx, c in enumerate(config)}
-            if test_func is not None:
-                test_result, reason = test_func(config)
-                assert test_result, f"test_func failed for {participant_index} with reason, {reason}"
-        df = pd.DataFrame(config_blocks)
-        df.style.set_properties(**{'text-align': 'left'}).set_table_styles([ dict(selector='th', props=[('text-align', 'left')])])
-        logger.info(f"Ordering for 5 participants: \n\n{tabulate(df, headers='keys', tablefmt='fancy_grid')}\n")
+        df = _get_table_for_participants(f, test_func)
+        logger.info(f"Ordering for 5 participants: \n\n{tabulate(df, headers='firstrow', tablefmt='fancy_grid')}\n")
         logger.info(f"Config file verification successful for {f}")
         return True
     return False
+
+
+def _get_table_for_participants(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> list[list[Any]]:
+    config_blocks: Dict[int, Dict[str, Any]] = {}
+    # collect configs for participants 1..5 (same range as original)
+    for participant_index in range(1, 6):
+        config = process_config_file(f, participant_index=participant_index)
+        config_blocks[participant_index] = {f"block_{idx + 1}": c["name"] for idx, c in enumerate(config)}
+        if test_func is not None:
+            test_result, reason = test_func(config)
+            assert test_result, f"test_func failed for {participant_index} with reason, {reason}"
+
+    # collect all block keys and sort by numeric suffix
+    all_blocks = set()
+    for d in config_blocks.values():
+        all_blocks.update(d.keys())
+
+    def block_key(block_name: str) -> int:
+        try:
+            return int(block_name.split("_", 1)[1])
+        except Exception:
+            return 100000
+
+    sorted_blocks = sorted(all_blocks, key=block_key)
+
+    # header row: 'block' followed by participant labels
+    participants = list(range(1, 6))
+    header: List[Any] = ["block"] + [f"participant_{i}" for i in participants]
+
+    table: List[List[Any]] = [header]
+    for block in sorted_blocks:
+        row = [block]
+        for p in participants:
+            row.append(config_blocks.get(p, {}).get(block, None))
+        table.append(row)
+
+    return table
+
