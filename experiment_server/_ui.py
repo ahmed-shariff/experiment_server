@@ -34,9 +34,12 @@ from textual.widgets import (
     Pretty,
     RichLog,
     Collapsible,
-    Switch
+    Switch,
+    TextArea
 )
-from experiment_server._api import Experiment
+from experiment_server._api import Experiment, _generate_config_json
+from experiment_server._process_config import verify_config, _process_config
+from experiment_server.utils import new_config_file
 import toml  # type: ignore
 
 
@@ -108,7 +111,7 @@ class ParticipantTab(Vertical):
             yield self.update_ppid_input
             yield Button("Update default ppid", id="btn_update_ppid")
         with VerticalScroll():
-            with Collapsible(title="Current block config:", id="collapse_status", collapsed=False):
+            with Collapsible(title="Manage block config:", id="collapse_status", collapsed=False):
                 yield Label("Current status:")
                 yield self.status_box
                 with Grid(id="status_grid"):
@@ -120,7 +123,7 @@ class ParticipantTab(Vertical):
             with Collapsible(title="Current block config:", id="collapse_block_config"):
                 yield self.config_pretty
                 with Grid(id="config_grid"):
-                    yield Button("Edit config", id="btn_edit_config")
+                    yield Button("Edit block config", id="btn_edit_config")
                     yield Button("Reset participant", id="btn_reset_participant")
                 yield self.edit_container
 
@@ -415,126 +418,296 @@ class ParticipantTab(Vertical):
 class ConfigTab(Vertical):
     """Manage config tab."""
 
-    def __init__(self, start_config_path: Optional[Path] = None):
+    def __init__(self, experiment:Experiment):
         super().__init__()
-        self.cfg_path_input = Input(placeholder="path to toml config file", id="cfg_path")
-        if start_config_path:
-            self.cfg_path_input.value = str(start_config_path)
-        self.new_cfg_path = Input(placeholder="output toml path", id="new_cfg_path")
-        self.order_input = Input(placeholder='order as JSON list, e.g. ["condA","condB"]', id="order_input")
-        self.blocks_input = Input(placeholder='blocks as JSON list of block names', id="blocks_input")
+        self.experiment = experiment
+        self.experiment.on_file_change_callback.append(self.config_changed_callback)
+        self.experiment.on_config_change_callback.append(self.config_changed_callback)
+
+        self.gen_box_message = Static("")
+        self._gen_box_temp_msg = None
+        self.gen_cfg_path_input = Input(placeholder="output toml path", id="gen_cfg_path")
+
+        self.new_order_input = Input(placeholder='order as JSON list, e.g. ["condA","condB"]', id="order_input")
+        self.new_blocks_input = Input(placeholder='blocks as JSON list of block names', id="blocks_input")
+        self.new_parameters_input = Input(placeholder='parameters as JSON list of block names', id="param_input")
+        self.new_box_message = Static("")
+        self._new_box_temp_msg = None
+        self.new_cfg_path_input = Input(placeholder="output toml path", id="new_cfg_path")
+
+        self.gen_json_box_message = Static("")
+        self._gen_json_box_temp_msg = None
+        self.gen_json_path_input = Input(placeholder="output toml path", id="gen_json_path")
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
 
+        self.config_edit_message = Static("")
+        self._config_file_box_temp_msg = None
+        self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
+
     def compose(self):
-        yield Label("Create / Verify / Generate Config")
-        yield Horizontal(Label("Existing config:"), self.cfg_path_input, Button("Verify", id="btn_verify"), Button("Generate JSON", id="btn_generate"))
-        yield Static("--- Create new minimal config ---")
-        yield Horizontal(self.new_cfg_path, Button("Create", id="btn_create"))
-        yield Label("Order (JSON list):")
-        yield self.order_input
-        yield Label("Blocks (JSON list of block names):")
-        yield self.blocks_input
-        yield Label("Participant indices (CSV or range) for generation:")
-        yield self.generate_indices_input
+        with VerticalScroll():
+            with Collapsible(title="Edit current config file:", id="collapse_edit_config"):
+                with VerticalScroll():
+                    with HorizontalGroup():
+                        yield Static("On save config will try to autoload")
+                        yield self.config_edit_message
+                    with Grid(id="edit_config_button_grid"):
+                        yield Button("Edit config", id="btn_edit_config")
+                        yield Button("Save config", id="btn_save_config", disabled=True)
+                    yield self.config_edit_text
 
-    def _parse_indices(self, s: str) -> List[int]:
-        s = s.strip()
-        if s == "":
-            return []
-        if "-" in s:
-            a, b = s.split("-", 1)
-            return list(range(int(a), int(b) + 1))
-        return [int(p.strip()) for p in s.split(",") if p.strip()]
+            with Collapsible(title="Generate new config file (simple):", id="collapse_generate_config_simple"):
+                with VerticalGroup():
+                    yield Static("Generate config file from sample (with examples and documentation). This will overwrite the file at destination.")
+                    with HorizontalGroup():
+                        yield self.gen_box_message
+                    with Grid(id="generate_simple_grid"):
+                        yield self.gen_cfg_path_input
+                        yield Button("Generate config", id="btn_generate_simple")
 
-    def create_config(self) -> None:
-        outp = self.new_cfg_path.value.strip()
+            with Collapsible(title="Generate new config file (advanced):", id="collapse_generate_config_advanced"):
+                with VerticalGroup():
+                    yield Static("Generate config file with following fields. This will overwrite the file at destination.")
+                    with HorizontalGroup():
+                        yield self.new_box_message
+                    with Grid(id="generate_complex_grid"):
+                        yield Label("Order (as JSON list):")
+                        yield self.new_order_input
+                        yield Label("Blocks (as JSON list of block names):")
+                        yield self.new_blocks_input
+                        yield Label("Parameters (as JSON list of parameter names):")
+                        yield self.new_parameters_input
+                        yield self.new_cfg_path_input
+                        yield Button("Generate config", id="btn_generate_advanced")
+
+            with Collapsible(title="Generate participant json:", id="collapse_generate_pp_json"):
+                with VerticalGroup():
+                    yield Static("Generate JSON for a set of participants by resolving loaded config.")
+                    with HorizontalGroup():
+                        yield self.gen_json_box_message
+                    with Grid(id="generate_json_grid"):
+                        yield Label("Participant indices (CSV or range) for generation:")
+                        yield self.generate_indices_input
+                        yield self.gen_json_path_input
+                        yield Button("Generate JSON for ppid range", id="btn_generate_json")
+        self.refresh_ui()
+
+    def config_changed_callback(self, success):
+        if success:
+            self._config_file_box_temp_msg = "Success"
+        else:
+            self._config_file_box_temp_msg = "Errors in config, check logs"
+        self.refresh_ui()
+
+    def create_config_advanced(self) -> None:
+        outp = self.new_cfg_path_input.value.strip()
         if outp == "":
-            logger.info("Provide output TOML path.")
+            self._new_box_temp_msg = "provide output toml path."
+            logger.info(self._new_box_temp_msg)
+            self.refresh_ui()
             return
+
+        if not outp.endswith(".toml"):
+            outp += ".toml"
+
         try:
-            order_val = json.loads(self.order_input.value) if self.order_input.value.strip() else [["conditionA", "conditionB"]]
-            blocks_val = json.loads(self.blocks_input.value) if self.blocks_input.value.strip() else ["conditionA", "conditionB"]
+            order_val = json.loads(self.new_order_input.value) if self.new_order_input.value.strip() else []
+            order_val_flat = [x for item in order_val for x in (item if isinstance(item, list) else [item])]
+            if not all([isinstance(i, str) for i in order_val_flat]):
+                raise Exception("Order needs to be list of strings or list of list of strings.")
         except Exception as e:
-            logger.error(f"Failed to parse JSON fields: {e}")
+            self._new_box_temp_msg = f"Failed to parse order JSON field: {e}"
+            logger.error(self._new_box_temp_msg)
+            self.refresh_ui()
             return
-        minimal = {"configuration": {"order": order_val}, "blocks": []}
+
+        try:
+            blocks_val = json.loads(self.new_blocks_input.value) if self.new_blocks_input.value.strip() else []
+            if not all([isinstance(i, str) for i in blocks_val]):
+                raise Exception("Block names needs to be list of strings.")
+            if not all([i in blocks_val for i in order_val_flat]):
+                raise Exception("Order contains unknown block names.")
+        except Exception as e:
+            self._new_box_temp_msg = f"Failed to parse block JSON field: {e}"
+            logger.error(self._new_box_temp_msg)
+            self.refresh_ui()
+            return
+
+        try:
+            parameters = json.loads(self.new_parameters_input.value) if self.new_parameters_input.value.strip() else ["parm1"]
+            if not isinstance(parameters, list) or not all([isinstance(i, str) for i in parameters]):
+                raise Exception("Parameters need to be list of strings.")
+        except Exception as e:
+            self._new_box_temp_msg = f"Failed to parse parameters JSON field: {e}"
+            logger.error(self._new_box_temp_msg)
+            self.refresh_ui()
+            return
+        minimal:dict[Any, Any] = {"blocks": []}
+        params = {p: "TODO" for p in parameters}
         for name in blocks_val:
-            minimal["blocks"].append({"name": name, "config": {}})
+            minimal["blocks"].append({"name": name, "config": params})
+        minimal["configuration"] = {"order": order_val}
+
+        try:
+            _process_config(minimal, 1, True)
+        except Exception as e:
+            self._new_box_temp_msg = f"Malformed configuration: {e}"
+            logger.exception(self._new_box_temp_msg)
+            self.refresh_ui()
+            return
+
         p = Path(outp)
         try:
-            if toml:
-                with p.open("w", encoding="utf-8") as f:
-                    toml.dump(minimal, f)
-            else:
-                lines = []
-                lines.append("[configuration]")
-                lines.append(f'order = {json.dumps(order_val)}')
-                for b in minimal["blocks"]:
-                    lines.append("")
-                    lines.append('[[blocks]]')
-                    lines.append(f'name = "{b["name"]}"')
-                    lines.append("[blocks.config]")
-                p.write_text("\n".join(lines), encoding="utf-8")
-            logger.info(f"Wrote config to {p}")
+            with p.open("w", encoding="utf-8") as f:
+                toml.dump(minimal, f)
+            self._new_box_temp_msg = f"Wrote config to {p}"
+            logger.info(self._new_box_temp_msg)
         except Exception as e:
-            logger.error(f"Failed to write config: {e}")
+            self._new_box_temp_msg = f"Failed to write config: {e}"
+            logger.error(self._new_box_temp_msg)
+        self.refresh_ui()
 
-    def verify_config(self) -> None:
-        path = self.cfg_path_input.value.strip()
-        if not path:
-            logger.info("Provide path to config to verify.")
+    def create_config_simple(self) -> None:
+        outp = self.gen_cfg_path_input.value.strip()
+        if outp == "":
+            self._gen_box_temp_msg = "provide output toml path."
+            logger.info(self._gen_box_temp_msg)
+            self.refresh_ui()
             return
-        p = Path(path)
-        if not p.exists():
-            logger.info("File not found.")
-            return
+
+        if not outp.endswith(".toml"):
+            outp += ".toml"
+
         try:
-            exp = Experiment(str(p), 1)
-            cnt = exp.get_blocks_count(None)
-            logger.info(f"Config loaded OK. Blocks count: {cnt}")
-            configs = exp.get_all_configs(1)
-            if configs:
-                logger.info("Participant 1 first block config:")
-                logger.info(pretty_json(configs[0]))
+            new_config_file(outp)
+            self._gen_box_temp_msg = f"Wrote to {outp}"
+            logger.info(self._gen_box_temp_msg)
         except Exception as e:
-            logger.error(f"Verification failed: {e}")
+            self._gen_box_temp_msg = f"Failed to write config: {e}"
+            logger.error(self._gen_box_temp_msg)
+        self.refresh_ui()
+
+    # def verify_config(self) -> None:
+    #     path = self.cfg_path_input.value.strip()
+    #     if not path:
+    #         logger.info("Provide path to config to verify.")
+    #         return
+    #     p = Path(path)
+    #     if not p.exists():
+    #         logger.info("File not found.")
+    #         return
+    #     try:
+    #         exp = Experiment(str(p), 1)
+    #         cnt = exp.get_blocks_count(None)
+    #         logger.info(f"Config loaded OK. Blocks count: {cnt}")
+    #         configs = exp.get_all_configs(1)
+    #         if configs:
+    #             logger.info("Participant 1 first block config:")
+    #             logger.info(pretty_json(configs[0]))
+    #     except Exception as e:
+    #         logger.error(f"Verification failed: {e}")
 
     def generate_json(self) -> None:
-        path = self.cfg_path_input.value.strip()
+        path = self.gen_json_path_input.value.strip()
         if not path:
-            logger.info("Provide path to config to generate from.")
+            self._gen_json_box_temp_msg = "Provide path to config to generate from."
+            logger.info(self._gen_json_box_temp_msg)
+            self.refresh_ui()
             return
         p = Path(path)
-        if not p.exists():
-            logger.info("File not found.")
+        if p.exists() and not p.is_dir():
+            self._gen_json_box_temp_msg = f"{p} is not a directory."
+            logger.info(self._gen_json_box_temp_msg)
+            self.refresh_ui()
             return
+
         indices_text = self.generate_indices_input.value.strip()
         if indices_text == "":
-            indices = [1]
+            indices = [1,]
         else:
             try:
-                indices = self._parse_indices(indices_text)
+                indices_text = indices_text.strip()
+                if indices_text == "":
+                    indices = [1,]
+                if "-" in indices_text:
+                    a, b = indices_text.split("-", 1)
+                    indices = list(range(int(a), int(b) + 1))
+                else:
+                    indices = [int(p.strip()) for p in indices_text.split(",") if p.strip()]
             except Exception as e:
-                logger.error(f"Failed to parse indices: {e}")
+                self._gen_json_box_temp_msg = f"Failed to parse indices: {e}"
+                logger.error(self._gen_json_box_temp_msg)
+                self.refresh_ui()
                 return
         try:
-            exp = Experiment(str(p), 1)
-            for idx in indices:
-                configs = exp.get_all_configs(idx)
-                out_name = p.with_suffix(f".participant_{idx}.json")
-                out_name.write_text(pretty_json(configs), encoding="utf-8")
-                logger.info(f"Wrote {out_name}")
+            _generate_config_json(self.experiment.config_file, indices, p)
+            self._gen_json_box_temp_msg = f"Generated json for with ppids {indices}"
+            logger.info(self._gen_json_box_temp_msg)
         except Exception as e:
-            logger.error(f"Generation failed: {e}")
+            self._gen_json_box_temp_msg = f"Generation failed: {e}"
+            logger.error(self._gen_json_box_temp_msg)
+        self.refresh_ui()
+
+    def edit_config(self):
+        edit_btn = self.query_one("#btn_edit_config", Button)
+        save_btn = self.query_one("#btn_save_config", Button)
+        edit_btn.disabled = True
+        save_btn.disabled = False
+        self.config_edit_text.read_only = False
+        self.refresh_ui()
+
+    def save_config(self):
+        edit_btn = self.query_one("#btn_edit_config", Button)
+        save_btn = self.query_one("#btn_save_config", Button)
+        edit_btn.disabled = False
+        save_btn.disabled = True
+        self.config_edit_text.read_only = True
+        with open(self.experiment.config_file, "w") as f:
+            f.write(self.config_edit_text.text)
+        self.refresh_ui()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
-        if bid == "btn_create":
-            self.create_config()
-        elif bid == "btn_verify":
-            self.verify_config()
-        elif bid == "btn_generate":
+        if bid == "btn_generate_advanced":
+            self.create_config_advanced()
+        elif bid == "btn_generate_simple":
+            self.create_config_simple()
+        elif bid == "btn_generate_json":
             self.generate_json()
+        elif bid == "btn_edit_config":
+            self.edit_config()
+        elif bid == "btn_save_config":
+            self.save_config()
+
+    def refresh_ui(self):
+        if self.experiment is not None and self.experiment.config_file is not None:
+            with open(self.experiment.config_file, "r") as f:
+                self.config_edit_text.text = "".join(f.readlines())
+
+        if self.experiment is not None:
+            out = ""
+            if self._config_file_box_temp_msg is not None:
+                out += f"({self._config_file_box_temp_msg})"
+                self._config_file_box_temp_msg = None
+            self.config_edit_message.update(out)
+
+            out = ""
+            if self._gen_box_temp_msg is not None:
+                out += f"({self._gen_box_temp_msg})"
+                self._gen_box_temp_msg = None
+            self.gen_box_message.update(out)
+
+            out = ""
+            if self._new_box_temp_msg is not None:
+                out += f"({self._new_box_temp_msg})"
+                self._new_box_temp_msg = None
+            self.new_box_message.update(out)
+
+            out = ""
+            if self._gen_json_box_temp_msg is not None:
+                out += f"({self._gen_json_box_temp_msg})"
+                self._gen_json_box_temp_msg = None
+            self.gen_json_box_message.update(out)
 
 
 class ExperimentTextualApp(App):
@@ -545,7 +718,7 @@ class ExperimentTextualApp(App):
         self.experiment = None
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
-        self.log_view = RichLog(id="log_view")
+        self.log_view = RichLog(id="log_view", markup=True)
         self._config_file_box_temp_msg: str|None = None
 
     def compose(self) -> ComposeResult:
@@ -565,14 +738,14 @@ class ExperimentTextualApp(App):
             sys.exit(1)
 
         with Grid(id="participant_summary_grid"):
-            yield Static("Loaded config:")
+            yield Static("Loaded config file:")
             yield self.config_file_box
-            yield Button("Load different Config", id="btn_load_config")
+            yield Button("Load different Config file", id="btn_load_config")
         with TabbedContent():
             with TabPane("Participant Management"):
                 yield ParticipantTab(self.experiment)
             with TabPane("Manage Config"):
-                yield ConfigTab(start_config_path=Path(self.config_path) if self.config_path else None)
+                yield ConfigTab(self.experiment)
 
         with Collapsible(title="Log:", id="log_group"):
             with VerticalGroup():

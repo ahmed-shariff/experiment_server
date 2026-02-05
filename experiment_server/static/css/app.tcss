@@ -215,3 +215,23 @@ TabPane {
 LoadConfig Button {
     width: 20
 }
+
+#collapse_edit_config HorizontalGroup Static {
+    width: auto;
+}
+
+#edit_config_button_grid {
+    grid-size: 2;
+}
+
+#generate_simple_grid {
+    grid-size: 2;
+}
+
+#generate_complex_grid {
+    grid-size: 2;
+}
+
+#generate_json_grid {
+    grid-size: 2;
+}
