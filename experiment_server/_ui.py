@@ -546,6 +546,7 @@ class ExperimentTextualApp(App):
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
         self.log_view = RichLog(id="log_view")
+        self._config_file_box_temp_msg: str|None = None
 
     def compose(self) -> ComposeResult:
         """Called to add widgets to the app."""
@@ -602,7 +603,11 @@ class ExperimentTextualApp(App):
 
     def refresh_ui(self):
         if self.experiment is not None:
-            self.config_file_box.update(str(self.experiment._config_file))
+            out = str(self.experiment._config_file)
+            if self._config_file_box_temp_msg is not None:
+                out += f"  ({self._config_file_box_temp_msg})"
+                self._config_file_box_temp_msg = None
+            self.config_file_box.update(out)
         if self.participant_tab is not None:
             self.participant_tab.refresh_ui()
 
@@ -614,9 +619,13 @@ class ExperimentTextualApp(App):
     def load_config(self, config_loaded_callback:Callable|None=None) -> None:
         def load_config_callback(path: Path | None) -> None:
             if path is not None and self.experiment is not None:
-                self.experiment.config_file = path
-                if config_loaded_callback is not None:
-                    config_loaded_callback()
+                try:
+                    self.experiment.config_file = path
+                    if config_loaded_callback is not None:
+                        config_loaded_callback()
+                except Exception as e:
+                    self._config_file_box_temp_msg = f"failed to load {path}"
+                    logger.error(f"Failed to load config {e}")
             self.refresh_ui()
 
         self.push_screen(LoadConfig(os.curdir), load_config_callback)
