@@ -89,12 +89,13 @@ class Experiment:
             config_file (str): Path to the TOML configuration file.
             default_participant_index (int): Default 1-based index used when none is provided.
         """
+        self.on_file_change_callback:list[Callable] = []
+        self.on_config_change_callback:list[Callable] = []
+
         self.watchdog = None
         self.global_state: Dict[int, ParticipantState] = {}
         self.config_file = Path(config_file)
         self.default_participant_index = default_participant_index
-
-        self.on_file_change_callback:list[Callable] = []
 
     @property
     def config_file(self) -> Path:
@@ -103,14 +104,34 @@ class Experiment:
     @config_file.setter
     def config_file(self, value):
         """Load a new config file. All participants states will be reset."""
-        if self.watchdog is not None:
-            self.watchdog.end_watch()
-        self.watchdog = FileModifiedWatcher(value, self._config_file_modified_callback)
+        try:
+            for ppid in self.global_state.keys():
+                self.global_state[ppid] = ParticipantState(
+                    process_config_file(value, ppid), ppid, False)
 
-        for ppid in self.global_state.keys():
-            self.global_state[ppid] = ParticipantState(
-                process_config_file(value, ppid), ppid, False)
-        self._config_file = value
+            if self.watchdog is not None:
+                self.watchdog.end_watch()
+            self.watchdog = FileModifiedWatcher(value, self._config_file_modified_callback)
+
+            self._config_file = value
+
+            for _callback in self.on_config_change_callback:
+                try:
+                    _callback(True)
+                except Exception as _e:
+                    logger.exception(f"Failed to call callback {_callback}: {_e}")
+        except Exception as e:
+            if self.watchdog is not None:
+                self.watchdog.end_watch()
+            self.watchdog = FileModifiedWatcher(self._config_file, self._config_file_modified_callback)
+
+            for _callback in self.on_config_change_callback:
+                try:
+                    _callback(False)
+                except Exception as _e:
+                    logger.exception(f"Failed to call callback {_callback}: {_e}")
+            logger.exception(f"Failed to set new config {e}")
+            raise
 
     @property
     def default_participant_index(self) -> int:
