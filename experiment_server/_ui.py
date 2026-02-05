@@ -38,6 +38,7 @@ from textual.widgets import (
 from experiment_server._api import Experiment, _generate_config_json
 from experiment_server._process_config import _process_config, _get_table_for_participants
 from experiment_server.utils import new_config_file
+from experiment_server._server import start_server_in_current_ioloop
 import toml  # type: ignore
 
 
@@ -746,15 +747,20 @@ class ExperimentTextualApp(App):
         else:
             sys.exit(1)
 
-        with Grid(id="participant_summary_grid"):
+        start_server_in_current_ioloop(self.experiment)
+
+        with Grid(id="top_grid"):
             yield Static("Loaded config file:")
             yield self.config_file_box
             yield Button("Load different Config file", id="btn_load_config")
+            yield Button("Refresh", id="btn_refresh")
         with TabbedContent():
             with TabPane("Participant Management"):
-                yield ParticipantTab(self.experiment)
+                self.participant_tab = ParticipantTab(self.experiment)
+                yield self.participant_tab
             with TabPane("Manage Config"):
-                yield ConfigTab(self.experiment)
+                self.config_tab = ConfigTab(self.experiment)
+                yield self.config_tab
 
         with Collapsible(title="Log:", id="log_group"):
             with VerticalGroup():
@@ -792,11 +798,15 @@ class ExperimentTextualApp(App):
             self.config_file_box.update(out)
         if self.participant_tab is not None:
             self.participant_tab.refresh_ui()
+        if self.config_tab is not None:
+            self.config_tab.refresh_ui()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
         if bid == "btn_load_config":
             self.load_config()
+        elif bid == "btn_refresh":
+            self.refresh_ui()
 
     def load_config(self, config_loaded_callback:Callable|None=None) -> None:
         def load_config_callback(path: Path | None) -> None:

@@ -6,6 +6,7 @@ from pathlib import Path
 from multiprocessing import Process
 
 from tornado.web import RequestHandler, Application, StaticFileHandler
+from tornado.platform.asyncio import AsyncIOMainLoop
 import tornado.ioloop
 import asyncio
 import json
@@ -14,8 +15,8 @@ from experiment_server._api import Experiment
 from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion
 
 
-def _create_app(default_participant_index, config_file):
-    resource_parameters = {"experiment": Experiment(config_file, default_participant_index)}
+def _create_app(experiment:Experiment):
+    resource_parameters = {"experiment": experiment}
 
     static_location = (Path(__file__).parent  / "static" ).absolute()
     
@@ -31,9 +32,21 @@ def _create_app(default_participant_index, config_file):
     ])
     return application
 
+def start_server_in_current_ioloop(experiment, host="127.0.0.1", port=5000):
+    # ensure Tornado uses the asyncio loop Textual already runs on
+    AsyncIOMainLoop().install()
+
+    # build an Application that uses the provided Experiment object
+    app = _create_app(experiment=experiment)
+
+    http_server = tornado.httpserver.HTTPServer(app)
+    http_server.listen(port=port, address=host)
+    return http_server
+
 
 async def _init_api(config_file, default_participant_index, host="127.0.0.1", port=5000):
-    application = _create_app(default_participant_index, config_file)
+    experiment = Experiment(config_file, default_participant_index)
+    application = _create_app(experiment=experiment)
     application.listen(port=port, address=host)
     await asyncio.Event().wait()
 
