@@ -90,9 +90,9 @@ class Experiment:
             default_participant_index (int): Default 1-based index used when none is provided.
         """
         self.watchdog = None
+        self.global_state: Dict[int, ParticipantState] = {}
         self.config_file = Path(config_file)
         self.default_participant_index = default_participant_index
-        self.global_state: Dict[int, ParticipantState] = {}
 
     @property
     def config_file(self) -> Path:
@@ -101,14 +101,14 @@ class Experiment:
     @config_file.setter
     def config_file(self, value):
         """Load a new config file. All participants states will be reset."""
-        self._config_file = value
         if self.watchdog is not None:
             self.watchdog.end_watch()
-        self.watchdog = FileModifiedWatcher(self._config_file, self._config_file_modified_callback)
+        self.watchdog = FileModifiedWatcher(value, self._config_file_modified_callback)
 
         for ppid in self.global_state.keys():
             self.global_state[ppid] = ParticipantState(
-                process_config_file(self._config_file, ppid), ppid, False)
+                process_config_file(value, ppid), ppid, False)
+        self._config_file = value
 
     @property
     def default_participant_index(self) -> int:
@@ -161,7 +161,7 @@ class Experiment:
         If participant_index is None, uses the default. Raises ExperimentServerExcetion if not present.
         """
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         if participant_index not in self.global_state:
             raise ExperimentServerExcetion(f"participant with index {participant_index} is not set. Consider using `add_participant_index`")
         return self.global_state[participant_index]
@@ -169,13 +169,13 @@ class Experiment:
     def get_state(self, participant_index:int|None=None) -> bool:
         """Return whether the participant is active."""
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         return self.global_state[participant_index].active
 
     def move_to_next(self, participant_index:int|None=None) -> str:
         """Advance the participant to the next block and return the new block_name."""
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         return self.global_state[participant_index].move_to_next_block()
 
     def get_config(self, participant_index:int|None=None) -> Union[Dict[str, Any], None]:
@@ -183,7 +183,7 @@ class Experiment:
         Return the current block's config for the participant, or None if experiment not started or finished.
         """
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         block = self.global_state[participant_index].block
         if block is None:
             return None
@@ -192,20 +192,20 @@ class Experiment:
     def reset_participant(self, participant_index:int|None=None) -> bool:
         """Reload the participant's configuration from file and replace their stored config."""
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         self.global_state[participant_index].config = process_config_file(self._config_file, participant_index)
         return True
 
     def get_blocks_count(self, participant_index:int|None=None) -> int:
         """Return the number of blocks for the participant."""
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         return len(self.global_state[participant_index].config)
 
     def get_all_configs(self, participant_index:int|None=None) -> List[dict]:
         """Return the list of all block 'config' dicts for the participant in order."""
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         return [c["config"] for c in self.global_state[participant_index].config]
 
     def move_to_block(self, block_id: int, participant_index:int|None=None) -> str:
@@ -216,7 +216,7 @@ class Experiment:
         """
         assert isinstance(block_id, int), "`block` should be an int"
         if participant_index is None:
-            participant_index = self._default_participant_index
+            participant_index = self.default_participant_index
         self.global_state[participant_index].block_id = block_id
         return self.global_state[participant_index].block_name
 
