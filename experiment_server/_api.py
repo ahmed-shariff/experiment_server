@@ -1,5 +1,5 @@
 from sys import stdout
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 from loguru import logger
 from experiment_server._process_config import process_config_file
@@ -94,6 +94,8 @@ class Experiment:
         self.config_file = Path(config_file)
         self.default_participant_index = default_participant_index
 
+        self.on_file_change_callback:list[Callable] = []
+
     @property
     def config_file(self) -> Path:
         return self._config_file
@@ -129,9 +131,22 @@ class Experiment:
     def _config_file_modified_callback(self):
         """Reload configurations for all known participants when the file changes."""
         logger.info("Reloading config")
-        for participantState in self.global_state.values():
-            config = process_config_file(self._config_file, participantState.participant_index)
-            participantState.config = config
+        try:
+            for participantState in self.global_state.values():
+                config = process_config_file(self._config_file, participantState.participant_index)
+                participantState.config = config
+            for _callback in self.on_file_change_callback:
+                try:
+                    _callback(True)
+                except Exception as _e:
+                    logger.exception(f"Failed to call callback {_callback}: {_e}")
+        except Exception as e:
+            for _callback in self.on_file_change_callback:
+                try:
+                    _callback(False)
+                except Exception as _e:
+                    logger.exception(f"Failed to call callback {_callback}: {_e}")
+            logger.exception(f"Failed to load config {e}")
 
     def get_next_participant(self) -> int:
         """Allocate and return the next participant index (max existing + 1)."""
