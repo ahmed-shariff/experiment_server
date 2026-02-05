@@ -12,6 +12,8 @@ from pathlib import Path
 import sys
 from typing import Any, Callable, Dict, List, Optional, Iterable
 import click
+from loguru import logger
+import asyncio
 
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
@@ -93,7 +95,6 @@ class ParticipantTab(Vertical):
         self.monitor_input = Input(placeholder="participant id (empty = default)", id="monitor_input", disabled=True)
         self.participant_id_to_add_input = Input(placeholder="participant id", id="participant_id_to_add_input")
         self.edit_container = Grid(id="edit_container")
-        self.log_view = RichLog(id="log_view")
 
         self.participants_table.add_column("participant_id")
         self.participants_table.add_column("block_id")
@@ -151,9 +152,6 @@ class ParticipantTab(Vertical):
                     yield Button("New participant", id="btn_new_participant")
                     # yield Button("List participants", id="btn_list_participants")
 
-        with Collapsible(title="Log:", id="log_group"):
-            with VerticalGroup():
-                yield self.log_view
         self.refresh_ui()
 
     # Utilities
@@ -205,9 +203,9 @@ class ParticipantTab(Vertical):
         pid = self._monitored_pid()
         try:
             name = self.experiment.move_to_next(pid)
-            self.log_view.write(f"Moved to next block: {name}")
+            logger.info(f"Moved to next block: {name}")
         except Exception as e:
-            self.log_view.write(f"Error moving to next: {e}")
+            logger.error(f"Error moving to next: {e}")
         self.refresh_ui()
 
     def move_to_block(self) -> None:
@@ -216,22 +214,22 @@ class ParticipantTab(Vertical):
         try:
             bid = int(v)
         except Exception:
-            self.log_view.write("Invalid block id")
+            logger.error("Invalid block id")
             return
         try:
             name = self.experiment.move_to_block(bid, pid)
-            self.log_view.write(f"Moved participant {pid or 'default'} to block {bid} ({name})")
+            logger.info(f"Moved participant {pid or 'default'} to block {bid} ({name})")
         except Exception as e:
-            self.log_view.write(f"Error moving to block: {e}")
+            logger.error(f"Error moving to block: {e}")
         self.refresh_ui()
 
     def reset_participant(self) -> None:
         pid = self._monitored_pid()
         try:
             self.experiment.reset_participant(pid)
-            self.log_view.write(f"Reset participant {pid or 'default'}")
+            logger.info(f"Reset participant {pid or 'default'}")
         except Exception as e:
-            self.log_view.write(f"Error resetting participant: {e}")
+            logger.error(f"Error resetting participant: {e}")
         self.refresh_ui()
 
     def list_participants(self) -> None:
@@ -239,41 +237,41 @@ class ParticipantTab(Vertical):
             self.participants_table.clear()
             for idx, st in sorted(self.experiment.global_state.items()):
                 self.participants_table.add_row(str(idx), str(st.block_id), str(st.block_name), str(st.active))
-            self.log_view.write("Listed participants")
+            logger.info("Listed participants")
         except Exception as e:
-            self.log_view.write(f"Error listing participants: {e}")
+            logger.error(f"Error listing participants: {e}")
 
     def move_all_to_block(self) -> None:
         v = self.block_all_input.value.strip()
         try:
             bid = int(v)
         except Exception:
-            self.log_view.write("Invalid block id")
+            logger.error("Invalid block id")
             return
         try:
             name = self.experiment.move_all_to_block(bid)
-            self.log_view.write(f"Moved all participants to block {bid} ({name})")
+            logger.info(f"Moved all participants to block {bid} ({name})")
         except Exception as e:
-            self.log_view.write(f"Error moving all: {e}")
+            logger.error(f"Error moving all: {e}")
         self.refresh_ui()
 
     def set_monitor(self) -> None:
         pid = self._monitored_pid()
         if pid is None:
-            self.log_view.write("Monitoring default participant")
+            logger.info("Monitoring default participant")
         else:
             if pid not in getattr(self.experiment, "global_state", {}):
-                self.log_view.write(f"Participant {pid} not known. Use New participant to add.")
+                logger.info(f"Participant {pid} not known. Use New participant to add.")
             else:
-                self.log_view.write(f"Now monitoring participant {pid}")
+                logger.info(f"Now monitoring participant {pid}")
         self.refresh_ui()
 
     def new_participant(self) -> None:
         try:
             new_id = self.experiment.get_next_participant()
-            self.log_view.write(f"Created new participant {new_id}")
+            logger.info(f"Created new participant {new_id}")
         except Exception as e:
-            self.log_view.write(f"Error creating participant: {e}")
+            logger.error(f"Error creating participant: {e}")
         self.refresh_ui()
 
     def new_participant_with_id(self) -> None:
@@ -281,13 +279,13 @@ class ParticipantTab(Vertical):
         try:
             id = int(v)
         except Exception:
-            self.log_view.write("Invalid participant id")
+            logger.error("Invalid participant id")
             return
         try:
             new_id = self.experiment.add_participant_index(id)
-            self.log_view.write(f"Created new participant {new_id}")
+            logger.info(f"Created new participant {new_id}")
         except Exception as e:
-            self.log_view.write(f"Error creating participant: {e}")
+            logger.error(f"Error creating participant: {e}")
         self.refresh_ui()
 
     def load_config(self):
@@ -299,12 +297,12 @@ class ParticipantTab(Vertical):
         try:
             ppid = int(v)
         except Exception:
-            self.log_view.write("Invalid ppid")
+            logger.error("Invalid ppid")
             return
         try:
             self.experiment.default_participant_index = ppid
         except Exception as e:
-            self.log_view.write(f"Error moving to block: {e}")
+            logger.error(f"Error moving to block: {e}")
         self.refresh_ui()
 
     # Config editing
@@ -313,10 +311,10 @@ class ParticipantTab(Vertical):
         try:
             cfg = self.experiment.get_config(pid)
         except Exception as e:
-            self.log_view.write(f"Cannot edit config: {e}")
+            logger.error(f"Cannot edit config: {e}")
             return
         if cfg is None:
-            self.log_view.write("Participant not active. Call Move to next first.")
+            logger.info("Participant not active. Call Move to next first.")
             return
 
         # clear prior edit inputs
@@ -339,21 +337,21 @@ class ParticipantTab(Vertical):
         self.edit_container.mount(Button("Submit edits", id="btn_submit_edits"))
         self.edit_container.mount(Button("Cancel edits", id="btn_cancel_edits"))
         self.edit_container.add_class("round_border")
-        self.log_view.write("Mounted edit inputs. Fill values and press Submit edits.")
+        logger.info("Mounted edit inputs. Fill values and press Submit edits.")
 
     def submit_edits(self) -> None:
         self.edit_container.remove_class("round_border")
         if not self._edit_inputs:
-            self.log_view.write("No edits in progress.")
+            logger.info("No edits in progress.")
             return
         pid = self._monitored_pid()
         try:
             cfg = self.experiment.get_config(pid)
         except Exception as e:
-            self.log_view.write(f"Cannot submit: {e}")
+            logger.error(f"Cannot submit: {e}")
             return
         if cfg is None:
-            self.log_view.write("Participant not active.")
+            logger.info("Participant not active.")
             return
 
         errors = False
@@ -365,16 +363,16 @@ class ParticipantTab(Vertical):
                 val = json.loads(raw)
                 cfg[k] = val
             except Exception as e:
-                self.log_view.write(f"Failed parsing {k}: {e}")
+                logger.error(f"Failed parsing {k}: {e}")
                 errors = True
 
         if not errors:
-            self.log_view.write("Config updated in-memory.")
+            logger.info("Config updated in-memory.")
             for child in list(self.edit_container.children):
                 child.remove()
             self._edit_inputs.clear()
         else:
-            self.log_view.write("One or more fields failed to parse; fix and submit again.")
+            logger.info("One or more fields failed to parse; fix and submit again.")
         self.refresh_ui()
 
     def cancel_edits(self) -> None:
@@ -382,7 +380,7 @@ class ParticipantTab(Vertical):
         self._edit_inputs.clear()
         for child in list(self.edit_container.children):
             child.remove()
-        self.log_view.write("Cancelled edits.")
+        logger.info("Cancelled edits.")
         self.refresh_ui()
 
     # Event handler
@@ -437,7 +435,6 @@ class ConfigTab(Vertical):
         self.order_input = Input(placeholder='order as JSON list, e.g. ["condA","condB"]', id="order_input")
         self.blocks_input = Input(placeholder='blocks as JSON list of block names', id="blocks_input")
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
-        self.output = RichLog()
 
     def compose(self):
         yield Label("Create / Verify / Generate Config")
@@ -450,7 +447,6 @@ class ConfigTab(Vertical):
         yield self.blocks_input
         yield Label("Participant indices (CSV or range) for generation:")
         yield self.generate_indices_input
-        yield self.output
 
     def _parse_indices(self, s: str) -> List[int]:
         s = s.strip()
@@ -464,13 +460,13 @@ class ConfigTab(Vertical):
     def create_config(self) -> None:
         outp = self.new_cfg_path.value.strip()
         if outp == "":
-            self.output.write("Provide output TOML path.")
+            logger.info("Provide output TOML path.")
             return
         try:
             order_val = json.loads(self.order_input.value) if self.order_input.value.strip() else [["conditionA", "conditionB"]]
             blocks_val = json.loads(self.blocks_input.value) if self.blocks_input.value.strip() else ["conditionA", "conditionB"]
         except Exception as e:
-            self.output.write(f"Failed to parse JSON fields: {e}")
+            logger.error(f"Failed to parse JSON fields: {e}")
             return
         minimal = {"configuration": {"order": order_val}, "blocks": []}
         for name in blocks_val:
@@ -490,38 +486,38 @@ class ConfigTab(Vertical):
                     lines.append(f'name = "{b["name"]}"')
                     lines.append("[blocks.config]")
                 p.write_text("\n".join(lines), encoding="utf-8")
-            self.output.write(f"Wrote config to {p}")
+            logger.info(f"Wrote config to {p}")
         except Exception as e:
-            self.output.write(f"Failed to write config: {e}")
+            logger.error(f"Failed to write config: {e}")
 
     def verify_config(self) -> None:
         path = self.cfg_path_input.value.strip()
         if not path:
-            self.output.write("Provide path to config to verify.")
+            logger.info("Provide path to config to verify.")
             return
         p = Path(path)
         if not p.exists():
-            self.output.write("File not found.")
+            logger.info("File not found.")
             return
         try:
             exp = Experiment(str(p), 1)
             cnt = exp.get_blocks_count(None)
-            self.output.write(f"Config loaded OK. Blocks count: {cnt}")
+            logger.info(f"Config loaded OK. Blocks count: {cnt}")
             configs = exp.get_all_configs(1)
             if configs:
-                self.output.write("Participant 1 first block config:")
-                self.output.write(pretty_json(configs[0]))
+                logger.info("Participant 1 first block config:")
+                logger.info(pretty_json(configs[0]))
         except Exception as e:
-            self.output.write(f"Verification failed: {e}")
+            logger.error(f"Verification failed: {e}")
 
     def generate_json(self) -> None:
         path = self.cfg_path_input.value.strip()
         if not path:
-            self.output.write("Provide path to config to generate from.")
+            logger.info("Provide path to config to generate from.")
             return
         p = Path(path)
         if not p.exists():
-            self.output.write("File not found.")
+            logger.info("File not found.")
             return
         indices_text = self.generate_indices_input.value.strip()
         if indices_text == "":
@@ -530,7 +526,7 @@ class ConfigTab(Vertical):
             try:
                 indices = self._parse_indices(indices_text)
             except Exception as e:
-                self.output.write(f"Failed to parse indices: {e}")
+                logger.error(f"Failed to parse indices: {e}")
                 return
         try:
             exp = Experiment(str(p), 1)
@@ -538,9 +534,9 @@ class ConfigTab(Vertical):
                 configs = exp.get_all_configs(idx)
                 out_name = p.with_suffix(f".participant_{idx}.json")
                 out_name.write_text(pretty_json(configs), encoding="utf-8")
-                self.output.write(f"Wrote {out_name}")
+                logger.info(f"Wrote {out_name}")
         except Exception as e:
-            self.output.write(f"Generation failed: {e}")
+            logger.error(f"Generation failed: {e}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
@@ -559,6 +555,7 @@ class ExperimentTextualApp(App):
         self.experiment = None
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
+        self.log_view = RichLog(id="log_view")
 
     def compose(self) -> ComposeResult:
         """Called to add widgets to the app."""
@@ -570,7 +567,7 @@ class ExperimentTextualApp(App):
                 self.experiment = Experiment(self.config_path, 1)
             except Exception as e:
                 # show a warning but continue with a DummyExperiment
-                yield Static(f"Warning loading config {self.config_path}: {e}", style="bold red")
+                yield Static(f"Warning loading config {self.config_path}: {e}")
                 sys.exit(1)
         else:
             sys.exit(1)
@@ -582,6 +579,21 @@ class ExperimentTextualApp(App):
                 yield ParticipantTab(self.experiment, _load_experiment_screen)
             with TabPane("Manage Config"):
                 yield ConfigTab(start_config_path=Path(self.config_path) if self.config_path else None)
+
+        with Collapsible(title="Log:", id="log_group"):
+            with VerticalGroup():
+                yield self.log_view
+
+    def on_mount(self):
+        # Remove default stderr sink so nothing is printed to the CLI
+        logger.remove()
+        # Get running loop to safely schedule writes from other threads
+        loop = asyncio.get_running_loop()
+        def textual_sink(message):
+            # message is a Loguru Message object; str(message) is the formatted text
+            loop.call_soon_threadsafe(self.log_view.write, str(message))
+        # Add Textual sink (enqueue=True for thread safety)
+        logger.add(textual_sink, enqueue=True)
 
     # def load_config(self, path: str) -> None:
     #     p = Path(path)
