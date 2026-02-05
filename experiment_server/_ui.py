@@ -10,16 +10,14 @@ import json
 import os
 from pathlib import Path
 import sys
-from typing import Any, Callable, Dict, List, Optional, Iterable
-import click
+from typing import Any, Callable, Dict, Optional, Iterable
 from loguru import logger
 import asyncio
+from tabulate import tabulate
 
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
-from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widget import Widget
 from textual.widgets import (
     DirectoryTree,
     Header,
@@ -38,7 +36,7 @@ from textual.widgets import (
     TextArea
 )
 from experiment_server._api import Experiment, _generate_config_json
-from experiment_server._process_config import verify_config, _process_config
+from experiment_server._process_config import _process_config, _get_table_for_participants
 from experiment_server.utils import new_config_file
 import toml  # type: ignore
 
@@ -441,6 +439,7 @@ class ConfigTab(Vertical):
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
 
         self.config_edit_message = Static("")
+        self.config_order_log = RichLog(id="order_table")
         self._config_file_box_temp_msg = None
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
 
@@ -448,6 +447,8 @@ class ConfigTab(Vertical):
         with VerticalScroll():
             with Collapsible(title="Edit current config file:", id="collapse_edit_config"):
                 with VerticalScroll():
+                    with Collapsible(title="Example ordering for 5 participants"):
+                        yield self.config_order_log
                     with HorizontalGroup():
                         yield Static("On save config will try to autoload")
                         yield self.config_edit_message
@@ -680,9 +681,17 @@ class ConfigTab(Vertical):
             self.save_config()
 
     def refresh_ui(self):
+        self.config_order_log.clear()
         if self.experiment is not None and self.experiment.config_file is not None:
             with open(self.experiment.config_file, "r") as f:
                 self.config_edit_text.text = "".join(f.readlines())
+
+            try:
+                order_table_out = _get_table_for_participants(self.experiment.config_file)
+                order_table_out = tabulate(order_table_out, headers='firstrow', tablefmt='fancy_grid')
+            except Exception as e:
+                order_table_out = f"Failed to load {self.experiment.config_file}: `{e}`"
+            self.config_order_log.write(order_table_out)
 
         if self.experiment is not None:
             out = ""
