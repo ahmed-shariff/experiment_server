@@ -9,6 +9,7 @@ Documentation is available at [https://shariff-faleel.com/experiment_server/](ht
 - [Overview](#overview)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Textual UI (TUI)](#textual-ui-tui)
   - [Configuration of an experiment](#configuration-of-an-experiment)
   - [Verify config](#verify-config)
   - [Loading experiment through server](#loading-experiment-through-server)
@@ -33,6 +34,55 @@ $ poetry add experiment-server
 ```
 
 # Usage
+## Textual UI (TUI)
+
+A terminal-based user interface is provided for interactive management and monitoring of an experiment. It is useful when you want a lightweight, keyboard-driven interface to load configs, inspect/generate per‑participant configs, edit files, and control participant flow without using the web UI.
+
+Launch the TUI with:
+
+```sh
+# Start TUI (optionally provide a config file)
+$ experiment-server ui
+$ experiment-server ui -c sample_config.toml
+
+# Common options
+$ experiment-server ui -c sample_config.toml -i 1 -h 127.0.0.1 -p 5000
+```
+
+Options:
+- -c, --config-file : path to a .toml config to load on start (optional).
+- -i, --default-participant-index : default participant index to use when no explicit participant id is provided (default 1).
+- -h, --host : host/interface for the server (default 127.0.0.1).
+- -p, --port : port for the server (default 5000).
+
+Behavior and features
+- Can be started without a config file; load a config later from the built-in file browser (filters to directories and .toml files).
+- When a config is loaded the package starts the server in the same event loop, exposing the same REST API described elsewhere in this README.
+- Participant management:
+  - View all participants and their status, block id and block name.
+  - Create new participants (auto id or a specific id).
+  - Move the default or a specific participant to the next block or to a specific block id.
+  - Move all active participants to a block.
+  - Reset a participant.
+  - Choose a monitored participant to view its current config and status.
+- Config management:
+  - View the currently loaded .toml contents in a code editor pane.
+  - Edit the config in place and save; saving writes the file and the app will attempt to reload the config.
+  - Generate new config files using simple or advanced helpers (write a minimal example or build from JSON-specified order/blocks/parameters).
+  - Generate expanded JSON configs for a range of participant indices (write output to a directory).
+- Live logging pane shows application logs for actions and errors.
+- A simple edit UI is available to tweak the in-memory per-participant config (submit or cancel edits).
+
+Notes
+- Editing and saving the config file from the TUI writes to the same config path the server is using; the TUI will attempt to reload the new configuration but will preserve participant state (see server behavior note in the [Loading experiment through server](#loading-experiment-through-server) section).
+- The TUI requires the textual/Rich environment provided by the package (normally installed with the package). Use `Ctrl+q` to exit or the TUI's quit action.
+
+This TUI is intended as a compact, interactive alternative to the web interface for quick testing, config edits, and participant control.
+<p style="display:flex; gap:8px; align-items:flex-start;">
+  <img src="https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot_tui1.png" alt="web UI screenshot 1" style="width:49%;">
+  <img src="https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot_tui2.png" alt="web UI screenshot 2" style="width:49%;">
+</p>
+
 ## Configuration of an experiment
 The configuration is defined in a [toml](https://toml.io/en/) file. 
 
