@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-import sys
 from typing import Any, Callable, Dict, Optional, Iterable
 from loguru import logger
 import asyncio
@@ -682,26 +681,6 @@ class ConfigTab(Vertical):
             self._gen_box_temp_msg = f"Failed to write config: {e}"
             logger.error(self._gen_box_temp_msg)
         self.refresh_ui()
-
-    # def verify_config(self) -> None:
-    #     path = self.cfg_path_input.value.strip()
-    #     if not path:
-    #         logger.info("Provide path to config to verify.")
-    #         return
-    #     p = Path(path)
-    #     if not p.exists():
-    #         logger.info("File not found.")
-    #         return
-    #     try:
-    #         exp = Experiment(str(p), 1)
-    #         cnt = exp.get_blocks_count(None)
-    #         logger.info(f"Config loaded OK. Blocks count: {cnt}")
-    #         configs = exp.get_all_configs(1)
-    #         if configs:
-    #             logger.info("Participant 1 first block config:")
-    #             logger.info(pretty_json(configs[0]))
-    #     except Exception as e:
-    #         logger.error(f"Verification failed: {e}")
 
     def generate_json(self) -> None:
         if self.experiment is None:

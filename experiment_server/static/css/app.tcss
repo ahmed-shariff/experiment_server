@@ -14,10 +14,10 @@ $header_bg: #10242f;
 $log_bg: #08202a;
 
 App {
-  background: $bg;
-  color: $text;
-  margin: 1;
-  overflow-y:auto;
+    background: $bg;
+    color: $text;
+    margin: 1;
+    overflow-y:auto;
 }
 
 Static {
@@ -30,9 +30,9 @@ Label {
 }
 
 Collapsible {
-  background: $panel_color;
-  padding: 1 1;
-  height: auto;
+    background: $panel_color;
+    padding: 1 1;
+    height: auto;
 }
 
 TabbedContent {
@@ -42,7 +42,7 @@ TabbedContent {
 }
 
 ParticipantTab {
-  overflow-y:auto;
+    overflow-y:auto;
 }
 
 Grid {
@@ -82,9 +82,9 @@ Grid {
 }
 
 #status_box, #log_view, #participants_table {
-  background: $surface;
-  border: round $border;
-  padding: 0 1;
+    background: $surface;
+    border: round $border;
+    padding: 0 1;
 }
 
 #status_box {
@@ -92,58 +92,58 @@ Grid {
 }
 
 #config_pretty {
-  color: $text;
-  min-height: 6;
-  max-height: 20;
-  overflow: auto;
-  padding: 1;
-  margin-bottom: 1;
-  border: round white;
-  background: $surface;
+    color: $text;
+    min-height: 6;
+    max-height: 20;
+    overflow: auto;
+    padding: 1;
+    margin-bottom: 1;
+    border: round white;
+    background: $surface;
 }
 
 #log_view {
-  overflow: auto;
-  color: $muted;
-  background: $log_bg;
-  border: solid $border;
-  align-vertical: bottom;
-  height: 10;
+    overflow: auto;
+    color: $muted;
+    background: $log_bg;
+    border: solid $border;
+    align-vertical: bottom;
+    height: 10;
 }
 
 Input {
-  background: #081822;
-  border: solid $border;
-  /* color: $text; */
-  height: 3;
-  width: 100%;
+    background: #081822;
+    border: solid $border;
+    /* color: $text; */
+    height: 3;
+    width: 100%;
 }
 
 #block_input, #block_all_input, #participant_id_to_add_input, #monitor_input {
-  min-width: 12;
+    min-width: 12;
 }
 
 #edit_container Input {
-  width: 44;
+    width: 44;
 }
 
 Button {
-  background: transparent;
-  color: $text;
-  border: round $accent-2;
-  height: 3;
-  width: 100%;
+    background: transparent;
+    color: $text;
+    border: round $accent-2;
+    height: 3;
+    width: 100%;
 }
 
 Button:hover {
-  background: $success;
-  border: round $accent-2;
+    background: $success;
+    border: round $accent-2;
 }
 
 Button:disabled {
-  opacity: 25%;
-  color: $muted;
-  border: solid #0b1218;
+    opacity: 25%;
+    color: $muted;
+    border: solid #0b1218;
 }
 
 #config_grid {
@@ -154,16 +154,16 @@ Button:disabled {
 #edit_container {
     width: 100;
     /* grid-gutter: 1; */
-  margin-top: 1;
-  grid-size: 2;
+    margin-top: 1;
+    grid-size: 2;
 }
 
 .edit_label {
-  color: $muted;
-  width: 50;
-  padding-right: 1;
-  padding-top: 1;
-  text-align: right;
+    color: $muted;
+    width: 50;
+    padding-right: 1;
+    padding-top: 1;
+    text-align: right;
 }
 
 .round_border {
@@ -172,8 +172,8 @@ Button:disabled {
 }
 
 .edit_value {
-  padding-left: 1;
-  width: auto;
+    padding-left: 1;
+    width: auto;
 }
 
 .edit_value_immutable {
@@ -190,33 +190,33 @@ Button:disabled {
 }
 
 #participants_table {
-  min-height: 12;
-  overflow: auto;
-  margin-bottom: 1;
+    min-height: 12;
+    overflow: auto;
+    margin-bottom: 1;
 }
 
 /* DataTable rows */
 DataTable, DataTable > .row {
-  color: $text;
-  background: transparent;
+    color: $text;
+    background: transparent;
 }
 
 DataTable > .row:hover {
-  background: $row_hover;
+    background: $row_hover;
 }
 
 DataTable > .row:focus {
-  background: $row_selected;
-  color: $text;
-  border-left: solid $accent;
+    background: $row_selected;
+    color: $text;
+    border-left: solid $accent;
 }
 
 #static_monitor_ppid {
-  width: 18;
+    width: 18;
 }
 
 TabPane {
-  padding: 1;
+    padding: 1;
 }
 
 LoadConfig Button {
