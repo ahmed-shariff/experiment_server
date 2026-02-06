@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7] - 2026-02-06
+
+### Added
+- Textual-based terminal UI (ui CLI command) for interactive experiment management:
+  - Manage participants, view/pretty-print and edit per‑participant configs, generate/verify TOML and participant JSON, live log pane, file browser to load configs, and ability to start the HTTP server from the TUI.
+  - CLI options for the TUI: --config-file, --default-participant-index, --host, --port.
+  - New UI assets (TCSS and screenshots).
+
+### Changed
+- Refactor config processing:
+  - Split TOML loading from processing and introduce _process_config(configuration, participant_index, ...) so config processing can be reused without a file.
+  - verify_config now uses a lightweight tabulate/list table helper instead of pandas for ordering previews.
+- Experiment API and lifecycle:
+  - config_file is now a property; setting it reloads participant states and recreates the file watcher.
+  - default_participant_index is a validated property that initializes the default participant state.
+  - Added observable callbacks: on_file_change_callback and on_config_change_callback.
+- Server integration:
+  - Expose a start_server_in_current_ioloop helper to run the Tornado HTTP server on the existing asyncio loop (used by the TUI).
+- CLI / utilities:
+  - new_config_file moved into experiment_server.utils and reused from the CLI.
+- Packaging and requirements:
+  - Bump minimum Python to >=3.10 and add Textual and tree-sitter related deps required by the TUI.
+- Documentation:
+  - README updated with TUI details and API docs/ mkdocs plugin options improved.
+
+### Fixed
+- Use public watchdog attribute during shutdown and guard against None to avoid shutdown errors.
+- Make config reloads more robust: callback exceptions are caught and logged; failures notify callbacks and attempt to restore prior watcher where appropriate.
+
+### Removed
+- Remove pandas dependency (ordering preview replaced by tabulate-based output).
+
 ## [0.3.6] - 2025-10-17
 ### Changed
 - Update readme and example config to improve readability.
