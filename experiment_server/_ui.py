@@ -7,6 +7,7 @@ Usage:
 from __future__ import annotations
 
 import json
+from logging import disable
 import os
 from pathlib import Path
 import sys
@@ -79,12 +80,13 @@ class LoadConfig(ModalScreen[Path]):
 
 class ParticipantTab(Vertical):
     """Participant management tab."""
-    def __init__(self, experiment:Experiment):
+    def __init__(self, experiment:Optional[Experiment]):
         super().__init__()
-        self.experiment = experiment
+        self.experiment:Optional[Experiment] = None
+        self.__experiment_parameter = experiment
 
         # Widgets
-        self.update_ppid_input = Input(placeholder=str(self.experiment.default_participant_index), id="update_ppid_input")
+        self.update_ppid_input = Input(placeholder="", id="update_ppid_input")
         self.status_box = Static(id="status_box")
         self.block_input = Input(placeholder="block id", id="block_input")
         self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
@@ -103,6 +105,27 @@ class ParticipantTab(Vertical):
 
         # editable inputs map when editing config
         self._edit_inputs: Dict[str, Input] = {}
+
+    def set_experiment(self, experiment: Optional[Experiment]):
+        self.experiment = experiment
+        disabled_state = self.experiment is None
+
+        query_result = self.query(Button)
+        for button in query_result:
+            button.disabled = disabled_state
+
+        query_result = self.query(Input)
+        for input in query_result:
+            input.disabled = disabled_state
+
+        query_result = self.query(Switch)
+        for switch in query_result:
+            switch.disabled = disabled_state
+
+        self.refresh_ui()
+
+    def on_mount(self):
+        self.set_experiment(self.__experiment_parameter)
 
     def compose(self):
         with Grid(id="participant_summary_grid"):
@@ -162,6 +185,9 @@ class ParticipantTab(Vertical):
             return None
 
     def refresh_ui(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         # status
         try:
@@ -196,6 +222,9 @@ class ParticipantTab(Vertical):
 
     # Actions (synchronous Experiment API usage)
     def move_next(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         try:
             name = self.experiment.move_to_next(pid)
@@ -205,6 +234,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def move_to_block(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         v = self.block_input.value.strip()
         try:
@@ -220,6 +252,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def reset_participant(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         try:
             self.experiment.reset_participant(pid)
@@ -229,6 +264,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def list_participants(self) -> None:
+        if self.experiment is None:
+            return
+
         try:
             self.participants_table.clear()
             for idx, st in sorted(self.experiment.global_state.items()):
@@ -238,6 +276,9 @@ class ParticipantTab(Vertical):
             logger.error(f"Error listing participants: {e}")
 
     def move_all_to_block(self) -> None:
+        if self.experiment is None:
+            return
+
         v = self.block_all_input.value.strip()
         try:
             bid = int(v)
@@ -252,6 +293,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def set_monitor(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         if pid is None:
             logger.info("Monitoring default participant")
@@ -263,6 +307,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def new_participant(self) -> None:
+        if self.experiment is None:
+            return
+
         try:
             new_id = self.experiment.get_next_participant()
             logger.info(f"Created new participant {new_id}")
@@ -271,6 +318,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def new_participant_with_id(self) -> None:
+        if self.experiment is None:
+            return
+
         v = self.participant_id_to_add_input.value.strip()
         try:
             id = int(v)
@@ -285,6 +335,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def update_ppid(self):
+        if self.experiment is None:
+            return
+
         v = self.update_ppid_input.value.strip()
         self.update_ppid_input.clear()
         try:
@@ -300,6 +353,9 @@ class ParticipantTab(Vertical):
 
     # Config editing
     def start_edit_config(self) -> None:
+        if self.experiment is None:
+            return
+
         pid = self._monitored_pid()
         try:
             cfg = self.experiment.get_config(pid)
@@ -333,6 +389,9 @@ class ParticipantTab(Vertical):
         logger.info("Mounted edit inputs. Fill values and press Submit edits.")
 
     def submit_edits(self) -> None:
+        if self.experiment is None:
+            return
+
         self.edit_container.remove_class("round_border")
         if not self._edit_inputs:
             logger.info("No edits in progress.")
@@ -369,6 +428,9 @@ class ParticipantTab(Vertical):
         self.refresh_ui()
 
     def cancel_edits(self) -> None:
+        if self.experiment is None:
+            return
+
         self.edit_container.remove_class("round_border")
         self._edit_inputs.clear()
         for child in list(self.edit_container.children):
@@ -378,6 +440,9 @@ class ParticipantTab(Vertical):
 
     # Event handler
     def on_switch_changed(self, event: Switch.Changed) -> None:
+        if self.experiment is None:
+            return
+
         # event.value is the new boolean state of the switch
         input_widget = self.monitor_input
         input_widget.disabled = event.value
@@ -385,6 +450,9 @@ class ParticipantTab(Vertical):
         button.disabled = event.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if self.experiment is None:
+            return
+
         bid = event.button.id
         if bid == "btn_move_next":
             self.move_next()
@@ -417,11 +485,10 @@ class ParticipantTab(Vertical):
 class ConfigTab(Vertical):
     """Manage config tab."""
 
-    def __init__(self, experiment:Experiment):
+    def __init__(self, experiment:Optional[Experiment]):
         super().__init__()
-        self.experiment = experiment
-        self.experiment.on_file_change_callback.append(self.config_changed_callback)
-        self.experiment.on_config_change_callback.append(self.config_changed_callback)
+        self.experiment:Optional[Experiment] = None
+        self.__experiment_parameter = experiment
 
         self.gen_box_message = Static("")
         self._gen_box_temp_msg = None
@@ -443,6 +510,34 @@ class ConfigTab(Vertical):
         self.config_order_log = RichLog(id="order_table")
         self._config_file_box_temp_msg = None
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
+
+    def set_experiment(self, experiment: Optional[Experiment]):
+        if self.experiment is not None:
+            self.experiment.on_file_change_callback.remove(self.config_changed_callback)
+            self.experiment.on_config_change_callback.remove(self.config_changed_callback)
+
+        self.experiment = experiment
+        disabled_state = self.experiment is None
+
+        if disabled_state:
+            self.config_edit_message.update("No config to read from")
+            self.gen_json_box_message.update("No config to read from")
+
+        self.query_one("#btn_edit_config").disabled = disabled_state
+        self.query_one("#btn_save_config").disabled = disabled_state
+        self.config_edit_message.disabled = disabled_state
+        self.generate_indices_input.disabled = disabled_state
+        self.gen_json_path_input.disabled = disabled_state
+        self.query_one("#btn_generate_json").disabled = disabled_state
+        
+        if self.experiment is not None:
+            self.experiment.on_file_change_callback.append(self.config_changed_callback)
+            self.experiment.on_config_change_callback.append(self.config_changed_callback)
+
+        self.refresh_ui()
+
+    def on_mount(self):
+        self.set_experiment(self.__experiment_parameter)
 
     def compose(self):
         with VerticalScroll():
@@ -610,6 +705,9 @@ class ConfigTab(Vertical):
     #         logger.error(f"Verification failed: {e}")
 
     def generate_json(self) -> None:
+        if self.experiment is None:
+            return
+
         path = self.gen_json_path_input.value.strip()
         if not path:
             self._gen_json_box_temp_msg = "Provide path to config to generate from."
@@ -651,6 +749,9 @@ class ConfigTab(Vertical):
         self.refresh_ui()
 
     def edit_config(self):
+        if self.experiment is None:
+            return
+
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
         edit_btn.disabled = True
@@ -659,6 +760,9 @@ class ConfigTab(Vertical):
         self.refresh_ui()
 
     def save_config(self):
+        if self.experiment is None:
+            return
+
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
         edit_btn.disabled = False
@@ -693,6 +797,8 @@ class ConfigTab(Vertical):
             except Exception as e:
                 order_table_out = f"Failed to load {self.experiment.config_file}: `{e}`"
             self.config_order_log.write(order_table_out)
+        else:
+            self.config_order_log.write("No config to read from")
 
         if self.experiment is not None:
             out = ""
@@ -702,34 +808,41 @@ class ConfigTab(Vertical):
             self.config_edit_message.update(out)
 
             out = ""
-            if self._gen_box_temp_msg is not None:
-                out += f"({self._gen_box_temp_msg})"
-                self._gen_box_temp_msg = None
-            self.gen_box_message.update(out)
-
-            out = ""
-            if self._new_box_temp_msg is not None:
-                out += f"({self._new_box_temp_msg})"
-                self._new_box_temp_msg = None
-            self.new_box_message.update(out)
-
-            out = ""
             if self._gen_json_box_temp_msg is not None:
                 out += f"({self._gen_json_box_temp_msg})"
                 self._gen_json_box_temp_msg = None
             self.gen_json_box_message.update(out)
 
+        out = ""
+        if self._gen_box_temp_msg is not None:
+            out += f"({self._gen_box_temp_msg})"
+            self._gen_box_temp_msg = None
+        self.gen_box_message.update(out)
+
+        out = ""
+        if self._new_box_temp_msg is not None:
+            out += f"({self._new_box_temp_msg})"
+            self._new_box_temp_msg = None
+        self.new_box_message.update(out)
+
 
 class ExperimentTextualApp(App):
-    def __init__(self, config_path: Optional[str] = None, *args, **kwargs):
+    def __init__(self, config_file: Optional[str] = None,
+                 default_participant_index:Optional[int]=None,
+                 host:Optional[str]=None,
+                 port:Optional[int]=None,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.config_path = config_path
-        self.config_file_box = Static("boooo", id="loaded_config_file_box")
+        self.config_file = config_file
+        self.default_participant_index = default_participant_index if default_participant_index is not None else 1
+        self.host = host if host is not None else "127.0.0.1"
+        self.port = port if port is not None else 5000
+        self.config_file_box = Static("", id="loaded_config_file_box")
         self.experiment = None
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
         self.log_view = RichLog(id="log_view", markup=True)
-        self._config_file_box_temp_msg: str|None = None
+        self._config_file_box_temp_msg: Optional[str] = None
 
     def compose(self) -> ComposeResult:
         """Called to add widgets to the app."""
@@ -737,17 +850,12 @@ class ExperimentTextualApp(App):
         yield Footer()
 
         # Load experiment if provided
-        if self.config_path:
+        if self.config_file is not None:
             try:
-                self.experiment = Experiment(self.config_path, 1)
+                self.process_config(self.config_file)
             except Exception as e:
-                # show a warning but continue with a DummyExperiment
-                yield Static(f"Warning loading config {self.config_path}: {e}")
-                sys.exit(1)
-        else:
-            sys.exit(1)
-
-        start_server_in_current_ioloop(self.experiment)
+                self._config_file_box_temp_msg = f"Failed to load config {e}"
+                logger.exception(self._config_file_box_temp_msg)
 
         with Grid(id="top_grid"):
             yield Static("Loaded config file:")
@@ -778,24 +886,16 @@ class ExperimentTextualApp(App):
         # Add Textual sink (enqueue=True for thread safety)
         logger.add(textual_sink, enqueue=True)
 
-    # def load_config(self, path: str) -> None:
-    #     p = Path(path)
-    #     if not p.exists():
-    #         raise FileNotFoundError(path)
-    #     self.experiment = Experiment(str(p), 1)
-    #     if self.participant_tab:
-    #         self.participant_tab.experiment = self.experiment
-    #         self.participant_tab.refresh_ui()
-    #     if self.config_tab:
-    #         self.config_tab.cfg_path_input.value = str(p)
-
     def refresh_ui(self):
         if self.experiment is not None:
             out = str(self.experiment._config_file)
             if self._config_file_box_temp_msg is not None:
                 out += f"  ({self._config_file_box_temp_msg})"
                 self._config_file_box_temp_msg = None
-            self.config_file_box.update(out)
+        else:
+            out = "No config file loaded"
+        self.config_file_box.update(out)
+
         if self.participant_tab is not None:
             self.participant_tab.refresh_ui()
         if self.config_tab is not None:
@@ -808,16 +908,29 @@ class ExperimentTextualApp(App):
         elif bid == "btn_refresh":
             self.refresh_ui()
 
-    def load_config(self, config_loaded_callback:Callable|None=None) -> None:
-        def load_config_callback(path: Path | None) -> None:
-            if path is not None and self.experiment is not None:
-                try:
-                    self.experiment.config_file = path
-                    if config_loaded_callback is not None:
-                        config_loaded_callback()
-                except Exception as e:
-                    self._config_file_box_temp_msg = f"failed to load {path}"
-                    logger.error(f"Failed to load config {e}")
+    def process_config(self, path: Path|str):
+        if self.experiment is None:
+            self.experiment = Experiment(str(path), self.default_participant_index)
+            if self.participant_tab is not None:
+                self.participant_tab.set_experiment(self.experiment)
+            if self.config_tab is not None:
+                self.config_tab.set_experiment(self.experiment)
+            start_server_in_current_ioloop(self.experiment, self.host, self.port)
+        else:
+            self.experiment.config_file = path
+
+    def load_config(self, config_loaded_callback:Optional[Callable]=None) -> None:
+        def load_config_callback(path: Optional[Path]) -> None:
+            if path is None:
+                self.refresh_ui()
+                return
+            try:
+                self.process_config(path)
+                if config_loaded_callback is not None:
+                    config_loaded_callback()
+            except Exception as e:
+                self._config_file_box_temp_msg = f"failed to load {path}"
+                logger.error(f"Failed to load config {e}")
             self.refresh_ui()
 
         self.push_screen(LoadConfig(os.curdir), load_config_callback)

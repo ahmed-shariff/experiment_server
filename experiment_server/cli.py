@@ -86,7 +86,17 @@ def new_config_file(new_file_location):
 
 
 @cli.command(aliases=["ui"])
-@click.argument("config-file")
-def ui(config_file):
-    app = ExperimentTextualApp(config_file, css_path=Path(__file__).parent / "static" / "css" / "app.tcss", watch_css=True)
+@click.option("-c","--config-file", default=None, type=click.Path(exists=True, file_okay=True, dir_okay=False, ))
+@click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True), is_eager=True)
+@click.option("-h", "--host", default='127.0.0.1')
+@click.option("-p", "--port", default='5000')
+def ui(config_file, default_participant_index, host, port):
+    """Similar to `run`, but launches TUI. Can be called without the config file. The
+    server will be started when an appropriate config file is correctly loaded."""
+    app = ExperimentTextualApp(config_file=config_file,
+                               default_participant_index=default_participant_index,
+                               host=host,
+                               port=port,
+                               css_path=Path(__file__).parent / "static" / "css" / "app.tcss",
+                               watch_css=True)
     app.run()
