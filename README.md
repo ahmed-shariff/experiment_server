@@ -50,34 +50,57 @@ $ experiment-server ui -c sample_config.toml -i 1 -h 127.0.0.1 -p 5000
 ```
 
 Options:
+
 - -c, --config-file : path to a .toml config to load on start (optional).
+
 - -i, --default-participant-index : default participant index to use when no explicit participant id is provided (default 1).
+
 - -h, --host : host/interface for the server (default 127.0.0.1).
+
 - -p, --port : port for the server (default 5000).
 
 Behavior and features
+
 - Can be started without a config file; load a config later from the built-in file browser (filters to directories and .toml files).
+
 - When a config is loaded the package starts the server in the same event loop, exposing the same REST API described elsewhere in this README.
+
 - Participant management:
+
   - View all participants and their status, block id and block name.
+
   - Create new participants (auto id or a specific id).
+
   - Move the default or a specific participant to the next block or to a specific block id.
+
   - Move all active participants to a block.
+
   - Reset a participant.
+
   - Choose a monitored participant to view its current config and status.
+
 - Config management:
+
   - View the currently loaded .toml contents in a code editor pane.
+
   - Edit the config in place and save; saving writes the file and the app will attempt to reload the config.
+
   - Generate new config files using simple or advanced helpers (write a minimal example or build from JSON-specified order/blocks/parameters).
+
   - Generate expanded JSON configs for a range of participant indices (write output to a directory).
+
 - Live logging pane shows application logs for actions and errors.
+
 - A simple edit UI is available to tweak the in-memory per-participant config (submit or cancel edits).
 
 Notes
+
 - Editing and saving the config file from the TUI writes to the same config path the server is using; the TUI will attempt to reload the new configuration but will preserve participant state (see server behavior note in the [Loading experiment through server](#loading-experiment-through-server) section).
+
 - The TUI requires the textual/Rich environment provided by the package (normally installed with the package). Use `Ctrl+q` to exit or the TUI's quit action.
 
 This TUI is intended as a compact, interactive alternative to the web interface for quick testing, config edits, and participant control.
+
 <p style="display:flex; gap:8px; align-items:flex-start;">
   <img src="https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot_tui1.png" alt="web UI screenshot 1" style="width:49%;">
   <img src="https://raw.githubusercontent.com/ahmed-shariff/experiment_server/master/media/screenshot_tui2.png" alt="web UI screenshot 2" style="width:49%;">
@@ -399,9 +422,13 @@ See also [_generate_config_json][experiment_server._api._generate_config_json]
 
 ## Function calls in config
 A function call in the config is represented by a table, with the following keys 
+
 - `function_name`: This should be one of the names in the supported functions list below.
+
 - `args`: The arguments to be passed to the function represented by `function_name`. This can be a list or a table/dict. They should unpack with `*` or `**` respectively when called with the corresponding function.
+
 - (optional) `params`: function-specific configurations to apply with the function calls.
+
 - (optional) `id`: A unique identifier to group function calls.
 
 A table that has keys other than the above keys would not be treated as a function call. Any function calls in different places of the config with the same `id` would be treated as a single group. Tables without an `id` are grouped based on their key-value pairs. Groups are used to identify how some parameters affect the results (e.g., `unique` for `choices`). Function calls can also be in `configurations.variabels`. Note that all function calls are made after the `extends` are resolved and variables from `configurations.variabels` are replaced.
