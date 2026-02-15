@@ -223,6 +223,32 @@ LoadConfig Button {
     width: 20
 }
 
+ConfirmationScreen {
+    align: center middle;
+}
+
+ConfirmationScreen Button {
+    width: 20
+}
+
+ConfirmationScreen Label {
+    text-align: center;
+    width: 100%;
+}
+
+ConfirmationScreen Vertical Horizontal {
+    width: 100%;
+    align: center middle;
+}
+
+ConfirmationScreen Vertical {
+    margin: 16;
+    padding: 2;
+    width: 1fr;
+    height: 11;
+    border: round white;
+}
+
 #collapse_edit_config HorizontalGroup Static {
     width: auto;
 }

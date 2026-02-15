@@ -76,6 +76,23 @@ class LoadConfig(ModalScreen[Path]):
         self.selected_path = file_selected.path
 
 
+class ConfirmationScreen(ModalScreen[bool]):
+    """A modal confirmation screen."""
+    def __init__(self, confirmation_message:str):
+        super().__init__()
+        self.confirmation_message = confirmation_message
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(self.confirmation_message)
+            with Horizontal():
+                yield Button("Yes", id="confirmation_yes")
+                yield Button("No", id="confirmation_no")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss(event.button.id == "confirmation_yes")
+
+
 class ParticipantTab(Vertical):
     """Participant management tab."""
     def __init__(self, experiment:Optional[Experiment]):
@@ -283,12 +300,18 @@ class ParticipantTab(Vertical):
         except Exception:
             logger.error("Invalid block id")
             return
-        try:
-            name = self.experiment.move_all_to_block(bid)
-            logger.info(f"Moved all participants to block {bid} ({name})")
-        except Exception as e:
-            logger.error(f"Error moving all: {e}")
-        self.refresh_ui()
+
+        def _callback(is_yes:Optional[bool]):
+            if is_yes:
+                assert self.experiment is not None
+                try:
+                    name = self.experiment.move_all_to_block(bid)
+                    logger.info(f"Moved all participants to block {bid} ({name})")
+                except Exception as e:
+                    logger.error(f"Error moving all: {e}")
+            self.refresh_ui()
+
+        self.app.push_screen(ConfirmationScreen(f"Move all participants to block {bid}?"), _callback)
 
     def set_monitor(self) -> None:
         if self.experiment is None:
@@ -652,15 +675,19 @@ class ConfigTab(Vertical):
             return
 
         p = Path(outp)
-        try:
-            with p.open("w", encoding="utf-8") as f:
-                toml.dump(minimal, f)
-            self._new_box_temp_msg = f"Wrote config to {p}"
-            logger.info(self._new_box_temp_msg)
-        except Exception as e:
-            self._new_box_temp_msg = f"Failed to write config: {e}"
-            logger.error(self._new_box_temp_msg)
-        self.refresh_ui()
+        def _callback(is_yes:Optional[bool]):
+            if is_yes:
+                try:
+                    with p.open("w", encoding="utf-8") as f:
+                        toml.dump(minimal, f)
+                    self._new_box_temp_msg = f"Wrote config to {p}"
+                    logger.info(self._new_box_temp_msg)
+                except Exception as e:
+                    self._new_box_temp_msg = f"Failed to write config: {e}"
+                    logger.error(self._new_box_temp_msg)
+            self.refresh_ui()
+
+        self.app.push_screen(ConfirmationScreen(f"Write new config to {str(p)}? {'(path exists, will overwrite)' if p.exists() else ''}"), _callback)
 
     def create_config_simple(self) -> None:
         outp = self.gen_cfg_path_input.value.strip()
@@ -673,14 +700,20 @@ class ConfigTab(Vertical):
         if not outp.endswith(".toml"):
             outp += ".toml"
 
-        try:
-            new_config_file(outp)
-            self._gen_box_temp_msg = f"Wrote to {outp}"
-            logger.info(self._gen_box_temp_msg)
-        except Exception as e:
-            self._gen_box_temp_msg = f"Failed to write config: {e}"
-            logger.error(self._gen_box_temp_msg)
-        self.refresh_ui()
+        p = Path(outp)
+
+        def _callback(is_yes:Optional[bool]):
+            if is_yes:
+                try:
+                    new_config_file(outp)
+                    self._gen_box_temp_msg = f"Wrote to {outp}"
+                    logger.info(self._gen_box_temp_msg)
+                except Exception as e:
+                    self._gen_box_temp_msg = f"Failed to write config: {e}"
+                    logger.error(self._gen_box_temp_msg)
+            self.refresh_ui()
+
+        self.app.push_screen(ConfirmationScreen(f"Write new config to {str(p)}? {'(path exists, will overwrite)' if p.exists() else ''}"), _callback)
 
     def generate_json(self) -> None:
         if self.experiment is None:
@@ -717,14 +750,20 @@ class ConfigTab(Vertical):
                 logger.error(self._gen_json_box_temp_msg)
                 self.refresh_ui()
                 return
-        try:
-            _generate_config_json(self.experiment.config_file, indices, p)
-            self._gen_json_box_temp_msg = f"Generated json for with ppids {indices}"
-            logger.info(self._gen_json_box_temp_msg)
-        except Exception as e:
-            self._gen_json_box_temp_msg = f"Generation failed: {e}"
-            logger.error(self._gen_json_box_temp_msg)
-        self.refresh_ui()
+
+        def _callback(is_yes:Optional[bool]):
+            if is_yes:
+                assert self.experiment is not None
+                try:
+                    _generate_config_json(self.experiment.config_file, indices, p)
+                    self._gen_json_box_temp_msg = f"Generated json for with ppids {indices}"
+                    logger.info(self._gen_json_box_temp_msg)
+                except Exception as e:
+                    self._gen_json_box_temp_msg = f"Generation failed: {e}"
+                    logger.error(self._gen_json_box_temp_msg)
+            self.refresh_ui()
+
+        self.app.push_screen(ConfirmationScreen(f"Write json files to directory {str(p)}? {'(directory exists, may overwrite existing files)' if p.exists() else ''}"), _callback)
 
     def edit_config(self):
         if self.experiment is None:
