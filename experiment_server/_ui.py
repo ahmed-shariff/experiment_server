@@ -545,7 +545,6 @@ class ConfigTab(Vertical):
             self.gen_json_box_message.update("No config to read from")
 
         self.query_one("#btn_edit_config").disabled = disabled_state
-        self.query_one("#btn_save_config").disabled = disabled_state
         self.config_edit_message.disabled = disabled_state
         self.generate_indices_input.disabled = disabled_state
         self.gen_json_path_input.disabled = disabled_state
@@ -571,7 +570,9 @@ class ConfigTab(Vertical):
                         yield self.config_edit_message
                     with Grid(id="edit_config_button_grid"):
                         yield Button("Edit config", id="btn_edit_config")
+                        yield Static()
                         yield Button("Save config", id="btn_save_config", disabled=True)
+                        yield Button("Cancel", id="btn_cancel_config_edit", disabled=True)
                     yield self.config_edit_text
 
             with Collapsible(title="Generate new config file (simple):", id="collapse_generate_config_simple"):
@@ -771,8 +772,10 @@ class ConfigTab(Vertical):
 
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
+        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
         edit_btn.disabled = True
         save_btn.disabled = False
+        cancel_btn.disabled = False
         self.config_edit_text.read_only = False
         self.refresh_ui()
 
@@ -782,11 +785,26 @@ class ConfigTab(Vertical):
 
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
+        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
         edit_btn.disabled = False
         save_btn.disabled = True
+        cancel_btn.disabled = True
         self.config_edit_text.read_only = True
         with open(self.experiment.config_file, "w") as f:
             f.write(self.config_edit_text.text)
+        self.refresh_ui()
+
+    def cancel_config_edit(self):
+        if self.experiment is None:
+            return
+
+        edit_btn = self.query_one("#btn_edit_config", Button)
+        save_btn = self.query_one("#btn_save_config", Button)
+        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
+        edit_btn.disabled = False
+        save_btn.disabled = True
+        cancel_btn.disabled = True
+        self.config_edit_text.read_only = True
         self.refresh_ui()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -801,6 +819,8 @@ class ConfigTab(Vertical):
             self.edit_config()
         elif bid == "btn_save_config":
             self.save_config()
+        elif bid == "btn_cancel_config_edit":
+            self.cancel_config_edit()
 
     def refresh_ui(self):
         self.config_order_log.clear()
