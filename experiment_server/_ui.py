@@ -511,23 +511,23 @@ class ConfigTab(Vertical):
         self.experiment:Optional[Experiment] = None
         self.__experiment_parameter = experiment
 
-        self.gen_box_message = Static("")
+        self.gen_box_message = Static("", classes="message_box")
         self._gen_box_temp_msg = None
         self.gen_cfg_path_input = Input(placeholder="output toml path", id="gen_cfg_path")
 
         self.new_order_input = Input(placeholder='order as JSON list, e.g. ["condA","condB"]', id="order_input")
         self.new_blocks_input = Input(placeholder='blocks as JSON list of block names', id="blocks_input")
         self.new_parameters_input = Input(placeholder='parameters as JSON list of block names', id="param_input")
-        self.new_box_message = Static("")
+        self.new_box_message = Static("", classes="message_box")
         self._new_box_temp_msg = None
         self.new_cfg_path_input = Input(placeholder="output toml path", id="new_cfg_path")
 
-        self.gen_json_box_message = Static("")
+        self.gen_json_box_message = Static("", classes="message_box")
         self._gen_json_box_temp_msg = None
         self.gen_json_path_input = Input(placeholder="output toml path", id="gen_json_path")
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
 
-        self.config_edit_message = Static("")
+        self.config_edit_message = Static("", classes="message_box")
         self.config_order_log = RichLog(id="order_table")
         self._config_file_box_temp_msg = None
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)

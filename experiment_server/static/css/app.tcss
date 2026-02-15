@@ -8,6 +8,7 @@ $accent-2: #06b6d4;
 $border: #777777;
 $success: #10b981;
 $error: #ef4444;
+$message: #eaa111;
 $row_hover: #07313b;
 $row_selected: #2a1650;
 $header_bg: #10242f;
@@ -187,6 +188,14 @@ Button:disabled {
     text-align:center;
     padding:1;
     text-style: bold underline;
+}
+
+.message_box {
+    text-style: italic underline;
+    padding: 0 1;
+    width:100%;
+    text-align: center;
+    color: $message;
 }
 
 #participants_table {
