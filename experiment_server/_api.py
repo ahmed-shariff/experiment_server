@@ -290,7 +290,7 @@ def _generate_config_json(config_file: Union[str, Path], participant_indices: It
 
     out_files = []
     for participant_index in participant_indices:
-        config = process_config_file(config_file, participant_index, supress_message=True)
+        config = process_config_file(config_file, participant_index, suppress_message=True)
         if out_dir is not None:
             out_file = Path(out_dir) / f"{Path(config_file).stem}-participant_{participant_index}.json"
             out_files.append(out_file)

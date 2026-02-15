@@ -16,7 +16,7 @@ SECTIONS = ["main_configuration", "init_configuration", "final_configuration", "
 ALLOWED_SETTINGS = ["randomize_within_groups", "randomize_groups"]
 
 
-def process_config_file(f: Union[str, Path], participant_index: int, supress_message:bool=False) -> List[Dict[str, Any]]:
+def process_config_file(f: Union[str, Path], participant_index: int, suppress_message:bool=False) -> List[Dict[str, Any]]:
     """
     Load and resolve an experiment configuration file for a single participant.
 
@@ -35,7 +35,7 @@ def process_config_file(f: Union[str, Path], participant_index: int, supress_mes
             This index is used where deterministic rotations (e.g. latin-square or per-participant
             assignment) are requested and is added to any configured random seed to provide
             reproducible per-participant randomness.
-        supress_message (bool, optional):
+        suppress_message (bool, optional):
             If False (default), a JSON summary of the resolved configuration for the participant
             is logged. If True, the info log is suppressed.
 
@@ -68,17 +68,17 @@ def process_config_file(f: Union[str, Path], participant_index: int, supress_mes
         raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
 
     if Path(f).suffix == ".toml":
-        return _process_toml(f, participant_index, supress_message)
+        return _process_toml(f, participant_index, suppress_message)
     else:
         raise ExperimentServerExcetion("Invalid file type. Expected `.toml`")
 
 
-def _process_toml(f: Union[str, Path], participant_index:int, supress_message:bool=False) -> List[Dict[str, Any]]:
+def _process_toml(f: Union[str, Path], participant_index:int, suppress_message:bool=False) -> List[Dict[str, Any]]:
     loaded_configuration = toml.load(f)
-    return _process_config(loaded_configuration, participant_index, supress_message)
+    return _process_config(loaded_configuration, participant_index, suppress_message)
 
 
-def _process_config(configuration: dict[Any, Any], participant_index:int, supress_message:bool=False) -> List[Dict[str, Any]]:
+def _process_config(configuration: dict[Any, Any], participant_index:int, suppress_message:bool=False) -> List[Dict[str, Any]]:
     configurations = configuration.get("configuration", {})
     variables = configurations.get("variables", {})
 
@@ -142,7 +142,7 @@ def _process_config(configuration: dict[Any, Any], participant_index:int, supres
         c["config"]["name"] = c["name"]
         c["config"]["block_id"] = idx
     
-    if not supress_message:
+    if not suppress_message:
         logger.info("Configuration loaded: \n" + json.dumps(blocks, indent=2))
     return blocks
 
@@ -362,7 +362,7 @@ def _get_table_for_participants(f: Union[str, Path], test_func:Callable[[List[Di
     config_blocks: Dict[int, Dict[str, Any]] = {}
     # collect configs for participants 1..5 (same range as original)
     for participant_index in range(1, 6):
-        config = process_config_file(f, participant_index=participant_index)
+        config = process_config_file(f, participant_index=participant_index, suppress_message=True)
         config_blocks[participant_index] = {f"block_{idx + 1}": c["name"] for idx, c in enumerate(config)}
         if test_func is not None:
             test_result, reason = test_func(config)
