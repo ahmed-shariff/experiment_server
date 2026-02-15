@@ -512,25 +512,26 @@ class ConfigTab(Vertical):
         self.__experiment_parameter = experiment
 
         self.gen_box_message = Static("", classes="message_box")
-        self._gen_box_temp_msg = None
+        self._gen_box_temp_msg:Optional[str] = None
         self.gen_cfg_path_input = Input(placeholder="output toml path", id="gen_cfg_path")
 
         self.new_order_input = Input(placeholder='order as JSON list, e.g. ["condA","condB"]', id="order_input")
         self.new_blocks_input = Input(placeholder='blocks as JSON list of block names', id="blocks_input")
         self.new_parameters_input = Input(placeholder='parameters as JSON list of block names', id="param_input")
         self.new_box_message = Static("", classes="message_box")
-        self._new_box_temp_msg = None
+        self._new_box_temp_msg:Optional[str] = None
         self.new_cfg_path_input = Input(placeholder="output toml path", id="new_cfg_path")
 
         self.gen_json_box_message = Static("", classes="message_box")
-        self._gen_json_box_temp_msg = None
+        self._gen_json_box_temp_msg:Optional[str] = None
         self.gen_json_path_input = Input(placeholder="output toml path", id="gen_json_path")
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
 
         self.config_edit_message = Static("", classes="message_box")
         self.config_order_log = RichLog(id="order_table")
-        self._config_file_box_temp_msg = None
+        self._config_file_box_temp_msg:Optional[str] = None
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
+        self.config_edit_text_path:Optional[Path] = None
 
     def set_experiment(self, experiment: Optional[Experiment]):
         if self.experiment is not None:
@@ -825,8 +826,17 @@ class ConfigTab(Vertical):
     def refresh_ui(self):
         self.config_order_log.clear()
         if self.experiment is not None and self.experiment.config_file is not None:
-            with open(self.experiment.config_file, "r") as f:
-                self.config_edit_text.text = "".join(f.readlines())
+            _config_file = Path(self.experiment.config_file)
+            new_text = _config_file.read_text()
+            if self.config_edit_text_path != _config_file:
+                self.config_edit_text.text = new_text
+                self.config_edit_text_path = _config_file
+            else:
+                old_text = self.config_edit_text.text
+                if new_text != old_text:
+                    last_line = max(0, self.config_edit_text.document.line_count - 1)
+                    length_of_last_line = len(self.config_edit_text.document[last_line])
+                    self.config_edit_text.replace(new_text, (0, 0), (last_line, length_of_last_line))
 
             try:
                 order_table_out = _get_table_for_participants(self.experiment.config_file)
