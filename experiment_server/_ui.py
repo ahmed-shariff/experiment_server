@@ -50,7 +50,7 @@ class TomlFilteredDirectoryTree(DirectoryTree):
         return [path for path in paths if path.is_dir() or path.suffix == ".toml"]
 
 
-class LoadConfig(ModalScreen[Path]):  
+class LoadConfigScreen(ModalScreen[Path]):
     """Screen with a dialog to load confi."""
 
     def __init__(self, current_path):
@@ -550,7 +550,7 @@ class ConfigTab(Vertical):
         self.generate_indices_input.disabled = disabled_state
         self.gen_json_path_input.disabled = disabled_state
         self.query_one("#btn_generate_json").disabled = disabled_state
-        
+
         if self.experiment is not None:
             self.experiment.on_file_change_callback.append(self.config_changed_callback)
             self.experiment.on_config_change_callback.append(self.config_changed_callback)
@@ -980,7 +980,7 @@ class ExperimentTextualApp(App):
                 logger.error(f"Failed to load config {e}")
             self.refresh_ui()
 
-        self.push_screen(LoadConfig(os.curdir), load_config_callback)
+        self.push_screen(LoadConfigScreen(os.curdir), load_config_callback)
 
     def action_quit(self) -> None:
         self.exit()

@@ -228,7 +228,21 @@ TabPane {
     padding: 1;
 }
 
-LoadConfig Button {
+ModalScreen Vertical {
+    padding: 2;
+    width: 1fr;
+    border: round white;
+}
+
+LoadConfigScreen {
+    align: center middle;
+}
+
+LoadConfigScreen Vertical {
+    margin: 16;
+}
+
+LoadConfigScreen Button {
     width: 20
 }
 
@@ -252,10 +266,7 @@ ConfirmationScreen Vertical Horizontal {
 
 ConfirmationScreen Vertical {
     margin: 16;
-    padding: 2;
-    width: 1fr;
     height: 11;
-    border: round white;
 }
 
 #collapse_edit_config HorizontalGroup Static {
