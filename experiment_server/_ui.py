@@ -6,10 +6,12 @@ Usage:
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Iterable
+import re
+from typing import Any, Callable, Dict, List, Optional, Iterable, Tuple
 from loguru import logger
 import asyncio
 from tabulate import tabulate
@@ -17,6 +19,7 @@ from tabulate import tabulate
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
 from textual.screen import ModalScreen
+from textual.document._document import Document
 from textual.widgets import (
     DirectoryTree,
     Header,
@@ -24,6 +27,8 @@ from textual.widgets import (
     Button,
     Input,
     Label,
+    ListItem,
+    ListView,
     Static,
     DataTable,
     TabbedContent,
@@ -39,6 +44,96 @@ from experiment_server._process_config import _process_config, _get_table_for_pa
 from experiment_server.utils import new_config_file
 from experiment_server._server import start_server_in_current_ioloop
 import toml  # type: ignore
+from enum import Enum, auto
+
+
+class _EditSnippetsInsertLocation(Enum):
+    AT_POINT = auto()
+    END_OF_FILE = auto()
+    END_OF_CONFIG = auto()
+    END_OF_VAR = auto()
+
+
+@dataclass
+class EditSnippet:
+    id: str
+    display_text: str
+    snippet_text: str
+    snippet_insert_location: _EditSnippetsInsertLocation
+    description: str
+
+
+_EDIT_SNIPPETS = [
+    EditSnippet("block", "block",
+                "\n[[blocks]]\nname=<REPLACE_NAME>\nextends=<REPLACE_EXTENDS>\n[blocks.config]\n<REPLACE_PARAM>=<REPLACE_VALUE>",
+                _EditSnippetsInsertLocation.END_OF_FILE,
+                "Inserts a block. Replace the appropriate fields"),
+
+    EditSnippet("group_as_is", "groups_strategy=as_is",
+                "groups_strategy = \"as_is\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the group strategy to 'as_is'"),
+    EditSnippet("group_latin", "groups_strategy=latin_square",
+                "groups_strategy = \"latin_square\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the group strategy to 'latin_square'"),
+    EditSnippet("group_randomize", "groups_strategy=randomize",
+                "groups_strategy = \"randomize\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the group strategy to 'randomize'"),
+
+    EditSnippet("within_groups_as_is", "within_groups_strategy=as_is",
+                "within_groups_strategy = \"as_is\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the within-groups strategy to 'as_is'"),
+    EditSnippet("within_groups_latin", "within_groups_strategy=latin_square",
+                "within_groups_strategy = \"latin_square\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the within-groups strategy to 'latin_square'"),
+    EditSnippet("within_groups_randomize", "within_groups_strategy=randomize",
+                "within_groups_strategy = \"randomize\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the within-groups strategy to 'randomize'"),
+
+    EditSnippet("init_blocks", "init_blocks",
+                "init_blocks = [\"<REPLACE_BLOCK_NAME>\"]",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Specify list of initial blocks. Replace the placeholder with a block name(s)"),
+    EditSnippet("init_blocks_as_is", "init_blocks_strategy=as_is",
+                "init_blocks_strategy = \"as_is\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the initial blocks strategy to 'as_is'"),
+    EditSnippet("init_blocks_latin", "init_blocks_strategy=latin_square",
+                "init_blocks_strategy = \"latin_square\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the initial blocks strategy to 'latin_square'"),
+    EditSnippet("init_blocks_randomize", "init_blocks_strategy=randomize",
+                "init_blocks_strategy = \"randomize\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the initial blocks strategy to 'randomize'"),
+
+    EditSnippet("final_blocks", "final_blocks",
+                "final_blocks = [\"<REPLACE_BLOCK_NAME>\"]",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Specify list of final blocks. Replace the placeholder with a block name(s)"),
+    EditSnippet("final_blocks_as_is", "final_blocks_strategy=as_is",
+                "final_blocks_strategy = \"as_is\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the final blocks strategy to 'as_is'"),
+    EditSnippet("final_blocks_latin", "final_blocks_strategy=latin_square",
+                "final_blocks_strategy = \"latin_square\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the final blocks strategy to 'latin_square'"),
+    EditSnippet("final_blocks_randomize", "final_blocks_strategy=randomize",
+                "final_blocks_strategy = \"randomize\"",
+                _EditSnippetsInsertLocation.END_OF_CONFIG,
+                "Set the final blocks strategy to 'randomize'"),
+
+    EditSnippet("new_var", "new variable",
+                "<REPLACE_VAR_NAME> = <REPLACE_VAR_VALUE>",
+                _EditSnippetsInsertLocation.END_OF_VAR,
+                "Inserts a new variable. Replace the name and value placeholders"),
+]
 
 
 def pretty_json(obj: Any) -> str:
@@ -91,6 +186,66 @@ class ConfirmationScreen(ModalScreen[bool]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "confirmation_yes")
+
+
+class SnippetSelectionScreen(ModalScreen[EditSnippet]):
+    """Modal screen for selecting snippets to be inserted when editing."""
+    def __init__(self, snippets:Optional[List[EditSnippet]]=None):
+        super().__init__()
+        if snippets is None:
+            snippets = _EDIT_SNIPPETS
+        self.snippets = { s.id: s for s in snippets }
+        self.snippet_description = Label("", id="snippet_description")
+        self.snippet_description.border_title = "Description"
+        self.snippet_preview = TextArea("", id="snippet_preview", language="toml", read_only=True)
+        self.snippet_preview.border_title = "Preview"
+        self.snippet_insert_location_label = Label(id="snippet_insert_location")
+        self.snippet_insert_location_label.border_title = "Inserted at"
+        self.target_snippet: Optional[EditSnippet]
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("Select snippet to insert")
+            with Horizontal():
+                with ListView(id="snippet_list_view"):
+                    for id, snippet in self.snippets.items():
+                        yield ListItem(Label(snippet.display_text), id=id)
+                with Vertical():
+                    yield self.snippet_description
+                    yield self.snippet_preview
+                    yield self.snippet_insert_location_label
+                    with Horizontal(id="snippets_buttons"):
+                        yield Button("Insert", id="snippet_insert")
+                        yield Button("Cancel", id="snippet_cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id
+        if bid == "snippet_insert":
+            self.dismiss(self.target_snippet)
+        else:
+            self.dismiss(None)
+
+    def on_list_view_highlighted(self, event:ListView.Highlighted):
+        assert event.item is not None and event.item.id is not None
+        self.target_snippet = self.snippets.get(event.item.id)
+        if self.target_snippet is None:
+            self.snippet_preview.text = f"ERROR - unknown key {event.item.id}"
+            self.snippet_description.update("")
+            self.snippet_insert_location_label.update("")
+            return
+        self.snippet_preview.text = self.target_snippet.snippet_text
+        if self.target_snippet.snippet_insert_location == _EditSnippetsInsertLocation.AT_POINT:
+            insert_location_text = "Cursor position"
+        elif self.target_snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_CONFIG:
+            insert_location_text = "End of 'configuration' section. Will create section if missing."
+        elif self.target_snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_FILE:
+            insert_location_text = "End of file"
+        elif self.target_snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_VAR:
+            insert_location_text = "End of 'configuration.variables' section. Will create section if missing."
+        else:
+            insert_location_text = f"ERROR - Unknown insert location {self.target_snippet.snippet_insert_location}"
+        self.snippet_description.update(self.target_snippet.description)
+        self.snippet_insert_location_label.update(insert_location_text)
 
 
 class ParticipantTab(Vertical):
@@ -533,6 +688,10 @@ class ConfigTab(Vertical):
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
         self.config_edit_text_path:Optional[Path] = None
 
+        self._edit_search_section_header = re.compile(r'^[ \t]*\[{1,2}[^\]]+\]{1,2}[ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_config_section = re.compile(r'^[ \t]*\[configuration\][ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_config_variables_section = re.compile(r'^[ \t]*\[configuration.variables\][ \t]*$', re.MULTILINE | re.IGNORECASE)
+
     def set_experiment(self, experiment: Optional[Experiment]):
         if self.experiment is not None:
             self.experiment.on_file_change_callback.remove(self.config_changed_callback)
@@ -572,6 +731,8 @@ class ConfigTab(Vertical):
                     with Grid(id="edit_config_button_grid"):
                         yield Button("Edit config", id="btn_edit_config")
                         yield Static()
+                        yield Static()
+                        yield Button("Insert snippet", id="btn_insert_snippet", disabled=True)
                         yield Button("Save config", id="btn_save_config", disabled=True)
                         yield Button("Cancel", id="btn_cancel_config_edit", disabled=True)
                     yield self.config_edit_text
@@ -773,12 +934,77 @@ class ConfigTab(Vertical):
 
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
+        snippet_btn = self.query_one("#btn_insert_snippet", Button)
         cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
         edit_btn.disabled = True
         save_btn.disabled = False
+        snippet_btn.disabled = False
         cancel_btn.disabled = False
         self.config_edit_text.read_only = False
         self.refresh_ui()
+
+    def _insert_at_end_of_config(self, te:TextArea, snippet_text:str) -> Tuple[int, int]:
+        assert isinstance(te.document, Document)
+        # search for configuration section
+        match = re.search(self._edit_search_config_section, te.text)
+        if match is None: # no config section, insert at the beginning
+            te.insert("[configuration]\n", (0, 0))
+            match_index = te.document.get_index_from_location((1, 0))
+        else:
+            match_index = match.end() # search after the [configuration] section
+
+        # now search for the next section header
+        match = re.search(self._edit_search_section_header, te.text[match_index:])
+
+        if match is None: # no header, insert at end of document
+            insert_location = te.document.end
+        else:
+            insert_location = te.document.get_location_from_index(match.start() + match_index)
+        insert_end = te.insert(f"{snippet_text}\n", insert_location)
+        te.cursor_location = insert_end.end_location
+        return te.cursor_location
+
+    def insert_snippet(self):
+        if self.experiment is None:
+            return
+
+        def _callback(snippet:Optional[EditSnippet]):
+            te = self.config_edit_text
+            assert isinstance(te.document, Document)
+
+            if snippet is None:
+                pass
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.AT_POINT:
+                location = te.cursor_location
+                insert_location = (location[0] + 1, 0)
+                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_CONFIG:
+                self._insert_at_end_of_config(te, snippet.snippet_text)
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_FILE:
+                insert_location = te.document.end
+                insert_end = te.insert(f"\n{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_VAR:
+                # search for [configuration.variables] section
+                match = re.search(self._edit_search_config_variables_section, te.text)
+                if match is None: # no config.var section, insert it
+                    loc = self._insert_at_end_of_config(te, "[configuration.variables]\n")
+                    match_index = te.document.get_index_from_location(loc)
+                else:
+                    match_index = match.end() # search after the [configuration] section
+
+                # now search for the next section header
+                match = re.search(self._edit_search_section_header, te.text[match_index:])
+
+                if match is None: # no header, insert at end of document
+                    insert_location = te.document.end
+                else:
+                    insert_location = te.document.get_location_from_index(match.start() + match_index)
+                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+
+        self.app.push_screen(SnippetSelectionScreen(), _callback)
 
     def save_config(self):
         if self.experiment is None:
@@ -786,9 +1012,11 @@ class ConfigTab(Vertical):
 
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
+        snippet_btn = self.query_one("#btn_insert_snippet", Button)
         cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
         edit_btn.disabled = False
         save_btn.disabled = True
+        snippet_btn.disabled = True
         cancel_btn.disabled = True
         self.config_edit_text.read_only = True
         with open(self.experiment.config_file, "w") as f:
@@ -801,9 +1029,11 @@ class ConfigTab(Vertical):
 
         edit_btn = self.query_one("#btn_edit_config", Button)
         save_btn = self.query_one("#btn_save_config", Button)
+        snippet_btn = self.query_one("#btn_insert_snippet", Button)
         cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
         edit_btn.disabled = False
         save_btn.disabled = True
+        snippet_btn.disabled = True
         cancel_btn.disabled = True
         self.config_edit_text.read_only = True
         self.refresh_ui()
@@ -818,6 +1048,8 @@ class ConfigTab(Vertical):
             self.generate_json()
         elif bid == "btn_edit_config":
             self.edit_config()
+        elif bid == "btn_insert_snippet":
+            self.insert_snippet()
         elif bid == "btn_save_config":
             self.save_config()
         elif bid == "btn_cancel_config_edit":

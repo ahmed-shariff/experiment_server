@@ -228,10 +228,14 @@ TabPane {
     padding: 1;
 }
 
-ModalScreen Vertical {
+ModalScreen > Vertical {
     padding: 2;
     width: 1fr;
     border: round white;
+}
+
+ModalScreen Button {
+    width: 20
 }
 
 LoadConfigScreen {
@@ -242,16 +246,8 @@ LoadConfigScreen Vertical {
     margin: 16;
 }
 
-LoadConfigScreen Button {
-    width: 20
-}
-
 ConfirmationScreen {
     align: center middle;
-}
-
-ConfirmationScreen Button {
-    width: 20
 }
 
 ConfirmationScreen Label {
@@ -269,6 +265,45 @@ ConfirmationScreen Vertical {
     height: 11;
 }
 
+SnippetSelectionScreen > Vertical {
+    margin: 4 4;
+    height: 40;
+}
+
+SnippetSelectionScreen ListView {
+    padding: 2;
+    width: 1fr;
+}
+
+SnippetSelectionScreen #snippet_preview {
+    background: $bg;
+    height: 4fr;
+    border: round white 50%;
+    width: 100%;
+    padding:1;
+}
+
+SnippetSelectionScreen #snippet_description {
+    background: $bg;
+    height: 2fr;
+    border: round white 50%;
+    width: 100%;
+    padding:1;
+}
+
+SnippetSelectionScreen #snippet_insert_location {
+    background: $bg;
+    height: 1fr;
+    border: round white 50%;
+    width: 100%;
+    padding: 0 1;
+}
+
+SnippetSelectionScreen #snippets_buttons {
+    height: 1fr;
+    width: 100%;
+}
+
 #collapse_edit_config HorizontalGroup Static {
     width: auto;
 }
@@ -284,7 +319,7 @@ ConfirmationScreen Vertical {
 }
 
 #edit_config_button_grid {
-    grid-size: 2;
+    grid-size: 3;
 }
 
 #generate_simple_grid {
