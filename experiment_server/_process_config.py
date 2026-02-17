@@ -1,7 +1,7 @@
 from pathlib import Path
 import random
 import warnings
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY
 from experiment_server.utils import ExperimentServerConfigurationException, ExperimentServerException, merge_dicts
@@ -9,6 +9,7 @@ from loguru import logger
 from tabulate import tabulate
 import json
 import toml
+from traceback import format_exception_only
 
 
 TOP_LEVEL_RESERVED_KEYS = ["name", "config", "extends"]
@@ -333,7 +334,7 @@ class ChoicesFunction:
         return choice
 
 
-def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> bool:
+def verify_config(f: Union[str, Path], test_func:Optional[Callable[[List[Dict[str, Any]]], Tuple[bool, str]]]=None, raise_on_error:bool=False) -> Tuple[bool, Optional[str]]:
     """
     Verify an experiment TOML config by constructing participant orders for participants 1–5.
 
@@ -346,19 +347,29 @@ def verify_config(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]]
         f: Path or filename of the TOML configuration file.
         test_func: Optional callable receiving the resolved blocks and returning
             a (bool, str) tuple indicating success and an optional reason.
+        raise_on_error: If True, will raise the exception that caused the verification to fail.
 
     Returns:
-        True if verification completed successfully for all checked participants.
+        Tuple (bool success, str reason):
+          `success` will be True if verification completed successfully for all checked
+          participants.  If verification failed, success will be false, and the reason will
+          be the message from the resulting exception.
     """
-    with logger.catch(reraise=False, message="Config verification failed"):
+    # with logger.catch(reraise=raise_on_error, message="Config verification failed"):
+
+    try:
         df = _get_table_for_participants(f, test_func)
         logger.info(f"Ordering for 5 participants: \n\n{tabulate(df, headers='firstrow', tablefmt='fancy_grid')}\n")
         logger.info(f"Config file verification successful for {f}")
-        return True
-    return False
+        return (True, None)
+    except Exception as e:
+        logger.exception(e)
+        if raise_on_error:
+            raise
+        return (False, "\n".join(format_exception_only(e)))
 
 
-def _get_table_for_participants(f: Union[str, Path], test_func:Callable[[List[Dict[str, Any]]], Tuple[bool, str]]=None) -> list[list[Any]]:
+def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable[[List[Dict[str, Any]]], Tuple[bool, str]]]=None) -> list[list[Any]]:
     config_blocks: Dict[int, Dict[str, Any]] = {}
     # collect configs for participants 1..5 (same range as original)
     for participant_index in range(1, 6):

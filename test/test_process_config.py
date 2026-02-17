@@ -20,8 +20,15 @@ MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition
         (Path(__file__).parent / "test_files/working_file_9.toml", True),
         (Path(__file__).parent / "test_files/failing_config.toml", False)])
 def test_verify_config(f, expected):
-    out = verify_config(f)
+    out, _ = verify_config(f)
     assert out == expected
+
+
+@pytest.mark.parametrize(
+    "f",[(Path(__file__).parent / "test_files/failing_config.toml")])
+def test_verify_config_fail_with_exception(f):
+    with pytest.raises(Exception):
+        verify_config(f, raise_on_error=True)
 
 
 def _test_func(config):
@@ -42,7 +49,7 @@ def _test_func(config):
         (Path(__file__).parent / "test_files/working_file.toml", True),
         ])
 def test_verify_config_with_test_func(f, expected):
-    out = verify_config(f, test_func=_test_func)
+    out, _ = verify_config(f, test_func=_test_func)
     assert out == expected
 
 
