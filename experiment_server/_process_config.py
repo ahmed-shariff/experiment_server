@@ -80,7 +80,10 @@ def _process_toml(f: Union[str, Path], participant_index:int, suppress_message:b
 
 
 def _process_config(configuration: dict[Any, Any], participant_index:int, suppress_message:bool=False) -> List[Dict[str, Any]]:
-    configurations = configuration.get("configuration", {})
+    try:
+        configurations = configuration["configuration"]
+    except KeyError:
+        raise ExperimentServerConfigurationException("Missing `configuration` section.")
     variables = configurations.get("variables", {})
 
     order_groups_strategy = ORDERING_STRATEGY.as_is
@@ -114,11 +117,19 @@ def _process_config(configuration: dict[Any, Any], participant_index:int, suppre
     random.seed(random_seed + participant_index)
 
     all_blocks = _replace_variables(configuration["blocks"], variables)
-    assert isinstance(all_blocks, list)
+    if not isinstance(all_blocks, list):
+        raise ExperimentServerConfigurationException(f"`blocks` is not a list.")
 
-    order = configurations.get("order", [str(i) for i in list(range(len(all_blocks)))])
+    try:
+        order = configurations["order"]
+    except KeyError:
+        raise ExperimentServerConfigurationException(f"Missing `order` under `configuration`.")
 
     for c in all_blocks:
+        if "name" not in c:
+            raise ExperimentServerConfigurationException(f"One or more block(s) missing `name`.")
+        if "config" not in c and "extends" not in c:
+            raise ExperimentServerConfigurationException(f"One or more block(s) missing `config`.")
         c["name"] = str(c["name"])
 
     blocks = construct_participant_condition(all_blocks, participant_index, order=order,
