@@ -688,6 +688,7 @@ class ConfigEditor(VerticalScroll):
 
     def compose(self):
         with VerticalScroll():
+            yield Static("This is a simple editor. Use preferred text editor for advanced editing operations.")
             with Collapsible(title="Example ordering for 5 participants"):
                 yield self.config_order_log
             with HorizontalGroup():
@@ -814,7 +815,8 @@ class ConfigEditor(VerticalScroll):
             self.app.push_screen(ConfirmationScreen("There are errors. Are you sure you want to save?\n"+
                                                     "Saving an incomplete file will not be loaded by experiment server.\n\n"+
                                                     f"Reason: {reason}\n\n"+
-                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report."),
+                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report.\n\n" +
+                                                    "You can also use\n`experiment-server ui --editor-only -c <config-file>`\n to open only the editor."),
                                  _callback)
 
     def cancel_config_edit(self):
@@ -1154,6 +1156,40 @@ class ConfigTab(Vertical):
         self.config_editor.refresh_ui()
 
 
+class ExperimentTextualEditorOnlyApp(App):
+    def __init__(self, config_file: Optional[str] = None,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config_editor = ConfigEditor(config_file)
+        self.log_view = RichLog(id="log_view", markup=True)
+
+    def compose(self) -> ComposeResult:
+        """Called to add widgets to the app."""
+        yield Header()
+        yield Footer()
+
+        yield self.config_editor
+        with Collapsible(title="Log:", id="log_group"):
+            with VerticalGroup():
+                yield self.log_view
+
+        self.refresh_ui()
+
+    def on_mount(self):
+        # Remove default stderr sink so nothing is printed to the CLI
+        logger.remove()
+        # Get running loop to safely schedule writes from other threads
+        loop = asyncio.get_running_loop()
+        def textual_sink(message):
+            # message is a Loguru Message object; str(message) is the formatted text
+            loop.call_soon_threadsafe(self.log_view.write, str(message))
+        # Add Textual sink (enqueue=True for thread safety)
+        logger.add(textual_sink, enqueue=True)
+
+    def refresh_ui(self):
+        self.config_editor.refresh_ui()
+
+
 class ExperimentTextualApp(App):
     def __init__(self, config_file: Optional[str] = None,
                  default_participant_index:Optional[int]=None,
@@ -1261,7 +1297,9 @@ class ExperimentTextualApp(App):
                 logger.exception(f"Failed to load config: {e}")
                 self.push_screen(ConfirmationScreen(
                     f"Could not load config file as there were errors: {e}\n\n"+
-                    "Check logs or use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report.", yes_or_no=False))
+                    "Check logs or use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report.\n\n" +
+                    "You can also use\n`experiment-server ui --editor-only -c <config-file>`\n to open only the editor.",
+                    yes_or_no=False))
             self.refresh_ui()
 
         self.push_screen(LoadConfigScreen(os.curdir), load_config_callback)

@@ -8,7 +8,7 @@ from pathlib import Path
 from click_aliases import ClickAliasedGroup
 
 from experiment_server._server import _server
-from experiment_server._ui import ExperimentTextualApp
+from experiment_server._ui import ExperimentTextualApp, ExperimentTextualEditorOnlyApp
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
 from experiment_server.utils import ExperimentServerException, new_config_file as _new_config_file
@@ -91,20 +91,30 @@ def new_config_file(new_file_location):
 @click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True), is_eager=True)
 @click.option("-h", "--host", default='127.0.0.1')
 @click.option("-p", "--port", default='5000')
-def ui(config_file, default_participant_index, host, port):
+@click.option("--editor-only", default=False, is_flag=True)
+def ui(config_file, default_participant_index, host, port, editor_only):
     """Similar to `run`, but launches TUI. Can be called without the config file. The
     server will be started when an appropriate config file is correctly loaded."""
-    if config_file is not None:
-        try:
-            verify_config(config_file, raise_on_error=True)
-        except Exception:
-            logger.error("Config file is not valid. Use `verify-config-file` to check it before loading.")
+    if editor_only:
+        if config_file is None:
+            logger.error("`--editor-only` requires the config file to be passed with `-c`/`--config-file`.")
             sys.exit(1)
+        else:
+            app = ExperimentTextualEditorOnlyApp(config_file=config_file,
+                                                 css_path=Path(__file__).parent / "static" / "css" / "app.tcss",
+                                                 watch_css=True)
+    else:
+        if config_file is not None:
+            try:
+                verify_config(config_file, raise_on_error=True)
+            except Exception:
+                logger.error("Config file is not valid. Use `verify-config-file` to check it before loading or use `ui --editor-only -c <config-file>` to launch only the editor.")
+                sys.exit(1)
 
-    app = ExperimentTextualApp(config_file=config_file,
-                               default_participant_index=default_participant_index,
-                               host=host,
-                               port=port,
-                               css_path=Path(__file__).parent / "static" / "css" / "app.tcss",
-                               watch_css=True)
+        app = ExperimentTextualApp(config_file=config_file,
+                                   default_participant_index=default_participant_index,
+                                   host=host,
+                                   port=port,
+                                   css_path=Path(__file__).parent / "static" / "css" / "app.tcss",
+                                   watch_css=True)
     app.run()

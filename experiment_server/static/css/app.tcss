@@ -263,7 +263,7 @@ ConfirmationScreen Vertical Horizontal {
 
 ConfirmationScreen Vertical {
     margin: 16;
-    height: 20;
+    height: 25;
 }
 
 SnippetSelectionScreen > Vertical {
@@ -315,7 +315,7 @@ SnippetSelectionScreen #snippets_buttons {
     margin: 0;
 }
 
-#collapse_edit_config #order_table {
+#order_table {
     height: auto;
 }
 
@@ -333,4 +333,8 @@ SnippetSelectionScreen #snippets_buttons {
 
 #generate_json_grid {
     grid-size: 2;
+}
+
+ExperimentTextualEditorOnlyApp ConfigEditor {
+    padding: 2;
 }
