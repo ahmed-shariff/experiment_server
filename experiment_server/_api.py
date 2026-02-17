@@ -6,7 +6,7 @@ from experiment_server._process_config import process_config_file
 from pathlib import Path
 import json
 
-from experiment_server.utils import ExperimentServerExcetion, FileModifiedWatcher
+from experiment_server.utils import ExperimentServerException, FileModifiedWatcher
 
 
 class ParticipantState:
@@ -199,7 +199,7 @@ class Experiment:
         if participant_index is None:
             participant_index = self.default_participant_index
         if participant_index not in self.global_state:
-            raise ExperimentServerExcetion(f"participant with index {participant_index} is not set. Consider using `add_participant_index`")
+            raise ExperimentServerException(f"participant with index {participant_index} is not set. Consider using `add_participant_index`")
         return self.global_state[participant_index]
 
     def get_state(self, participant_index:int|None=None) -> bool:
@@ -286,7 +286,7 @@ def _generate_config_json(config_file: Union[str, Path], participant_indices: It
             logger.info(f"Creating direcotry {out_dir}")
             out_dir.mkdir(parents=True)
         elif not out_dir.is_dir():
-            raise ExperimentServerExcetion(f"`out_file_location` should be a directory. Got {out_dir}")
+            raise ExperimentServerException(f"`out_file_location` should be a directory. Got {out_dir}")
 
     out_files = []
     for participant_index in participant_indices:

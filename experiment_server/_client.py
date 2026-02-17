@@ -2,7 +2,7 @@ import json
 from typing import Tuple, Union
 import requests
 
-from experiment_server.utils import ExperimentServerExcetion
+from experiment_server.utils import ExperimentServerException
 
 
 class Client:
@@ -49,7 +49,7 @@ class Client:
         elif verb == "PUT":
             r = requests.put(url)
         else:
-            raise ExperimentServerExcetion("huh?")
+            raise ExperimentServerException("huh?")
 
         if r.status_code != 200:
             return False, {"message": f"status {r.status_code} with text: {r.text}"}

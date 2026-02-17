@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Union, Optional, Any
 from loguru import logger
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -24,15 +24,28 @@ class FileModifiedWatcher(PatternMatchingEventHandler):
         self._observer.stop()
         self._observer.join()
 
+class ExperimentServerException(Exception):
+    def __init__(self, message:Optional[str]=None, *args: Any, **kwargs: Any) -> None:
+        self.message = message
 
-class ExperimentServerExcetion(Exception):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(args, kwargs)
+        if message is not None:
+            super().__init__(message, *args, **kwargs)
+        else:
+            super().__init__(*args, **kwargs)
+
+    def __str__(self) -> str:
+        if self.message is not None:
+            return self.message
+        return super().__str__()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(message={self.message!r})"
 
 
-class ExperimentServerConfigurationExcetion(Exception):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(args, kwargs)
+class ExperimentServerConfigurationException(ExperimentServerException):
+    def __init__(self, message:Optional[str]=None, *args:Any, **kwargs:Any) -> None:
+        super().__init__(message, *args, **kwargs)
+
 
 # From: https://cs.uwaterloo.ca/~dmasson/tools/latin_square/
 # Based on "Bradley, J. V. Complete counterbalancing of immediate sequential effects in a Latin square design. J. Amer. Statist. Ass.,.1958, 53, 525-528. "

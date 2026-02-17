@@ -2,7 +2,7 @@ import itertools
 import pytest
 
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY, INIT_FINAL_ORDERING_STRATEGY
-from experiment_server.utils import ExperimentServerConfigurationExcetion, balanced_latin_square
+from experiment_server.utils import ExperimentServerConfigurationException, balanced_latin_square
 
 
 def generate_test_config(size=4, init_final_size=3):
@@ -33,7 +33,7 @@ def generate_test_config(size=4, init_final_size=3):
         {"1": [[0]], "2":[["1"]], "3":[[4]]},
         [["2"], ["3"], "1", ["0"]]])
 def test_order_fail_checks(order):
-    with pytest.raises(ExperimentServerConfigurationExcetion):
+    with pytest.raises(ExperimentServerConfigurationException):
         construct_participant_condition(generate_test_config(), 1, order=order, init_block_names=[], final_block_names=[])
 
 
@@ -46,14 +46,14 @@ def test_order_pass_checks(order):
     try:
         config = construct_participant_condition(generate_test_config(), 1, order=order, init_block_names=[], final_block_names=[])
         assert config[0]["name"] == "0"
-    except ExperimentServerConfigurationExcetion:
+    except ExperimentServerConfigurationException:
         assert False, "Raised ExperimentServerConfigurationExcetion"
 
 
 def test_duplicate_name_fail():
     config = generate_test_config()
     config[1]["name"] = "0"
-    with pytest.raises(ExperimentServerConfigurationExcetion):
+    with pytest.raises(ExperimentServerConfigurationException):
         construct_participant_condition(config, 1, order=[], init_block_names=[], final_block_names=[])
 
 

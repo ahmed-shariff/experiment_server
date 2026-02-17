@@ -4,7 +4,7 @@ import warnings
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from experiment_server._participant_ordering import construct_participant_condition, ORDERING_STRATEGY
-from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion, merge_dicts
+from experiment_server.utils import ExperimentServerConfigurationException, ExperimentServerException, merge_dicts
 from loguru import logger
 from tabulate import tabulate
 import json
@@ -65,12 +65,12 @@ def process_config_file(f: Union[str, Path], participant_index: int, suppress_me
     See also `experiment_server._participant_ordering.construct_participant_condition`.
     """
     if participant_index < 1:
-        raise ExperimentServerConfigurationExcetion(f"Participant index needs to be greater than 0, got {participant_index}")
+        raise ExperimentServerConfigurationException(f"Participant index needs to be greater than 0, got {participant_index}")
 
     if Path(f).suffix == ".toml":
         return _process_toml(f, participant_index, suppress_message)
     else:
-        raise ExperimentServerExcetion("Invalid file type. Expected `.toml`")
+        raise ExperimentServerException("Invalid file type. Expected `.toml`")
 
 
 def _process_toml(f: Union[str, Path], participant_index:int, suppress_message:bool=False) -> List[Dict[str, Any]]:
@@ -159,7 +159,7 @@ def _resolve_extends(c, configs, seen_configs):
     try:
         dict_b = [_c for _c in configs if _c["name"] == c["extends"]][0]
     except IndexError:
-        raise ExperimentServerConfigurationExcetion("`{}` is not a valid name. It must be a `name`.".format(c["extends"]))
+        raise ExperimentServerConfigurationException("`{}` is not a valid name. It must be a `name`.".format(c["extends"]))
 
     dict_b, configs, seen_configs = _resolve_extends(dict_b, configs, seen_configs + [dict_b["name"]])
     configs[dict_a["block_idx"]] = merge_dicts(dict_a, dict_b)
@@ -221,7 +221,7 @@ def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict
                 try:
                     resolved_config[k] = variabels[v[1:]]
                 except KeyError:
-                    raise ExperimentServerConfigurationExcetion(f"The variable `{v}` does not exsist in `configuration.variables`")
+                    raise ExperimentServerConfigurationException(f"The variable `{v}` does not exsist in `configuration.variables`")
             elif isinstance(v, dict):
                 resolved_config[k] = _replace_variables(v, variabels)
             else:
@@ -233,7 +233,7 @@ def _replace_variables(config: Union[Dict[str, Any], List[Any]], variabels: Dict
                 try:
                     resolved_config.append(variabels[v[1:]])
                 except KeyError:
-                    raise ExperimentServerConfigurationExcetion(f"The variable `{v}` does not exsist in `configuration.variables`")
+                    raise ExperimentServerConfigurationException(f"The variable `{v}` does not exsist in `configuration.variables`")
             elif isinstance(v, dict):
                 resolved_config.append(_replace_variables(v, variabels))
             else:
@@ -269,7 +269,7 @@ def _unpack_args(args) -> Tuple[list, dict]:
     elif isinstance(args, dict):
         kwargs = args
     else:
-        raise ExperimentServerConfigurationExcetion(f"`args` should be a list or a dict. Got {args}")
+        raise ExperimentServerConfigurationException(f"`args` should be a list or a dict. Got {args}")
     return largs, kwargs
 
 
@@ -287,7 +287,7 @@ def _resolve_function(function_name:str, args: Union[List,Dict], function_calls:
             function_call_group = function_calls[call_signature] = ChoicesFunction(args, params)
         return function_call_group(args, params)
     else:
-        raise ExperimentServerConfigurationExcetion(f"Unknown function {function_name}")
+        raise ExperimentServerConfigurationException(f"Unknown function {function_name}")
 
 
 class ChoicesFunction:
@@ -301,11 +301,11 @@ class ChoicesFunction:
         self.params = params
         if params is not None:
             if not isinstance(params, dict):
-                raise ExperimentServerConfigurationExcetion(f"`params` for `choices` should be a dict.")
+                raise ExperimentServerConfigurationException(f"`params` for `choices` should be a dict.")
             if len(params) not in (0, 1):
-                raise ExperimentServerConfigurationExcetion(f"Function `choices` expected 0 or 1 keys in params, got {len(params)}")
+                raise ExperimentServerConfigurationException(f"Function `choices` expected 0 or 1 keys in params, got {len(params)}")
             if len(params) == 1 and "unique" not in params:
-                raise ExperimentServerConfigurationExcetion(f"Unexpected key in `params` of `choices`. Allowed keys: [`unique`]")
+                raise ExperimentServerConfigurationException(f"Unexpected key in `params` of `choices`. Allowed keys: [`unique`]")
             if "unique" in params:
                 self.unique = params.get("unique")
         self.previous_choices = []
@@ -329,7 +329,7 @@ class ChoicesFunction:
 
             # Check if it is possible to get unique values.
             if len(self.previous_choices) != len(set(self.previous_choices)):
-                raise ExperimentServerConfigurationExcetion("There are more calls to `choices` than number of elements in `args`")
+                raise ExperimentServerConfigurationException("There are more calls to `choices` than number of elements in `args`")
         return choice
 
 

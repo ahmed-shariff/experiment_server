@@ -12,7 +12,7 @@ import asyncio
 import json
 
 from experiment_server._api import Experiment
-from experiment_server.utils import ExperimentServerConfigurationExcetion, ExperimentServerExcetion
+from experiment_server.utils import ExperimentServerConfigurationException, ExperimentServerException
 
 
 def _create_app(experiment:Experiment):
@@ -397,9 +397,9 @@ class ExperimentHandler(RequestHandler):
                     if not added_participant:
                         self.set_status(406)
                     self.write(json.dumps(added_participant))
-                except ExperimentServerConfigurationExcetion as e:
+                except ExperimentServerConfigurationException as e:
                     self.set_status(406)
-                    self.write(e.args[0][0])
+                    self.write(e.message if e.message is not None else str(e.args))
 
     def _get_int_from_param(self, param):
         try:

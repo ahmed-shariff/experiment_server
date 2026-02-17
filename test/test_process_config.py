@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 import random
 
 from experiment_server._process_config import verify_config, _process_toml, resolve_extends, ChoicesFunction, _resolve_function
-from experiment_server.utils import ExperimentServerConfigurationExcetion
+from experiment_server.utils import ExperimentServerConfigurationException
 
 
 MAIN_CONFIG_KEYS = ["buttonSize","trialsPerItem","conditionId","relativePosition", "participant_index", "name", "block_id"]
@@ -105,7 +105,7 @@ def test_resolve_extends(config, expected):
           {"name": "c", "extends": "b", "param2": "baz"}], "`b` is not a valid name. It must be a `name`.")
     ])
 def test_resolve_extends_exceptions(config, expected):
-    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+    with pytest.raises(ExperimentServerConfigurationException, match=expected):
         resolve_extends(config)
 
 
@@ -128,7 +128,7 @@ def test_random_seed(mocker, f, seed, pid):
         ({"a": 1}, f"Unexpected key in .*. Allowed keys: .*"),
     ])
 def test_functions_choices_fail_paramters(params, expected):
-    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+    with pytest.raises(ExperimentServerConfigurationException, match=expected):
         ChoicesFunction([1, 2, 3], params=params)
 
 
@@ -153,7 +153,7 @@ def test_functions_choices_pass_calls(args, params, test_unique):
     ])
 def test_functions_choices_failed_calls(args, params, expected):
     choices_callable = ChoicesFunction(args, params)
-    with pytest.raises(ExperimentServerConfigurationExcetion, match=expected):
+    with pytest.raises(ExperimentServerConfigurationException, match=expected):
         [c for _ in range(5) for c in choices_callable(args, params)]
 
 

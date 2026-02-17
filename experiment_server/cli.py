@@ -10,7 +10,7 @@ from experiment_server._server import _server
 from experiment_server._ui import ExperimentTextualApp
 from experiment_server._process_config import verify_config
 from experiment_server._api import _generate_config_json
-from experiment_server.utils import ExperimentServerExcetion, new_config_file as _new_config_file
+from experiment_server.utils import ExperimentServerException, new_config_file as _new_config_file
 
 
 @click.group(cls=ClickAliasedGroup)
@@ -69,7 +69,7 @@ def generate_config_json(config_file, participant_index, participant_range, out_
     elif participant_index is not None and participant_range is not None:
         logger.error("Both `participant-index` and `participant-range` provided. Ignoring `participant-index`.")
 
-    with logger.catch(ExperimentServerExcetion, reraise=False):
+    with logger.catch(ExperimentServerException, reraise=False):
         _generate_config_json(config_file=config_file, participant_indices=range(1, participant_range + 1) if participant_range is not None else [participant_index, ], out_dir=out_dir)
 
 

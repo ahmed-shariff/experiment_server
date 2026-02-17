@@ -1,5 +1,5 @@
 import json
-from experiment_server.utils import ExperimentServerExcetion
+from experiment_server.utils import ExperimentServerException
 import pytest
 import importlib
 import pytest_mock
@@ -138,5 +138,5 @@ def test_generate_config_json_with_location_as_non_dir(tmp_path, config_file):
     out_file_location = tmp_path / "out2" / "somefile.json"
     out_file_location.parent.mkdir()
     out_file_location.touch()
-    with pytest.raises(ExperimentServerExcetion):
+    with pytest.raises(ExperimentServerException):
         experiment_server._api._generate_config_json(config_file, range(1, 5), out_file_location)
