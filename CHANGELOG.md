@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2026-02-16
+### Added
+- New compact editor-only TUI App and CLI flag:
+  - experiment-server ui --editor-only (-c required) launches a slim Textual editor (no HTTP server) with embedded log pane.
+- ConfigEditor component:
+  - Extracted from ConfigTab; encapsulates loading, incremental text replacement, edit/save/cancel flow, snippet insertion, save validation flow and ordering preview.
+- Snippet insertion UI and snippets:
+  - Modal to choose/preview/insert common TOML fragments at cursor, EOF, end of configuration, or configuration.variables.
+- Confirmation modal and cancel button:
+  - ConfirmationScreen modal used for destructive actions (write/overwrite/move all).
+  - Cancel button for config editing to exit without saving.
+
+### Changed
+- verify_config API:
+  - Now returns (success: bool, reason: Optional[str]) and accepts `raise_on_error` to optionally re-raise exceptions.
+  - Call sites updated to unpack result or opt into `raise_on_error`.
+- Stricter config validation:
+  - process_config now enforces presence/shape of top-level "configuration", "order", and that blocks are lists; requires block "name" and either "config" or "extends".
+  - Improved, clearer error messages when config is malformed.
+- Exceptions and typing:
+  - Renamed/standardized exceptions to ExperimentServerException and ExperimentServerConfigurationException; updated usages and tests.
+- CLI / UI behavior:
+  - ui command: verify config at TUI startup (unless --editor-only) and exit on invalid config with suggestion to use verify-config-file or editor-only mode.
+  - Editor-only mode removes default stderr sink to avoid CLI output.
+- UI refactor & UX tweaks:
+  - ConfigTab now embeds ConfigEditor; reduced duplication and simplified refresh behavior.
+  - Added client-side save validation (temp file + verify_config) and confirmation when saving invalid files; detect unreplaced <REPLACE_*> placeholders.
+  - Added message styling class and other CSS tweaks for modal, order table, snippet screens and editor padding.
+  - LoadConfig renamed to LoadConfigScreen and related style updates.
+  - Move-all action now prompts for confirmation.
+- Misc:
+  - Fixed suppress_message parameter name in process_config_file and call sites.
+  - Minor CSS/layout and wording adjustments.
+
+### Fixed
+- Several misspellings/typos in exception names and related imports.
+- Tests updated to reflect new exception names and verify_config behaviour.
+
 ## [0.3.7] - 2026-02-06
 
 ### Added

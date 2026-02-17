@@ -38,7 +38,7 @@ $ poetry add experiment-server
 
 A terminal-based user interface is provided for interactive management and monitoring of an experiment. It is useful when you want a lightweight, keyboard-driven interface to load configs, inspect/generate per‑participant configs, edit files, and control participant flow without using the web UI.
 
-Launch the TUI with:
+### Launch the TUI with:
 
 ```sh
 # Start TUI (optionally provide a config file)
@@ -49,17 +49,21 @@ $ experiment-server ui -c sample_config.toml
 $ experiment-server ui -c sample_config.toml -i 1 -h 127.0.0.1 -p 5000
 ```
 
-Options:
+### Options:
 
 - -c, --config-file : path to a .toml config to load on start (optional).
 
-- -i, --default-participant-index : default participant index to use when no explicit participant id is provided (default 1).
+- -i, --default-participant-index : default participant index to use when no explicit participant id is provided (default 1). (optional)
 
-- -h, --host : host/interface for the server (default 127.0.0.1).
+- -h, --host : host/interface for the server (default 127.0.0.1). (optional)
 
-- -p, --port : port for the server (default 5000).
+- -p, --port : port for the server (default 5000). (optional)
 
-Behavior and features
+- --editor-only : Launch the editor only. "-i", "-h", and "-p" will be ignored. When launching ui with "--editor-only", the config file ("-c") must be passed as well. (optional)
+
+### Behavior and features
+
+- Startup config validation - When launching the full TUI (without --editor-only), if a config file is provided it is validated at startup. If validation fails, the TUI will refuse to start the full UI/server and will exit with an error message suggesting use of verify-config-file or the editor-only mode to edit the file.
 
 - Can be started without a config file; load a config later from the built-in file browser (filters to directories and .toml files).
 
@@ -91,9 +95,24 @@ Behavior and features
 
 - Live logging pane shows application logs for actions and errors.
 
-- A simple edit UI is available to tweak the in-memory per-participant config (submit or cancel edits).
+- A simple edit UI is available to tweak the in-memory per-participant config (submit or cancel edits). The embedded editor provides:
+  - An "Edit config" flow (Edit / Insert snippet / Save / Cancel).
 
-Notes
+  - "Insert snippet" to add common TOML fragments (blocks, strategy lines, init/final blocks, new variables).
+
+  - Save-time validation: when you save from the TUI, the editor runs verification (same checks used by [verify-config-file](#verify-config)). If verification fails the UI shows the failure reason and asks you to confirm whether to write the file anyway.
+
+- editor-only TUI - A compact editor-only TUI is available via --editor-only. This launches a simple code editor for editing a config file without starting the HTTP server. Example:
+
+```sh
+# editor-only mode (requires a config file)
+$ experiment-server ui --editor-only -c sample_config.toml
+```
+
+  - Note: --editor-only requires -c/--config-file and will not start the server.
+
+
+### Notes
 
 - Editing and saving the config file from the TUI writes to the same config path the server is using; the TUI will attempt to reload the new configuration but will preserve participant state (see server behavior note in the [Loading experiment through server](#loading-experiment-through-server) section).
 
@@ -352,7 +371,13 @@ A config file can be validated by running:
 ```sh
 $ experiment-server verify-config-file sample_config.toml
 ```
-This will show how the expanded config looks like for the first 5 participants.
+This will show how the expanded config looks like for the first 5 participants and will return a clear failure reason if the config is invalid.
+
+You can launch the editor-only [TUI](#textual-ui-tui) to edit the file in-place. This editor also has save time validation which can be used to verify the config before saving.
+
+```sh
+$ experiment-server ui --editor-only -c sample_config.toml
+```
 
 See also [verify_config][experiment_server._process_config.verify_config]
 
