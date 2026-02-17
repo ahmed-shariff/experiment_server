@@ -174,19 +174,23 @@ class LoadConfigScreen(ModalScreen[Path]):
 
 class ConfirmationScreen(ModalScreen[bool]):
     """A modal confirmation screen."""
-    def __init__(self, confirmation_message:str):
+    def __init__(self, confirmation_message:str, yes_or_no:bool=True):
         super().__init__()
         self.confirmation_message = confirmation_message
+        self.yes_or_no = yes_or_no
 
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label(self.confirmation_message)
             with Horizontal():
-                yield Button("Yes", id="confirmation_yes")
-                yield Button("No", id="confirmation_no")
+                if self.yes_or_no:
+                    yield Button("Yes", id="confirmation_yes")
+                    yield Button("No", id="confirmation_no")
+                else:
+                    yield Button("ok", id="confirmation_ok")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(event.button.id == "confirmation_yes")
+        self.dismiss(event.button.id == "confirmation_yes" or event.button.id == "confirmation_ok")
 
 
 class SnippetSelectionScreen(ModalScreen[EditSnippet]):
@@ -1049,7 +1053,7 @@ class ConfigTab(Vertical):
             self.app.push_screen(ConfirmationScreen("There are errors. Are you sure you want to save?\n"+
                                                     "Saving an incomplete file will not be loaded by experiment server.\n\n"+
                                                     f"Reason: {reason}\n\n"+
-                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\nfor more detailed error report."),
+                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report."),
                                  _callback)
 
     def cancel_config_edit(self):
@@ -1238,7 +1242,10 @@ class ExperimentTextualApp(App):
                     config_loaded_callback()
             except Exception as e:
                 self._config_file_box_temp_msg = f"failed to load {path}"
-                logger.error(f"Failed to load config {e}")
+                logger.exception(f"Failed to load config: {e}")
+                self.push_screen(ConfirmationScreen(
+                    f"Could not load config file as there were errors: {e}\n\n"+
+                    "Check logs or use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report.", yes_or_no=False))
             self.refresh_ui()
 
         self.push_screen(LoadConfigScreen(os.curdir), load_config_callback)

@@ -1,5 +1,6 @@
 """CLI."""
 
+import sys
 import click
 from click.core import ParameterSource
 from loguru import logger
@@ -93,6 +94,13 @@ def new_config_file(new_file_location):
 def ui(config_file, default_participant_index, host, port):
     """Similar to `run`, but launches TUI. Can be called without the config file. The
     server will be started when an appropriate config file is correctly loaded."""
+    if config_file is not None:
+        try:
+            verify_config(config_file, raise_on_error=True)
+        except Exception:
+            logger.error("Config file is not valid. Use `verify-config-file` to check it before loading.")
+            sys.exit(1)
+
     app = ExperimentTextualApp(config_file=config_file,
                                default_participant_index=default_participant_index,
                                host=host,
