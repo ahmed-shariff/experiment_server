@@ -663,6 +663,214 @@ class ParticipantTab(Vertical):
             self.update_ppid()
 
 
+class ConfigEditor(VerticalScroll):
+    """Config editor widget."""
+
+    def __init__(self, config_file:Optional[str|Path]):
+        super().__init__()
+        self.__config_file = config_file
+
+        self.config_edit_message = Static("", classes="message_box")
+        self.config_order_log = RichLog(id="order_table")
+        self._config_file_box_temp_msg:Optional[str] = None
+        self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
+        self.config_edit_text_path:Optional[Path] = None
+
+        self._edit_search_section_header = re.compile(r'^[ \t]*\[{1,2}[^\]]+\]{1,2}[ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_config_section = re.compile(r'^[ \t]*\[configuration\][ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_config_variables_section = re.compile(r'^[ \t]*\[configuration.variables\][ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_replace_tags = re.compile(r"<REPLACE_([A-Za-z0-9_]+)>")
+
+    def set_config_file(self, config_file:Optional[str|Path]):
+        self.__config_file = config_file
+        self.disabled = config_file is None
+        self.refresh_ui()
+
+    def compose(self):
+        with VerticalScroll():
+            with Collapsible(title="Example ordering for 5 participants"):
+                yield self.config_order_log
+            with HorizontalGroup():
+                yield Static("On save config will try to autoload")
+                yield self.config_edit_message
+            with Grid(id="edit_config_button_grid"):
+                yield Button("Edit config", id="btn_edit_config")
+                yield Static()
+                yield Static()
+                yield Button("Insert snippet", id="btn_insert_snippet", disabled=True)
+                yield Button("Save config", id="btn_save_config", disabled=True)
+                yield Button("Cancel", id="btn_cancel_config_edit", disabled=True)
+            yield self.config_edit_text
+        self.refresh_ui()
+
+    def edit_config(self):
+        edit_btn = self.query_one("#btn_edit_config", Button)
+        save_btn = self.query_one("#btn_save_config", Button)
+        snippet_btn = self.query_one("#btn_insert_snippet", Button)
+        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
+        edit_btn.disabled = True
+        save_btn.disabled = False
+        snippet_btn.disabled = False
+        cancel_btn.disabled = False
+        self.config_edit_text.read_only = False
+        self.refresh_ui()
+
+    def _insert_at_end_of_config(self, te:TextArea, snippet_text:str) -> Tuple[int, int]:
+        assert isinstance(te.document, Document)
+        # search for configuration section
+        match = re.search(self._edit_search_config_section, te.text)
+        if match is None: # no config section, insert at the beginning
+            te.insert("[configuration]\n", (0, 0))
+            match_index = te.document.get_index_from_location((1, 0))
+        else:
+            match_index = match.end() # search after the [configuration] section
+
+        # now search for the next section header
+        match = re.search(self._edit_search_section_header, te.text[match_index:])
+
+        if match is None: # no header, insert at end of document
+            insert_location = te.document.end
+        else:
+            insert_location = te.document.get_location_from_index(match.start() + match_index)
+        insert_end = te.insert(f"{snippet_text}\n", insert_location)
+        te.cursor_location = insert_end.end_location
+        return te.cursor_location
+
+    def insert_snippet(self):
+        def _callback(snippet:Optional[EditSnippet]):
+            te = self.config_edit_text
+            assert isinstance(te.document, Document)
+
+            if snippet is None:
+                pass
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.AT_POINT:
+                location = te.cursor_location
+                insert_location = (location[0] + 1, 0)
+                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_CONFIG:
+                self._insert_at_end_of_config(te, snippet.snippet_text)
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_FILE:
+                insert_location = te.document.end
+                insert_end = te.insert(f"\n{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_VAR:
+                # search for [configuration.variables] section
+                match = re.search(self._edit_search_config_variables_section, te.text)
+                if match is None: # no config.var section, insert it
+                    loc = self._insert_at_end_of_config(te, "[configuration.variables]\n")
+                    match_index = te.document.get_index_from_location(loc)
+                else:
+                    match_index = match.end() # search after the [configuration] section
+
+                # now search for the next section header
+                match = re.search(self._edit_search_section_header, te.text[match_index:])
+
+                if match is None: # no header, insert at end of document
+                    insert_location = te.document.end
+                else:
+                    insert_location = te.document.get_location_from_index(match.start() + match_index)
+                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
+                te.cursor_location = insert_end.end_location
+
+        self.app.push_screen(SnippetSelectionScreen(), _callback)
+
+    def save_config(self):
+        replace_match = re.search(self._edit_search_replace_tags, self.config_edit_text.text)
+        if replace_match is not None:
+            assert isinstance(self.config_edit_text.document, Document)
+            replace_location = self.config_edit_text.document.get_location_from_index(replace_match.start())
+            reason = f"Found unreplaced snippet placeholder on line {replace_location[0] + 1}"
+            success = False
+        else:
+            with tempfile.NamedTemporaryFile(mode="w+t", suffix=".toml", delete=False) as f:
+                f.write(self.config_edit_text.text)
+                f.close()
+                success, reason = verify_config(f.name)
+            os.remove(f.name)
+
+        def _callback(is_yes:Optional[bool]):
+            if not is_yes:
+                return
+
+            edit_btn = self.query_one("#btn_edit_config", Button)
+            save_btn = self.query_one("#btn_save_config", Button)
+            snippet_btn = self.query_one("#btn_insert_snippet", Button)
+            cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
+            edit_btn.disabled = False
+            save_btn.disabled = True
+            snippet_btn.disabled = True
+            cancel_btn.disabled = True
+            self.config_edit_text.read_only = True
+
+            assert self.__config_file is not None
+            with open(self.__config_file, "w") as f:
+                f.write(self.config_edit_text.text)
+            self.refresh_ui()
+
+        if success:
+            _callback(True)
+        else:
+            self.app.push_screen(ConfirmationScreen("There are errors. Are you sure you want to save?\n"+
+                                                    "Saving an incomplete file will not be loaded by experiment server.\n\n"+
+                                                    f"Reason: {reason}\n\n"+
+                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report."),
+                                 _callback)
+
+    def cancel_config_edit(self):
+        edit_btn = self.query_one("#btn_edit_config", Button)
+        save_btn = self.query_one("#btn_save_config", Button)
+        snippet_btn = self.query_one("#btn_insert_snippet", Button)
+        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
+        edit_btn.disabled = False
+        save_btn.disabled = True
+        snippet_btn.disabled = True
+        cancel_btn.disabled = True
+        self.config_edit_text.read_only = True
+        self.refresh_ui()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id
+        if bid == "btn_edit_config":
+            self.edit_config()
+        elif bid == "btn_insert_snippet":
+            self.insert_snippet()
+        elif bid == "btn_save_config":
+            self.save_config()
+        elif bid == "btn_cancel_config_edit":
+            self.cancel_config_edit()
+
+    def refresh_ui(self):
+        self.config_order_log.clear()
+        if self.__config_file is None:
+            self.config_order_log.write("No config to load")
+            return
+        _config_file = Path(self.__config_file)
+        new_text = _config_file.read_text()
+        if self.config_edit_text_path != _config_file:
+            self.config_edit_text.text = new_text
+            self.config_edit_text_path = _config_file
+        else:
+            old_text = self.config_edit_text.text
+            if new_text != old_text:
+                last_line = max(0, self.config_edit_text.document.line_count - 1)
+                length_of_last_line = len(self.config_edit_text.document[last_line])
+                self.config_edit_text.replace(new_text, (0, 0), (last_line, length_of_last_line))
+
+        try:
+            order_table_out = _get_table_for_participants(self.__config_file)
+            order_table_out = tabulate(order_table_out, headers='firstrow', tablefmt='fancy_grid')
+        except Exception as e:
+            order_table_out = f"Failed to load {self.__config_file}: `{e}`"
+        self.config_order_log.write(order_table_out)
+
+        out = ""
+        if self._config_file_box_temp_msg is not None:
+            out += f"({self._config_file_box_temp_msg})"
+            self._config_file_box_temp_msg = None
+        self.config_edit_message.update(out)
+
+
 class ConfigTab(Vertical):
     """Manage config tab."""
 
@@ -687,16 +895,8 @@ class ConfigTab(Vertical):
         self.gen_json_path_input = Input(placeholder="output toml path", id="gen_json_path")
         self.generate_indices_input = Input(placeholder="participant indices CSV or range (e.g. 1,2,3 or 1-5)", id="gen_indices")
 
-        self.config_edit_message = Static("", classes="message_box")
-        self.config_order_log = RichLog(id="order_table")
-        self._config_file_box_temp_msg:Optional[str] = None
-        self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
-        self.config_edit_text_path:Optional[Path] = None
-
-        self._edit_search_section_header = re.compile(r'^[ \t]*\[{1,2}[^\]]+\]{1,2}[ \t]*$', re.MULTILINE | re.IGNORECASE)
-        self._edit_search_config_section = re.compile(r'^[ \t]*\[configuration\][ \t]*$', re.MULTILINE | re.IGNORECASE)
-        self._edit_search_config_variables_section = re.compile(r'^[ \t]*\[configuration.variables\][ \t]*$', re.MULTILINE | re.IGNORECASE)
-        self._edit_search_replace_tags = re.compile(r"<REPLACE_([A-Za-z0-9_]+)>")
+        self.config_editor = ConfigEditor(None)
+        self.config_editor.disabled = True
 
     def set_experiment(self, experiment: Optional[Experiment]):
         if self.experiment is not None:
@@ -707,11 +907,9 @@ class ConfigTab(Vertical):
         disabled_state = self.experiment is None
 
         if disabled_state:
-            self.config_edit_message.update("No config to read from")
             self.gen_json_box_message.update("No config to read from")
 
         self.query_one("#btn_edit_config").disabled = disabled_state
-        self.config_edit_message.disabled = disabled_state
         self.generate_indices_input.disabled = disabled_state
         self.gen_json_path_input.disabled = disabled_state
         self.query_one("#btn_generate_json").disabled = disabled_state
@@ -719,6 +917,7 @@ class ConfigTab(Vertical):
         if self.experiment is not None:
             self.experiment.on_file_change_callback.append(self.config_changed_callback)
             self.experiment.on_config_change_callback.append(self.config_changed_callback)
+            self.config_editor.set_config_file(self.experiment.config_file)
 
         self.refresh_ui()
 
@@ -729,19 +928,7 @@ class ConfigTab(Vertical):
         with VerticalScroll():
             with Collapsible(title="Edit current config file:", id="collapse_edit_config"):
                 with VerticalScroll():
-                    with Collapsible(title="Example ordering for 5 participants"):
-                        yield self.config_order_log
-                    with HorizontalGroup():
-                        yield Static("On save config will try to autoload")
-                        yield self.config_edit_message
-                    with Grid(id="edit_config_button_grid"):
-                        yield Button("Edit config", id="btn_edit_config")
-                        yield Static()
-                        yield Static()
-                        yield Button("Insert snippet", id="btn_insert_snippet", disabled=True)
-                        yield Button("Save config", id="btn_save_config", disabled=True)
-                        yield Button("Cancel", id="btn_cancel_config_edit", disabled=True)
-                    yield self.config_edit_text
+                    yield self.config_editor
 
             with Collapsible(title="Generate new config file (simple):", id="collapse_generate_config_simple"):
                 with VerticalGroup():
@@ -784,6 +971,8 @@ class ConfigTab(Vertical):
             self._config_file_box_temp_msg = "Success"
         else:
             self._config_file_box_temp_msg = "Errors in config, check logs"
+        if self.experiment is not None:
+            self.config_editor.set_config_file(self.experiment.config_file)
         self.refresh_ui()
 
     def create_config_advanced(self) -> None:
@@ -934,143 +1123,6 @@ class ConfigTab(Vertical):
 
         self.app.push_screen(ConfirmationScreen(f"Write json files to directory {str(p)}? {'(directory exists, may overwrite existing files)' if p.exists() else ''}"), _callback)
 
-    def edit_config(self):
-        if self.experiment is None:
-            return
-
-        edit_btn = self.query_one("#btn_edit_config", Button)
-        save_btn = self.query_one("#btn_save_config", Button)
-        snippet_btn = self.query_one("#btn_insert_snippet", Button)
-        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
-        edit_btn.disabled = True
-        save_btn.disabled = False
-        snippet_btn.disabled = False
-        cancel_btn.disabled = False
-        self.config_edit_text.read_only = False
-        self.refresh_ui()
-
-    def _insert_at_end_of_config(self, te:TextArea, snippet_text:str) -> Tuple[int, int]:
-        assert isinstance(te.document, Document)
-        # search for configuration section
-        match = re.search(self._edit_search_config_section, te.text)
-        if match is None: # no config section, insert at the beginning
-            te.insert("[configuration]\n", (0, 0))
-            match_index = te.document.get_index_from_location((1, 0))
-        else:
-            match_index = match.end() # search after the [configuration] section
-
-        # now search for the next section header
-        match = re.search(self._edit_search_section_header, te.text[match_index:])
-
-        if match is None: # no header, insert at end of document
-            insert_location = te.document.end
-        else:
-            insert_location = te.document.get_location_from_index(match.start() + match_index)
-        insert_end = te.insert(f"{snippet_text}\n", insert_location)
-        te.cursor_location = insert_end.end_location
-        return te.cursor_location
-
-    def insert_snippet(self):
-        if self.experiment is None:
-            return
-
-        def _callback(snippet:Optional[EditSnippet]):
-            te = self.config_edit_text
-            assert isinstance(te.document, Document)
-
-            if snippet is None:
-                pass
-            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.AT_POINT:
-                location = te.cursor_location
-                insert_location = (location[0] + 1, 0)
-                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
-                te.cursor_location = insert_end.end_location
-            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_CONFIG:
-                self._insert_at_end_of_config(te, snippet.snippet_text)
-            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_FILE:
-                insert_location = te.document.end
-                insert_end = te.insert(f"\n{snippet.snippet_text}\n", insert_location)
-                te.cursor_location = insert_end.end_location
-            elif snippet.snippet_insert_location == _EditSnippetsInsertLocation.END_OF_VAR:
-                # search for [configuration.variables] section
-                match = re.search(self._edit_search_config_variables_section, te.text)
-                if match is None: # no config.var section, insert it
-                    loc = self._insert_at_end_of_config(te, "[configuration.variables]\n")
-                    match_index = te.document.get_index_from_location(loc)
-                else:
-                    match_index = match.end() # search after the [configuration] section
-
-                # now search for the next section header
-                match = re.search(self._edit_search_section_header, te.text[match_index:])
-
-                if match is None: # no header, insert at end of document
-                    insert_location = te.document.end
-                else:
-                    insert_location = te.document.get_location_from_index(match.start() + match_index)
-                insert_end = te.insert(f"{snippet.snippet_text}\n", insert_location)
-                te.cursor_location = insert_end.end_location
-
-        self.app.push_screen(SnippetSelectionScreen(), _callback)
-
-    def save_config(self):
-        if self.experiment is None:
-            return
-
-        replace_match = re.search(self._edit_search_replace_tags, self.config_edit_text.text)
-        if replace_match is not None:
-            assert isinstance(self.config_edit_text.document, Document)
-            replace_location = self.config_edit_text.document.get_location_from_index(replace_match.start())
-            reason = f"Found unreplaced snippet placeholder on line {replace_location[0] + 1}"
-            success = False
-        else:
-            with tempfile.NamedTemporaryFile(mode="w+t", suffix=".toml", delete=False) as f:
-                f.write(self.config_edit_text.text)
-                f.close()
-                success, reason = verify_config(f.name)
-            os.remove(f.name)
-
-        def _callback(is_yes:Optional[bool]):
-            if not is_yes:
-                return
-
-            assert self.experiment is not None
-            edit_btn = self.query_one("#btn_edit_config", Button)
-            save_btn = self.query_one("#btn_save_config", Button)
-            snippet_btn = self.query_one("#btn_insert_snippet", Button)
-            cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
-            edit_btn.disabled = False
-            save_btn.disabled = True
-            snippet_btn.disabled = True
-            cancel_btn.disabled = True
-            self.config_edit_text.read_only = True
-            with open(self.experiment.config_file, "w") as f:
-                f.write(self.config_edit_text.text)
-            self.refresh_ui()
-
-        if success:
-            _callback(True)
-        else:
-            self.app.push_screen(ConfirmationScreen("There are errors. Are you sure you want to save?\n"+
-                                                    "Saving an incomplete file will not be loaded by experiment server.\n\n"+
-                                                    f"Reason: {reason}\n\n"+
-                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\n in the CLI for more detailed error report."),
-                                 _callback)
-
-    def cancel_config_edit(self):
-        if self.experiment is None:
-            return
-
-        edit_btn = self.query_one("#btn_edit_config", Button)
-        save_btn = self.query_one("#btn_save_config", Button)
-        snippet_btn = self.query_one("#btn_insert_snippet", Button)
-        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
-        edit_btn.disabled = False
-        save_btn.disabled = True
-        snippet_btn.disabled = True
-        cancel_btn.disabled = True
-        self.config_edit_text.read_only = True
-        self.refresh_ui()
-
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
         if bid == "btn_generate_advanced":
@@ -1079,46 +1131,9 @@ class ConfigTab(Vertical):
             self.create_config_simple()
         elif bid == "btn_generate_json":
             self.generate_json()
-        elif bid == "btn_edit_config":
-            self.edit_config()
-        elif bid == "btn_insert_snippet":
-            self.insert_snippet()
-        elif bid == "btn_save_config":
-            self.save_config()
-        elif bid == "btn_cancel_config_edit":
-            self.cancel_config_edit()
 
     def refresh_ui(self):
-        self.config_order_log.clear()
-        if self.experiment is not None and self.experiment.config_file is not None:
-            _config_file = Path(self.experiment.config_file)
-            new_text = _config_file.read_text()
-            if self.config_edit_text_path != _config_file:
-                self.config_edit_text.text = new_text
-                self.config_edit_text_path = _config_file
-            else:
-                old_text = self.config_edit_text.text
-                if new_text != old_text:
-                    last_line = max(0, self.config_edit_text.document.line_count - 1)
-                    length_of_last_line = len(self.config_edit_text.document[last_line])
-                    self.config_edit_text.replace(new_text, (0, 0), (last_line, length_of_last_line))
-
-            try:
-                order_table_out = _get_table_for_participants(self.experiment.config_file)
-                order_table_out = tabulate(order_table_out, headers='firstrow', tablefmt='fancy_grid')
-            except Exception as e:
-                order_table_out = f"Failed to load {self.experiment.config_file}: `{e}`"
-            self.config_order_log.write(order_table_out)
-        else:
-            self.config_order_log.write("No config to read from")
-
         if self.experiment is not None:
-            out = ""
-            if self._config_file_box_temp_msg is not None:
-                out += f"({self._config_file_box_temp_msg})"
-                self._config_file_box_temp_msg = None
-            self.config_edit_message.update(out)
-
             out = ""
             if self._gen_json_box_temp_msg is not None:
                 out += f"({self._gen_json_box_temp_msg})"
@@ -1136,6 +1151,7 @@ class ConfigTab(Vertical):
             out += f"({self._new_box_temp_msg})"
             self._new_box_temp_msg = None
         self.new_box_message.update(out)
+        self.config_editor.refresh_ui()
 
 
 class ExperimentTextualApp(App):
