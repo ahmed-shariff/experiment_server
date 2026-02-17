@@ -40,11 +40,12 @@ from textual.widgets import (
     TextArea
 )
 from experiment_server._api import Experiment, _generate_config_json
-from experiment_server._process_config import _process_config, _get_table_for_participants
+from experiment_server._process_config import _process_config, _get_table_for_participants, verify_config
 from experiment_server.utils import new_config_file
 from experiment_server._server import start_server_in_current_ioloop
 import toml  # type: ignore
 from enum import Enum, auto
+import tempfile
 
 
 class _EditSnippetsInsertLocation(Enum):
@@ -132,7 +133,7 @@ _EDIT_SNIPPETS = [
     EditSnippet("new_var", "new variable",
                 "<REPLACE_VAR_NAME> = <REPLACE_VAR_VALUE>",
                 _EditSnippetsInsertLocation.END_OF_VAR,
-                "Inserts a new variable. Replace the name and value placeholders"),
+                "Inserts a new variable. Replace the name and value placeholders.\nCan be used for any parameter's value as \"$<VAR_NAME>\""),
 ]
 
 
@@ -691,6 +692,7 @@ class ConfigTab(Vertical):
         self._edit_search_section_header = re.compile(r'^[ \t]*\[{1,2}[^\]]+\]{1,2}[ \t]*$', re.MULTILINE | re.IGNORECASE)
         self._edit_search_config_section = re.compile(r'^[ \t]*\[configuration\][ \t]*$', re.MULTILINE | re.IGNORECASE)
         self._edit_search_config_variables_section = re.compile(r'^[ \t]*\[configuration.variables\][ \t]*$', re.MULTILINE | re.IGNORECASE)
+        self._edit_search_replace_tags = re.compile(r"<REPLACE_([A-Za-z0-9_]+)>")
 
     def set_experiment(self, experiment: Optional[Experiment]):
         if self.experiment is not None:
@@ -1010,18 +1012,45 @@ class ConfigTab(Vertical):
         if self.experiment is None:
             return
 
-        edit_btn = self.query_one("#btn_edit_config", Button)
-        save_btn = self.query_one("#btn_save_config", Button)
-        snippet_btn = self.query_one("#btn_insert_snippet", Button)
-        cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
-        edit_btn.disabled = False
-        save_btn.disabled = True
-        snippet_btn.disabled = True
-        cancel_btn.disabled = True
-        self.config_edit_text.read_only = True
-        with open(self.experiment.config_file, "w") as f:
-            f.write(self.config_edit_text.text)
-        self.refresh_ui()
+        replace_match = re.search(self._edit_search_replace_tags, self.config_edit_text.text)
+        if replace_match is not None:
+            assert isinstance(self.config_edit_text.document, Document)
+            replace_location = self.config_edit_text.document.get_location_from_index(replace_match.start())
+            reason = f"Found unreplaced snippet placeholder on line {replace_location[0] + 1}"
+            success = False
+        else:
+            with tempfile.NamedTemporaryFile(mode="w+t", suffix=".toml", delete=False) as f:
+                f.write(self.config_edit_text.text)
+                f.close()
+                success, reason = verify_config(f.name)
+            os.remove(f.name)
+
+        def _callback(is_yes:Optional[bool]):
+            if not is_yes:
+                return
+
+            assert self.experiment is not None
+            edit_btn = self.query_one("#btn_edit_config", Button)
+            save_btn = self.query_one("#btn_save_config", Button)
+            snippet_btn = self.query_one("#btn_insert_snippet", Button)
+            cancel_btn = self.query_one("#btn_cancel_config_edit", Button)
+            edit_btn.disabled = False
+            save_btn.disabled = True
+            snippet_btn.disabled = True
+            cancel_btn.disabled = True
+            self.config_edit_text.read_only = True
+            with open(self.experiment.config_file, "w") as f:
+                f.write(self.config_edit_text.text)
+            self.refresh_ui()
+
+        if success:
+            _callback(True)
+        else:
+            self.app.push_screen(ConfirmationScreen("There are errors. Are you sure you want to save?\n"+
+                                                    "Saving an incomplete file will not be loaded by experiment server.\n\n"+
+                                                    f"Reason: {reason}\n\n"+
+                                                    "Check logs or you can save the file and use\n`experiment-server verify-config-file <config-file>`\nfor more detailed error report."),
+                                 _callback)
 
     def cancel_config_edit(self):
         if self.experiment is None:

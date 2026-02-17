@@ -253,6 +253,7 @@ ConfirmationScreen {
 ConfirmationScreen Label {
     text-align: center;
     width: 100%;
+    height: auto;
 }
 
 ConfirmationScreen Vertical Horizontal {
@@ -262,7 +263,7 @@ ConfirmationScreen Vertical Horizontal {
 
 ConfirmationScreen Vertical {
     margin: 16;
-    height: 11;
+    height: 20;
 }
 
 SnippetSelectionScreen > Vertical {
