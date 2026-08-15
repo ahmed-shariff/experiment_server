@@ -91,6 +91,7 @@ def new_config_file(new_file_location):
 @click.option("-i", "--default-participant-index", default=1, type=click.IntRange(min=1, max_open=True), is_eager=True)
 @click.option("-h", "--host", default='127.0.0.1')
 @click.option("-p", "--port", default='5000')
+@click.option("-a", "--ask-default-participant-index", is_flag=True, default=False, expose_value=False, callback=_ask_default_participant_index_callback)
 @click.option("--editor-only", default=False, is_flag=True)
 def ui(config_file, default_participant_index, host, port, editor_only):
     """Similar to `run`, but launches TUI. Can be called without the config file. The
