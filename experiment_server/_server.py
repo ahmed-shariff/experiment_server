@@ -10,13 +10,15 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 import tornado.ioloop
 import asyncio
 import json
+from typing import Callable, Optional
 
 from experiment_server._api import Experiment
 from experiment_server.utils import ExperimentServerConfigurationException, ExperimentServerException
 
 
-def _create_app(experiment:Experiment):
+def _create_app(experiment:Experiment, on_shutdown: Optional[Callable[[], None]] = None):
     resource_parameters = {"experiment": experiment}
+    api_parameters = {"experiment": experiment, "on_shutdown": on_shutdown}
 
     static_location = (Path(__file__).parent  / "static" ).absolute()
     
@@ -25,30 +27,46 @@ def _create_app(experiment:Experiment):
         (r"/index()",StaticFileHandler, {'path': str(static_location / "index.html")}),
         (r"/web/([^/]+)", WebHandler, resource_parameters),
         (r"/web/([^/]+)/([0-9]+)", WebHandler, resource_parameters),
-        (r"/api/([^/]+)", ExperimentHandler, resource_parameters),
-        (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, resource_parameters),
-        (r"/api/([^/]+)/([0-9]+)/([0-9]+)", ExperimentHandler, resource_parameters),
+        (r"/api/([^/]+)", ExperimentHandler, api_parameters),
+        (r"/api/([^/]+)/([0-9]+)", ExperimentHandler, api_parameters),
+        (r"/api/([^/]+)/([0-9]+)/([0-9]+)", ExperimentHandler, api_parameters),
         (r"/(.*)",StaticFileHandler, {'path': static_location, 'default_filename': "index.html"})
     ])
     return application
 
-def start_server_in_current_ioloop(experiment, host="127.0.0.1", port=5000):
+def start_server_in_current_ioloop(experiment, host="127.0.0.1", port=5000,
+                                    on_shutdown: Optional[Callable[[], None]] = None):
     # ensure Tornado uses the asyncio loop Textual already runs on
     AsyncIOMainLoop().install()
 
-    # build an Application that uses the provided Experiment object
-    app = _create_app(experiment=experiment)
+    # The callback closes over the HTTP server so the request handler can
+    # stop accepting requests without stopping an embedding application's loop.
+    server_holder = {}
 
+    def shutdown_callback():
+        server_holder["server"].stop()
+        if on_shutdown is not None:
+            on_shutdown()
+
+    app = _create_app(experiment=experiment, on_shutdown=shutdown_callback)
     http_server = tornado.httpserver.HTTPServer(app)
+    server_holder["server"] = http_server
     http_server.listen(port=port, address=host)
     return http_server
 
 
 async def _init_api(config_file, default_participant_index, host="127.0.0.1", port=5000):
     experiment = Experiment(config_file, default_participant_index)
-    application = _create_app(experiment=experiment)
-    application.listen(port=port, address=host)
-    await asyncio.Event().wait()
+    shutdown_event = asyncio.Event()
+    server_holder = {}
+
+    def shutdown_callback():
+        server_holder["server"].stop()
+        shutdown_event.set()
+
+    application = _create_app(experiment=experiment, on_shutdown=shutdown_callback)
+    server_holder["server"] = application.listen(port=port, address=host)
+    await shutdown_event.wait()
 
 
 def _server(config_file, default_participant_index, host="127.0.0.1", port=5000):
@@ -279,8 +297,9 @@ class WebHandler(RequestHandler):
 
 
 class ExperimentHandler(RequestHandler):
-    def initialize(self, experiment:Experiment):
+    def initialize(self, experiment:Experiment, on_shutdown=None):
         self.experiment = experiment
+        self.on_shutdown = on_shutdown
 
     def get(self, action=None, param=None):
         # The experiment methods treat None as default pp
@@ -377,7 +396,9 @@ class ExperimentHandler(RequestHandler):
         elif action == "shutdown":
             if self.experiment.watchdog is not None:
                 self.experiment.watchdog.end_watch()
-            shutdown_server()
+            self.write({"message": "shutting down"})
+            if self.on_shutdown is not None:
+                tornado.ioloop.IOLoop.current().add_callback(self.on_shutdown)
         else:
             self.set_status(404)
             self.write("n/a")
@@ -409,16 +430,3 @@ class ExperimentHandler(RequestHandler):
             self.set_status(404)
             self.write(f"param should be an integer, got {param}, processing as None")
             return None
-
-
-# # From: https://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
-# def shutdown_server():
-#     func = request.environ.get('werkzeug.server.shutdown')
-#     if func is None:
-#         raise RuntimeError('Not running with the Werkzeug Server')
-#     func()
-
-
-# from https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server    
-def shutdown_server():
-    tornado.ioloop.IOLoop.instance().stop()

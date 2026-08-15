@@ -1207,6 +1207,7 @@ class ExperimentTextualApp(App):
         self.config_tab: Optional[ConfigTab] = None
         self.log_view = RichLog(id="log_view", markup=True)
         self._config_file_box_temp_msg: Optional[str] = None
+        self.http_server = None
 
     def compose(self) -> ComposeResult:
         """Called to add widgets to the app."""
@@ -1279,7 +1280,9 @@ class ExperimentTextualApp(App):
                 self.participant_tab.set_experiment(self.experiment)
             if self.config_tab is not None:
                 self.config_tab.set_experiment(self.experiment)
-            start_server_in_current_ioloop(self.experiment, self.host, self.port)
+            self.http_server = start_server_in_current_ioloop(
+                self.experiment, self.host, self.port,
+                on_shutdown=self._server_shutdown_requested)
         else:
             self.experiment.config_file = path
 
@@ -1303,6 +1306,9 @@ class ExperimentTextualApp(App):
             self.refresh_ui()
 
         self.push_screen(LoadConfigScreen(os.curdir), load_config_callback)
+
+    def _server_shutdown_requested(self) -> None:
+        self.exit()
 
     def action_quit(self) -> None:
         self.exit()
