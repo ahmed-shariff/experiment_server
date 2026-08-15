@@ -1183,8 +1183,9 @@ class ExperimentTextualEditorOnlyApp(App):
         def textual_sink(message):
             # message is a Loguru Message object; str(message) is the formatted text
             loop.call_soon_threadsafe(self.log_view.write, str(message))
-        # Add Textual sink (enqueue=True for thread safety)
-        logger.add(textual_sink, enqueue=True)
+        # The sink schedules writes on Textual's loop itself; a multiprocessing
+        # queue is unnecessary and can fail under Python's forkserver context.
+        logger.add(textual_sink)
 
     def refresh_ui(self):
         self.config_editor.refresh_ui()
@@ -1248,8 +1249,9 @@ class ExperimentTextualApp(App):
         def textual_sink(message):
             # message is a Loguru Message object; str(message) is the formatted text
             loop.call_soon_threadsafe(self.log_view.write, str(message))
-        # Add Textual sink (enqueue=True for thread safety)
-        logger.add(textual_sink, enqueue=True)
+        # The sink schedules writes on Textual's loop itself; a multiprocessing
+        # queue is unnecessary and can fail under Python's forkserver context.
+        logger.add(textual_sink)
 
     def refresh_ui(self):
         if self.experiment is not None:
