@@ -315,6 +315,10 @@ SnippetSelectionScreen #snippets_buttons {
     margin: 0;
 }
 
+#collapse_edit_config TextArea {
+    height: 100%;
+}
+
 #order_table {
     height: auto;
 }
