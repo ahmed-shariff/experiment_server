@@ -380,10 +380,10 @@ def verify_config(f: Union[str, Path], test_func:Optional[Callable[[List[Dict[st
         return (False, "\n".join(format_exception_only(e)))
 
 
-def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable[[List[Dict[str, Any]]], Tuple[bool, str]]]=None) -> list[list[Any]]:
+def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable[[List[Dict[str, Any]]], Tuple[bool, str]]]=None, from_ppid:int=1, to_ppid:int=5) -> list[list[Any]]:
     config_blocks: Dict[int, Dict[str, Any]] = {}
-    # collect configs for participants 1..5 (same range as original)
-    for participant_index in range(1, 6):
+    # collect configs for participants from..to (same range as original)
+    for participant_index in range(from_ppid, to_ppid + 1):
         config = process_config_file(f, participant_index=participant_index, suppress_message=True)
         config_blocks[participant_index] = {f"block_{idx + 1}": c["name"] for idx, c in enumerate(config)}
         if test_func is not None:
@@ -404,7 +404,7 @@ def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable
     sorted_blocks = sorted(all_blocks, key=block_key)
 
     # header row: 'block' followed by participant labels
-    participants = list(range(1, 6))
+    participants = list(range(from_ppid, to_ppid + 1))
     header: List[Any] = ["block"] + [f"participant_{i}" for i in participants]
 
     table: List[List[Any]] = [header]

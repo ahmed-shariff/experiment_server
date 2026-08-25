@@ -41,7 +41,9 @@ def test_order_fail_checks(order):
     "order",[
         ["0", "1", "2", "3"],
         [["0"], ["1"], ["2"], ["3"]],
-        {"1": ["0"], "2":["1"], "3":["3"]}])
+        {"1": ["0"], "2":["1"], "3":["3"]},
+        {1: ["0"], 2:["1"], 3:["3"]}
+    ])
 def test_order_pass_checks(order):
     try:
         config = construct_participant_condition(generate_test_config(), 1, order=order, init_block_names=[], final_block_names=[])
