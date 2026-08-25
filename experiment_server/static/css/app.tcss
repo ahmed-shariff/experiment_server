@@ -323,6 +323,22 @@ SnippetSelectionScreen #snippets_buttons {
     height: auto;
 }
 
+#example_ordering_edit {
+    width: 100%;
+    height: auto;
+}
+
+#example_ordering_edit Label {
+    padding:1;
+    text-align: center;
+    width: 20;
+}
+
+#example_ordering_edit Input,
+#example_ordering_edit Button {
+    width: 20;
+}
+
 #edit_config_button_grid {
     grid-size: 3;
 }

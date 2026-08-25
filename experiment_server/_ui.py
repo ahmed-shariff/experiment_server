@@ -20,6 +20,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
 from textual.screen import ModalScreen
 from textual.document._document import Document
+from textual.validation import ValidationResult, Validator
 from textual.widgets import (
     DirectoryTree,
     Header,
@@ -663,6 +664,31 @@ class ParticipantTab(Vertical):
             self.update_ppid()
 
 
+class RangeBoundValidator(Validator):
+    """Validate one range endpoint against the other endpoint."""
+
+    def __init__(self, peer_input_id: str, is_min_field: bool) -> None:
+        super().__init__()
+        self.peer_input_id = peer_input_id
+        self.is_min_field = is_min_field
+
+    def validate(self, value: str) -> ValidationResult:
+        # Empty input is treated as its placeholder by ConfigEditor. This lets
+        # the user clear a field before entering a new value.
+        if not value:
+            return self.success()
+
+        try:
+            current_num = int(value)
+        except ValueError:
+            return self.failure("Must be a valid integer.")
+
+        # The peer-aware range check runs in ConfigEditor.on_input_changed,
+        # where both Input widgets are available. Validators do not have a
+        # reference to the screen in Textual 7.5.
+        return self.success()
+
+
 class ConfigEditor(VerticalScroll):
     """Config editor widget."""
 
@@ -671,6 +697,8 @@ class ConfigEditor(VerticalScroll):
         self.__config_file = config_file
 
         self.config_edit_message = Static("", classes="message_box")
+        self.eg_order_edit_message = Static("", classes="message_box")
+        self.eg_order_range = [1, 5, True] # [min, max, ready to set]
         self.config_order_log = RichLog(id="order_table")
         self._config_file_box_temp_msg:Optional[str] = None
         self.config_edit_text = TextArea.code_editor(language="toml", read_only=True)
@@ -691,6 +719,16 @@ class ConfigEditor(VerticalScroll):
             yield Static("This is a simple editor. Use preferred text editor for advanced editing operations.")
             with Collapsible(title="Example ordering for 5 participants"):
                 yield self.config_order_log
+                yield self.eg_order_edit_message
+                with Horizontal(id="example_ordering_edit"):
+                    yield Label("Show range")
+                    yield Label("from")
+                    yield Input(placeholder="1", type="integer", id="eg_range_from",
+                                validators=[RangeBoundValidator("eg_range_to", is_min_field=True)])
+                    yield Label("to")
+                    yield Input(placeholder="5", type="integer", id="eg_range_to",
+                                validators=[RangeBoundValidator("eg_range_from", is_min_field=False)])
+                    yield Button("Update", id="btn_eg_range_update")
             with HorizontalGroup():
                 yield Static("On save config will try to autoload")
                 yield self.config_edit_message
@@ -702,6 +740,18 @@ class ConfigEditor(VerticalScroll):
                 yield Button("Save config", id="btn_save_config", disabled=True)
                 yield Button("Cancel", id="btn_cancel_config_edit", disabled=True)
             yield self.config_edit_text
+        self.refresh_ui()
+
+    def update_order_table(self):
+        _from, _to, _set = self.eg_order_range
+        if _set:
+            _from_input = self.query_one("#eg_range_from", Input)
+            _from_input.placeholder = str(_from)
+            _from_input.value = ""
+            _to_input = self.query_one("#eg_range_to", Input)
+            _to_input.placeholder = str(_to)
+            _to_input.value = ""
+            self.query_one("#btn_eg_range_update").disabled = True
         self.refresh_ui()
 
     def edit_config(self):
@@ -831,9 +881,50 @@ class ConfigEditor(VerticalScroll):
         self.config_edit_text.read_only = True
         self.refresh_ui()
 
+    def on_input_changed(self, event: Input.Changed) -> None:
+        iid = event.input.id
+        if iid not in {"eg_range_from", "eg_range_to"}:
+            return
+
+        from_input = self.query_one("#eg_range_from", Input)
+        to_input = self.query_one("#eg_range_to", Input)
+        field_name = "From" if iid == "eg_range_from" else "To"
+        _message = ""
+        _set_range = False
+
+        try:
+            from_value = int(from_input.value or from_input.placeholder)
+            to_value = int(to_input.value or to_input.placeholder)
+            self.eg_order_range[0] = from_value
+            self.eg_order_range[1] = to_value
+
+            if from_value >= to_value:
+                _message = f"value for `{field_name}` is not valid"
+            elif event.validation_result is not None and not event.validation_result.is_valid:
+                _message = (
+                    f"value for `{field_name}` is not valid: "
+                    f"{event.validation_result.failure_descriptions}"
+                )
+            else:
+                _set_range = True
+        except ValueError:
+            _message = f"value for `{field_name}` is not valid"
+
+        self.eg_order_range[2] = _set_range
+        self.query_one("#btn_eg_range_update", Button).disabled = not _set_range
+
+        if _message:
+            _message += (
+                f", (from: {self.eg_order_range[0]}, "
+                f"to: {self.eg_order_range[1]})"
+            )
+        self.eg_order_edit_message.update(_message)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
-        if bid == "btn_edit_config":
+        if bid == "btn_eg_range_update":
+            self.update_order_table()
+        elif bid == "btn_edit_config":
             self.edit_config()
         elif bid == "btn_insert_snippet":
             self.insert_snippet()
@@ -860,11 +951,18 @@ class ConfigEditor(VerticalScroll):
                 self.config_edit_text.replace(new_text, (0, 0), (last_line, length_of_last_line))
 
         try:
-            order_table_out = _get_table_for_participants(self.__config_file)
+            _from, _to, _set = self.eg_order_range
+            if not _set:
+                self.eg_order_range = [1, 5, True]
+                self.update_order_table()
+                return
+            order_table_out = _get_table_for_participants(self.__config_file, from_ppid=_from, to_ppid=_to)
             order_table_out = tabulate(order_table_out, headers='firstrow', tablefmt='fancy_grid')
         except Exception as e:
             order_table_out = f"Failed to load {self.__config_file}: `{e}`"
         self.config_order_log.write(order_table_out)
+
+        self.eg_order_edit_message.update("")
 
         out = ""
         if self._config_file_box_temp_msg is not None:
