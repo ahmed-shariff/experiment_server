@@ -319,8 +319,8 @@ class ChoicesFunction:
             if len(params) == 1 and "unique" not in params:
                 raise ExperimentServerConfigurationException(f"Unexpected key in `params` of `choices`. Allowed keys: [`unique`]")
             if "unique" in params:
-                self.unique = params.get("unique")
-        self.previous_choices = []
+                self.unique = bool(params.get("unique"))
+        self.previous_choices: List[Any] = []
 
     def __call__(self, args, params) -> Any:
         # Sanity check, making sure nothing changes between calls
@@ -391,7 +391,7 @@ def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable
             assert test_result, f"test_func failed for {participant_index} with reason, {reason}"
 
     # collect all block keys and sort by numeric suffix
-    all_blocks = set()
+    all_blocks: set[str] = set()
     for d in config_blocks.values():
         all_blocks.update(d.keys())
 
@@ -409,7 +409,7 @@ def _get_table_for_participants(f: Union[str, Path], test_func:Optional[Callable
 
     table: List[List[Any]] = [header]
     for block in sorted_blocks:
-        row = [block]
+        row: List[Any] = [block]
         for p in participants:
             row.append(config_blocks.get(p, {}).get(block, None))
         table.append(row)

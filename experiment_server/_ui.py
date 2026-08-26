@@ -19,6 +19,7 @@ from tabulate import tabulate
 from textual.app import App, ComposeResult
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll,HorizontalGroup, VerticalGroup
 from textual.screen import ModalScreen
+from textual.widget import Widget
 from textual.document._document import Document
 from textual.validation import ValidationResult, Validator
 from textual.widgets import (
@@ -38,7 +39,7 @@ from textual.widgets import (
     RichLog,
     Collapsible,
     Switch,
-    TextArea
+    TextArea,
 )
 from experiment_server._api import Experiment, _generate_config_json
 from experiment_server._process_config import _process_config, _get_table_for_participants, verify_config
@@ -266,7 +267,7 @@ class ParticipantTab(Vertical):
         self.status_box = Static(id="status_box")
         self.block_input = Input(placeholder="block id", id="block_input")
         self.block_all_input = Input(placeholder="block id (for all)", id="block_all_input")
-        self.participants_table = DataTable(id="participants_table")
+        self.participants_table: DataTable[Any] = DataTable(id="participants_table")
         self.config_pretty = Pretty("", id="config_pretty")
 
         self.monitor_default_switch = Switch(value=True)
@@ -286,17 +287,9 @@ class ParticipantTab(Vertical):
         self.experiment = experiment
         disabled_state = self.experiment is None
 
-        query_result = self.query(Button)
-        for button in query_result:
-            button.disabled = disabled_state
-
-        query_result = self.query(Input)
-        for input in query_result:
-            input.disabled = disabled_state
-
-        query_result = self.query(Switch)
-        for switch in query_result:
-            switch.disabled = disabled_state
+        for widget in self.query(Widget):
+            if isinstance(widget, (Button, Input, Switch)):
+                widget.disabled = disabled_state
 
         self.refresh_ui()
 
@@ -1301,7 +1294,7 @@ class ExperimentTextualApp(App):
         self.host = host if host is not None else "127.0.0.1"
         self.port = port if port is not None else 5000
         self.config_file_box = Static("", id="loaded_config_file_box")
-        self.experiment = None
+        self.experiment: Optional[Experiment] = None
         self.participant_tab: Optional[ParticipantTab] = None
         self.config_tab: Optional[ConfigTab] = None
         self.log_view = RichLog(id="log_view", markup=True)
@@ -1410,5 +1403,5 @@ class ExperimentTextualApp(App):
     def _server_shutdown_requested(self) -> None:
         self.exit()
 
-    def action_quit(self) -> None:
+    async def action_quit(self) -> None:
         self.exit()

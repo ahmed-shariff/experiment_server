@@ -1,5 +1,5 @@
 import json
-from typing import Tuple, Union
+from typing import Any, Tuple, Union
 import requests
 
 from experiment_server.utils import ExperimentServerException
@@ -40,7 +40,7 @@ class Client:
     def __init__(self, server_host:str ="127.0.0.1", server_port:Union[str, int]="5000") -> None:
         self._server_url = f"http://{server_host}:{server_port}"
 
-    def _request(self, end_point:str, verb:str) -> Tuple[bool, dict]:
+    def _request(self, end_point:str, verb:str) -> Tuple[bool, Any]:
         url = self._server_url + f"/api/{end_point}"
         if verb == "GET":
             r = requests.get(url)
@@ -55,13 +55,13 @@ class Client:
             return False, {"message": f"status {r.status_code} with text: {r.text}"}
         return True, json.loads(r.text) if len(r.text) > 0 else ""
     
-    def _get(self, end_point:str) -> Tuple[bool, dict]:
+    def _get(self, end_point:str) -> Tuple[bool, Any]:
         return self._request(end_point, "GET")
 
-    def _post(self, end_point:str) -> Tuple[bool, dict]:
+    def _post(self, end_point:str) -> Tuple[bool, Any]:
         return self._request(end_point, "POST")
 
-    def _put(self, end_point:str) -> Tuple[bool, dict]:
+    def _put(self, end_point:str) -> Tuple[bool, Any]:
         return self._request(end_point, "PUT")
 
     def move_to_next(self, participant_index:int|None=None) -> Tuple[bool, dict]:

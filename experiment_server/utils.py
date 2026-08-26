@@ -9,7 +9,7 @@ class FileModifiedWatcher(PatternMatchingEventHandler):
     def __init__(self, config_file: Union[Path, str], callback:Callable) -> None:
         super().__init__(patterns=[str(config_file)])
         self._observer = Observer()
-        self._observer.schedule(self, path=Path(config_file).parent, recursive=False)
+        self._observer.schedule(self, path=str(Path(config_file).parent), recursive=False)
         self._observer.start()
         self._callback = callback
 

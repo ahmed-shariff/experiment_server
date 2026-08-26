@@ -10,7 +10,7 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 import tornado.ioloop
 import asyncio
 import json
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from experiment_server._api import Experiment
 from experiment_server.utils import ExperimentServerConfigurationException, ExperimentServerException
@@ -41,7 +41,7 @@ def start_server_in_current_ioloop(experiment, host="127.0.0.1", port=5000,
 
     # The callback closes over the HTTP server so the request handler can
     # stop accepting requests without stopping an embedding application's loop.
-    server_holder = {}
+    server_holder: dict[str, Any] = {}
 
     def shutdown_callback():
         server_holder["server"].stop()
@@ -58,7 +58,7 @@ def start_server_in_current_ioloop(experiment, host="127.0.0.1", port=5000,
 async def _init_api(config_file, default_participant_index, host="127.0.0.1", port=5000):
     experiment = Experiment(config_file, default_participant_index)
     shutdown_event = asyncio.Event()
-    server_holder = {}
+    server_holder: dict[str, Any] = {}
 
     def shutdown_callback():
         server_holder["server"].stop()
