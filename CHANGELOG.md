@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.9] - 2026-08-28
+### Added
+- `ui` now supports `-a`/`--ask-default-participant-index`, which prompts for the default participant index before starting the TUI.
+- `ConfigEditor` now includes `eg_range_from` and `eg_range_to` inputs and an `btn_eg_range_update` button for selecting the participant range displayed in the example ordering table.
+- `RangeBoundValidator` validates the range inputs, while `ConfigEditor.on_input_changed` checks that the lower bound is less than the upper bound before enabling the update button.
+- `_create_app` and `start_server_in_current_ioloop` now accept an `on_shutdown` callback for applications embedding the server.
+
+### Changed
+- `_get_table_for_participants` now accepts `from_ppid` and `to_ppid` arguments. Its default range remains participants 1 through 5.
+- `ExperimentHandler` now acknowledges `POST /api/shutdown` with `{"message": "shutting down"}` and invokes the shutdown callback through Tornado's event loop.
+- `_init_api` now waits on an `asyncio.Event` and stops its HTTP server through the shutdown callback instead of stopping the shared IOLoop.
+- `ExperimentTextualApp` stores the HTTP server, exits through `_server_shutdown_requested`, and uses an asynchronous `action_quit`.
+- Textual log sinks in `ExperimentTextualApp` and `ExperimentTextualEditorOnlyApp` no longer use Loguru's multiprocessing queue. They schedule writes directly on Textual's event loop.
+- Added explicit type annotations to `Client._request`, `_get`, and `_post`, the server state holders, `ChoicesFunction.previous_choices`, participant tables, and several `ExperimentTextualApp` fields.
+- The GitHub Actions workflow now runs pytest on pushes to `master` and `development` instead of deploying GitHub Pages.
+
+### Fixed
+- `FileModifiedWatcher` now passes the watched directory to `Observer.schedule` as a string.
+- `ChoicesFunction` now normalizes the `unique` parameter to a boolean.
+- The configuration editor's `TextArea` now fills the available height.
+
 ## [0.3.8] - 2026-02-16
 ### Added
 - New compact editor-only TUI App and CLI flag:
